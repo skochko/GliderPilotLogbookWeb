@@ -1,0 +1,10 @@
+@import 'tailwindcss';
+
+:root {
+  --sheet-zebra-color: #f8fafc;
+  --sheet-header-color: #e2e8f0;
+}
+
+body {
+  @apply min-h-screen bg-slate-50 text-slate-900 antialiased;
+}

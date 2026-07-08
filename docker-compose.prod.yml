@@ -1,0 +1,8 @@
+# Production overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build
+
+services:
+  web:
+    restart: unless-stopped
+    ports:
+      - '${WEB_HTTP_PORT:-80}:80'

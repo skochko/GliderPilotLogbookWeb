@@ -1,0 +1,41 @@
+---
+description: Glider Pilot Logbook frontend — project context and constraints
+alwaysApply: true
+---
+
+# Glider Pilot Logbook — Frontend
+
+Separate repo from backend **GliderPilotLogbookCore** (Django REST API).
+
+## Architecture
+
+- **Google Sheets = source of truth** — frontend never stores flights locally long-term
+- Backend is a gateway: OAuth, validation, Google Sheets CRUD
+- No JWT — **session cookies** + CSRF for mutating requests
+- Compatible with [GliderPilotLogbookSync](https://github.com/skochko/GliderPilotLogbookSync) spreadsheet schema
+
+## Stack
+
+- **Vue 3** + TypeScript + Vite
+- Composition API with `<script setup>`
+- API types from OpenAPI (`openapi/schema.yaml` or live `/api/schema/`)
+- No duplicate business logic (date normalization, flight ID, formulas) — backend owns that
+
+## App areas (map to API)
+
+| UI area | API |
+|---------|-----|
+| Login | `GET /api/auth/google`, callback |
+| Dashboard / stats | `GET /api/statistics` |
+| Flights | `GET/POST/PATCH/DELETE /api/flights` |
+| Connect logbook | `POST /api/logbook/connect` |
+| Settings | `GET/PATCH /api/settings` |
+| Summary + medical | `GET/PATCH /api/summary`, `/api/summary/medical` |
+| Profile prefs | `GET/PATCH /api/profile` |
+
+## Do not
+
+- Implement Google Sheets access from the browser
+- Store refresh tokens or OAuth secrets in frontend
+- Assume row numbers as stable IDs — use composite `flight.id`
+- Overwrite read-only fields on PATCH (`flight_time`, `pic_time`, `dual_time`, `instructor_time`)

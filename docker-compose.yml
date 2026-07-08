@@ -1,0 +1,16 @@
+# Vue frontend (nginx static SPA)
+#
+# Staging:  docker compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging up -d --build
+# Production: docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build
+
+name: glider-logbook-web
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:?Set VITE_API_URL in env file}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+        VITE_GOOGLE_API_KEY: ${VITE_GOOGLE_API_KEY:-}

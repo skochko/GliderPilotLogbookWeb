@@ -1,0 +1,47 @@
+---
+description: Vue 3 + TypeScript conventions for the logbook frontend
+globs: "**/*.{vue,ts}"
+alwaysApply: false
+---
+
+# Vue 3 + TypeScript
+
+## Structure
+
+```
+src/
+  api/              # apiFetch, typed endpoints, parseApiError
+  components/       # presentational .vue
+  composables/      # useAuth, useFlights, useSettings
+  views/            # route-level pages
+  router/           # vue-router
+  types/            # generated from openapi/schema.yaml
+  App.vue
+  main.ts
+```
+
+## Patterns
+
+- **Composition API** + `<script setup lang="ts">`
+- One `api/client.ts` — all fetch through CSRF-aware wrapper
+- **Composables** for data fetching; views/components stay thin
+- Explicit `loading` / `error` / `empty` states in templates
+- Prefer native `fetch` over axios (cookies + CSRF simpler)
+- **Pinia** optional — fine for auth user; composables alone also work
+
+## Auth
+
+- App init: `GET /auth/me` — 403 → logged out
+- Login: full-page redirect to `/auth/google` on the API host
+- OAuth return: backend redirects to `FRONTEND_URL?auth=success|error` — read query in router guard or `App.vue`, then refetch user
+
+## Env
+
+- `VITE_API_URL` only — never commit secrets
+- Vite dev server default `:5173` — add to backend `CORS_ALLOWED_ORIGINS`
+
+## Testing
+
+- Vitest + `@vue/test-utils` for components
+- Mock `api/client` in composable tests
+- E2E: backend `:8000`, frontend `:5173`, real session flow

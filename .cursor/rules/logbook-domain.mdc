@@ -1,0 +1,40 @@
+---
+description: Flight logbook domain — fields, validation, UX rules
+globs: "**/*.{ts,vue}"
+alwaysApply: false
+---
+
+# Logbook domain (UI)
+
+## Flight form — editable fields
+
+`date`, `pilot`, `copilot`, `glider`, `registration`, `departure_place`, `launch_time`, `landing_time`, `arrival_place`, `launch_type`, `landings`, `is_instructor`
+
+**Read-only** (show after save, from API): `flight_time`, `pic_time`, `dual_time`, `instructor_time`, `row_number`
+
+## Validation (mirror backend)
+
+- `date`: ISO `YYYY-MM-DD` (display may follow Settings `date_format`)
+- `launch_time`, `landing_time`: `HH:MM`
+- `landings`: integer ≥ 0
+- `launch_type`: free text (suggest Aerotow, Winch but allow custom)
+
+## Settings affect UX
+
+- `date_format`, `sort_direction`, `pilot_name`, `is_instructor` — from `GET /api/settings`
+- `zebra_color`, `header_color` — read-only, optional theming
+
+## Summary / medical
+
+- Summary: 7 optional date fields (ISO in API)
+- Medical: exactly **3 entries** on PATCH (`start_date`, `medical_type`, `expiry_date`)
+
+## Statistics dashboard
+
+`GET /api/statistics` — totals, `flights_by_glider`, `flights_by_launch_type`, `recent_activity` (max 10).
+
+## Empty states
+
+- Not logged in → login
+- No logbook → connect flow (URL or spreadsheet ID)
+- No flights → empty list, not an error

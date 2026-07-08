@@ -1,0 +1,1518 @@
+openapi: 3.0.3
+info:
+  title: Glider Pilot Logbook API
+  version: 1.0.0
+  description: Backend for glider pilot logbooks stored in Google Sheets. Session
+    authentication with CSRF for mutating requests.
+paths:
+  /api/auth/csrf:
+    get:
+      operationId: auth_csrf_retrieve
+      tags:
+      - Auth
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CsrfResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+  /api/auth/google:
+    get:
+      operationId: auth_google_retrieve
+      tags:
+      - Auth
+      security:
+      - {}
+      responses:
+        '302':
+          description: Redirect to Google OAuth consent screen
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+  /api/auth/google/callback:
+    get:
+      operationId: auth_google_callback_retrieve
+      tags:
+      - Auth
+      security:
+      - {}
+      responses:
+        '302':
+          description: Redirect to frontend after successful login
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+    post:
+      operationId: auth_google_callback_create
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleCallbackRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserMe'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+  /api/auth/logout:
+    post:
+      operationId: auth_logout_create
+      tags:
+      - Auth
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+  /api/auth/me:
+    get:
+      operationId: auth_me_retrieve
+      tags:
+      - Auth
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserMe'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+  /api/flights:
+    get:
+      operationId: flights_list
+      tags:
+      - Flights
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Flight'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+    post:
+      operationId: flights_create
+      tags:
+      - Flights
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlightCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flight'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Resource not found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Conflict
+  /api/flights/{flight_id}:
+    get:
+      operationId: flights_retrieve
+      parameters:
+      - in: path
+        name: flight_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Flights
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flight'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Resource not found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Conflict
+    patch:
+      operationId: flights_partial_update
+      parameters:
+      - in: path
+        name: flight_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Flights
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFlightPatchRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flight'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Resource not found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Conflict
+    delete:
+      operationId: flights_destroy
+      parameters:
+      - in: path
+        name: flight_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Flights
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Resource not found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Conflict
+  /api/health:
+    get:
+      operationId: health_retrieve
+      description: GET /api/health — liveness and dependency checks.
+      tags:
+      - Health
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+          description: ''
+  /api/logbook:
+    get:
+      operationId: logbook_retrieve
+      tags:
+      - Logbook
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogbookStatus'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+  /api/logbook/connect:
+    post:
+      operationId: logbook_connect_create
+      tags:
+      - Logbook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogbookConnectRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogbookStatus'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Resource not found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Conflict
+  /api/logbook/disconnect:
+    delete:
+      operationId: logbook_disconnect_destroy
+      tags:
+      - Logbook
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+  /api/profile:
+    get:
+      operationId: profile_retrieve
+      tags:
+      - Profile
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+    patch:
+      operationId: profile_partial_update
+      tags:
+      - Profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfilePatchRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+  /api/settings:
+    get:
+      operationId: settings_retrieve
+      tags:
+      - Settings
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SheetSettings'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+    patch:
+      operationId: settings_partial_update
+      tags:
+      - Settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSheetSettingsPatchRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SheetSettings'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Resource not found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Conflict
+  /api/statistics:
+    get:
+      operationId: statistics_retrieve
+      tags:
+      - Statistics
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statistics'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+  /api/summary:
+    get:
+      operationId: summary_retrieve
+      tags:
+      - Summary
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Summary'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+    patch:
+      operationId: summary_partial_update
+      tags:
+      - Summary
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSummaryPatchRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Summary'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Resource not found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Conflict
+  /api/summary/medical:
+    get:
+      operationId: summary_medical_retrieve
+      tags:
+      - Summary
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalBlock'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+    patch:
+      operationId: summary_medical_partial_update
+      tags:
+      - Summary
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicalBlockPatchRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalBlock'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Resource not found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Conflict
+components:
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        error:
+          $ref: '#/components/schemas/ApiErrorBody'
+      required:
+      - error
+    ApiErrorBody:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details: {}
+      required:
+      - code
+      - details
+      - message
+    CsrfResponse:
+      type: object
+      properties:
+        csrfToken:
+          type: string
+      required:
+      - csrfToken
+    Flight:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        row_number:
+          type: integer
+          readOnly: true
+        date:
+          type: string
+        pilot:
+          type: string
+        copilot:
+          type: string
+        glider:
+          type: string
+        registration:
+          type: string
+        departure_place:
+          type: string
+        launch_time:
+          type: string
+        arrival_place:
+          type: string
+        landing_time:
+          type: string
+        flight_time:
+          type: string
+          readOnly: true
+        launch_type:
+          type: string
+        landings:
+          type: integer
+        is_instructor:
+          type: boolean
+        pic_time:
+          type: string
+          readOnly: true
+        dual_time:
+          type: string
+          readOnly: true
+        instructor_time:
+          type: string
+          readOnly: true
+      required:
+      - arrival_place
+      - copilot
+      - date
+      - departure_place
+      - dual_time
+      - flight_time
+      - glider
+      - id
+      - instructor_time
+      - is_instructor
+      - landing_time
+      - landings
+      - launch_time
+      - launch_type
+      - pic_time
+      - pilot
+      - registration
+      - row_number
+    FlightCreateRequest:
+      type: object
+      properties:
+        date:
+          type: string
+          minLength: 1
+        pilot:
+          type: string
+          default: ''
+        copilot:
+          type: string
+          default: ''
+        glider:
+          type: string
+          default: ''
+        registration:
+          type: string
+          default: ''
+        departure_place:
+          type: string
+          default: ''
+        launch_time:
+          type: string
+          default: ''
+        arrival_place:
+          type: string
+          default: ''
+        landing_time:
+          type: string
+          default: ''
+        launch_type:
+          type: string
+          default: ''
+        landings:
+          type: integer
+          default: 0
+        is_instructor:
+          type: boolean
+          default: false
+      required:
+      - date
+    GliderStats:
+      type: object
+      properties:
+        glider:
+          type: string
+        count:
+          type: integer
+        hours:
+          type: number
+          format: double
+      required:
+      - count
+      - glider
+      - hours
+    GoogleCallbackRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+        state:
+          type: string
+      required:
+      - code
+    HealthChecks:
+      type: object
+      properties:
+        database:
+          type: boolean
+        redis:
+          type: boolean
+      required:
+      - database
+      - redis
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        checks:
+          $ref: '#/components/schemas/HealthChecks'
+      required:
+      - checks
+      - status
+    LaunchTypeStats:
+      type: object
+      properties:
+        launch_type:
+          type: string
+        count:
+          type: integer
+      required:
+      - count
+      - launch_type
+    LogbookConnectRequest:
+      type: object
+      properties:
+        spreadsheet_id:
+          type: string
+        url:
+          type: string
+    LogbookStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        spreadsheet_id:
+          type: string
+        title:
+          type: string
+        sheets:
+          type: array
+          items:
+            type: string
+      required:
+      - connected
+      - sheets
+      - spreadsheet_id
+      - title
+    MedicalBlock:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicalEntry'
+      required:
+      - entries
+    MedicalEntry:
+      type: object
+      properties:
+        start_date:
+          type: string
+        medical_type:
+          type: string
+          maxLength: 255
+        expiry_date:
+          type: string
+      required:
+      - expiry_date
+      - medical_type
+      - start_date
+    MedicalEntryRequest:
+      type: object
+      properties:
+        start_date:
+          type: string
+        medical_type:
+          type: string
+          maxLength: 255
+        expiry_date:
+          type: string
+      required:
+      - expiry_date
+      - medical_type
+      - start_date
+    PatchedFlightPatchRequest:
+      type: object
+      properties:
+        date:
+          type: string
+          minLength: 1
+        pilot:
+          type: string
+        copilot:
+          type: string
+        glider:
+          type: string
+        registration:
+          type: string
+        departure_place:
+          type: string
+        launch_time:
+          type: string
+        arrival_place:
+          type: string
+        landing_time:
+          type: string
+        launch_type:
+          type: string
+        landings:
+          type: integer
+        is_instructor:
+          type: boolean
+    PatchedMedicalBlockPatchRequest:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicalEntryRequest'
+    PatchedProfilePatchRequest:
+      type: object
+      properties:
+        preferences:
+          type: object
+          additionalProperties: {}
+    PatchedSheetSettingsPatchRequest:
+      type: object
+      properties:
+        date_format:
+          type: string
+          minLength: 1
+        sort_direction:
+          type: string
+          minLength: 1
+        pilot_name:
+          type: string
+        start_date:
+          type: string
+          nullable: true
+        is_instructor:
+          type: boolean
+        instructor_from_date:
+          type: string
+          nullable: true
+    PatchedSummaryPatchRequest:
+      type: object
+      properties:
+        by_date_start:
+          type: string
+        by_date_end:
+          type: string
+        fi_train_date:
+          type: string
+        fi_training_date_2:
+          type: string
+        bi_ref_date:
+          type: string
+        fi_3year_date:
+          type: string
+        fi_ref_date:
+          type: string
+    Profile:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        google_sub:
+          type: string
+        has_logbook:
+          type: boolean
+        spreadsheet_id:
+          type: string
+        preferences:
+          type: object
+          additionalProperties: {}
+      required:
+      - email
+      - google_sub
+      - has_logbook
+      - preferences
+      - spreadsheet_id
+    RecentActivity:
+      type: object
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+        glider:
+          type: string
+        registration:
+          type: string
+        launch_type:
+          type: string
+        flight_time:
+          type: string
+        landings:
+          type: integer
+      required:
+      - date
+      - flight_time
+      - glider
+      - id
+      - landings
+      - launch_type
+      - registration
+    SheetSettings:
+      type: object
+      properties:
+        date_format:
+          type: string
+        sort_direction:
+          type: string
+        pilot_name:
+          type: string
+        start_date:
+          type: string
+          nullable: true
+        is_instructor:
+          type: boolean
+        instructor_from_date:
+          type: string
+          nullable: true
+        zebra_color:
+          type: string
+        header_color:
+          type: string
+      required:
+      - date_format
+      - header_color
+      - is_instructor
+      - pilot_name
+      - sort_direction
+      - zebra_color
+    Statistics:
+      type: object
+      properties:
+        total_flights:
+          type: integer
+        total_flight_hours:
+          type: number
+          format: double
+        total_launches:
+          type: integer
+        flights_by_glider:
+          type: array
+          items:
+            $ref: '#/components/schemas/GliderStats'
+        flights_by_launch_type:
+          type: array
+          items:
+            $ref: '#/components/schemas/LaunchTypeStats'
+        recent_activity:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecentActivity'
+      required:
+      - flights_by_glider
+      - flights_by_launch_type
+      - recent_activity
+      - total_flight_hours
+      - total_flights
+      - total_launches
+    Summary:
+      type: object
+      properties:
+        by_date_start:
+          type: string
+        by_date_end:
+          type: string
+        fi_train_date:
+          type: string
+        fi_training_date_2:
+          type: string
+        bi_ref_date:
+          type: string
+        fi_3year_date:
+          type: string
+        fi_ref_date:
+          type: string
+      required:
+      - bi_ref_date
+      - by_date_end
+      - by_date_start
+      - fi_3year_date
+      - fi_ref_date
+      - fi_train_date
+      - fi_training_date_2
+    UserMe:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        has_logbook:
+          type: boolean
+        spreadsheet_id:
+          type: string
+      required:
+      - email
+      - has_logbook
+      - id
+      - name
+      - spreadsheet_id
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+tags:
+- name: Health
+- name: Auth
+- name: Profile
+- name: Logbook
+- name: Settings
+- name: Flights
+- name: Summary
+- name: Statistics

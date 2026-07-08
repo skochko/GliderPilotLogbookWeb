@@ -1,0 +1,54 @@
+import { readonly, ref } from 'vue'
+import * as authApi from '@/api/auth'
+import { isApiError } from '@/api/errors'
+import type { UserMe } from '@/types'
+
+const user = ref<UserMe | null>(null)
+const loading = ref(true)
+const initialized = ref(false)
+const error = ref<string | null>(null)
+
+export function useAuth() {
+  async function fetchMe(): Promise<UserMe | null> {
+    loading.value = true
+    error.value = null
+    try {
+      user.value = await authApi.fetchMe()
+      return user.value
+    } catch (err) {
+      error.value = isApiError(err) ? err.message : 'Failed to load user'
+      user.value = null
+      return null
+    } finally {
+      loading.value = false
+      initialized.value = true
+    }
+  }
+
+  function login(): void {
+    authApi.loginRedirect()
+  }
+
+  async function logout(): Promise<void> {
+    loading.value = true
+    error.value = null
+    try {
+      await authApi.logout()
+      user.value = null
+    } catch (err) {
+      error.value = isApiError(err) ? err.message : 'Logout failed'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return {
+    user: readonly(user),
+    loading: readonly(loading),
+    initialized: readonly(initialized),
+    error: readonly(error),
+    fetchMe,
+    login,
+    logout,
+  }
+}

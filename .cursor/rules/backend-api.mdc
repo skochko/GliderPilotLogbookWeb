@@ -1,0 +1,61 @@
+---
+description: Session auth, CSRF, API client, and error handling for Django backend
+globs: "**/{api,lib,services,composables}/**/*.{ts,vue}"
+alwaysApply: false
+---
+
+# Backend API integration
+
+Base URL: `import.meta.env.VITE_API_URL` (e.g. `http://localhost:8000/api`).
+
+## Authentication
+
+1. Login: redirect to `{API}/auth/google` (full page) **or** OAuth popup + `POST /auth/google/callback` with `{ code, state }`
+2. After login: `sessionid` cookie (HttpOnly) — all requests use `credentials: 'include'`
+3. Current user: `GET /auth/me`
+4. Logout: `POST /auth/logout` (+ CSRF header)
+
+## CSRF (required for POST, PATCH, PUT, DELETE)
+
+```typescript
+async function getCsrfToken(): Promise<string> {
+  const res = await fetch(`${API}/auth/csrf`, { credentials: 'include' });
+  const { csrfToken } = await res.json();
+  return csrfToken;
+}
+
+async function apiFetch(path: string, init: RequestInit = {}) {
+  const method = (init.method ?? 'GET').toUpperCase();
+  const headers = new Headers(init.headers);
+  if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(method)) {
+    headers.set('X-CSRFToken', await getCsrfToken());
+  }
+  if (init.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  return fetch(`${API}${path}`, { ...init, headers, credentials: 'include' });
+}
+```
+
+## Error format
+
+All errors: `{ error: { code, message, details } }`
+
+| HTTP | Typical `code` |
+|------|----------------|
+| 400 | `VALIDATION_ERROR` |
+| 403 | `FORBIDDEN` (not logged in) |
+| 404 | `NOT_FOUND` |
+| 409 | conflict (duplicate flight) |
+| 429 | `THROTTLED` |
+| 502 | `GOOGLE_API_ERROR` |
+
+Parse `error.message` for user-facing text; use `details` for field errors.
+
+## Logbook gate
+
+Many endpoints return 400 if no logbook: connect via `POST /logbook/connect` first (`spreadsheet_id` or `url`).
+
+## Flight ID in URLs
+
+Composite ID (no slashes): e.g. `2025-11-08Field09:05Field10:15` — encode for URL path segment.

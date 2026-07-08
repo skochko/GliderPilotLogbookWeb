@@ -1,0 +1,8 @@
+# Staging overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging up -d --build
+
+services:
+  web:
+    restart: unless-stopped
+    ports:
+      - '${WEB_HTTP_PORT:-8080}:80'
