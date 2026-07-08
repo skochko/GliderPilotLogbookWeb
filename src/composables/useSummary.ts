@@ -15,6 +15,17 @@ const error = ref<string | null>(null)
 const loading = computed(() => summaryLoading.value || medicalLoading.value)
 const initialized = computed(() => summaryInitialized.value && medicalInitialized.value)
 
+export function resetSummaryState(): void {
+  summary.value = null
+  medical.value = null
+  summaryLoading.value = false
+  medicalLoading.value = false
+  summaryInitialized.value = false
+  medicalInitialized.value = false
+  mutating.value = false
+  error.value = null
+}
+
 export function useSummary() {
   async function fetchSummary(): Promise<Summary | null> {
     summaryLoading.value = true

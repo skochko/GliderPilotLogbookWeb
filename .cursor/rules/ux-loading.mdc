@@ -11,13 +11,11 @@ alwaysApply: false
 When displaying data from the API:
 
 - Show `LoadingState` (or inline `SpinnerIcon`) while the request is in flight.
-- Do **not** show empty-state text (`No flights yet`, `No data yet`, `Flight not found`, etc.) until the request has **completed** (`initialized` / `listInitialized` / `detailInitialized` is `true`).
-- Use composable flags:
-  - `loading` — read/fetch in progress
-  - `initialized` — first fetch finished (success or error)
+- Do **not** show empty-state text until the request has **completed** (`initialized` / `listInitialized` / `detailInitialized` is `true`).
+- Use `!initialized` for the spinner — not `!initialized && loading`, because `loading` stays false until the fetch function runs.
 
 ```vue
-<LoadingState v-if="!initialized && loading" />
+<LoadingState v-if="!initialized" />
 <ErrorBanner v-else-if="error" :retry-busy="loading" @retry="fetch" />
 <div v-else-if="initialized && !items.length">No items yet.</div>
 ```

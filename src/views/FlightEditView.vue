@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import FlightForm from '@/components/FlightForm.vue'
@@ -19,8 +19,8 @@ const submitError = ref<string | null>(null)
 
 const flightId = decodeFlightId(route.params.id as string)
 
-onMounted(async () => {
-  flight.value = await get(flightId)
+void get(flightId).then((result) => {
+  flight.value = result
 })
 
 async function onSubmit(payload: Record<string, unknown>): Promise<void> {
@@ -52,7 +52,7 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
       <p class="mt-1 text-slate-600">Update flight details in your logbook.</p>
     </div>
 
-    <LoadingState v-if="detailLoading" />
+    <LoadingState v-if="!detailInitialized" />
     <div
       v-else-if="detailInitialized && !flight"
       class="rounded-lg border border-slate-200 bg-white p-6 text-slate-600"

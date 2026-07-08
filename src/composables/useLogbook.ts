@@ -9,6 +9,14 @@ const initialized = ref(false)
 const mutating = ref(false)
 const error = ref<string | null>(null)
 
+export function resetLogbookState(): void {
+  status.value = null
+  loading.value = false
+  initialized.value = false
+  mutating.value = false
+  error.value = null
+}
+
 export function useLogbook() {
   async function fetchStatus(): Promise<LogbookStatus | null> {
     loading.value = true

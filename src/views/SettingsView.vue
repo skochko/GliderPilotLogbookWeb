@@ -55,7 +55,7 @@ async function onSubmit(): Promise<void> {
       <p class="mt-1 text-slate-600">Logbook preferences from your Settings sheet.</p>
     </div>
 
-    <LoadingState v-if="!initialized && loading" />
+    <LoadingState v-if="!initialized" />
     <ErrorBanner v-else-if="error" :message="error" :retry-busy="loading" @retry="fetch" />
     <ErrorBanner v-if="submitError" :message="submitError" />
 

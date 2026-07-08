@@ -11,6 +11,16 @@ const detailInitialized = ref(false)
 const mutating = ref(false)
 const error = ref<string | null>(null)
 
+export function resetFlightsState(): void {
+  flights.value = []
+  loading.value = false
+  listInitialized.value = false
+  detailLoading.value = false
+  detailInitialized.value = false
+  mutating.value = false
+  error.value = null
+}
+
 export function useFlights() {
   async function list(): Promise<Flight[]> {
     loading.value = true

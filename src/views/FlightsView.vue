@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
@@ -21,10 +21,8 @@ const remarksOpen = ref(false)
 const remarksText = ref('')
 const remarksFlightId = ref<string | null>(null)
 
-onMounted(async () => {
-  await fetchSettings()
-  await list()
-})
+void fetchSettings()
+void list()
 
 const sortedFlights = computed(() =>
   sortFlights([...flights.value], settings.value?.sort_direction ?? 'newest_first'),
@@ -81,17 +79,17 @@ async function confirmDelete(): Promise<void> {
       </RouterLink>
     </div>
 
-    <LoadingState v-if="!listInitialized && loading" />
+    <LoadingState v-if="!listInitialized" />
     <ErrorBanner v-else-if="error" :message="error" :retry-busy="loading" @retry="list" />
 
     <div
-      v-else-if="listInitialized && !sortedFlights.length"
+      v-else-if="!sortedFlights.length"
       class="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center text-slate-500"
     >
       No flights yet. Add your first flight to get started.
     </div>
 
-    <div v-else class="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <div v-else-if="listInitialized" class="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
       <table class="min-w-full text-sm">
         <thead class="bg-[var(--sheet-header-color)] text-left text-slate-700">
           <tr>

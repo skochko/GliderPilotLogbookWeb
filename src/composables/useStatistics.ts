@@ -8,6 +8,13 @@ const loading = ref(false)
 const initialized = ref(false)
 const error = ref<string | null>(null)
 
+export function resetStatisticsState(): void {
+  statistics.value = null
+  loading.value = false
+  initialized.value = false
+  error.value = null
+}
+
 export function useStatistics() {
   async function fetch(): Promise<Statistics | null> {
     loading.value = true

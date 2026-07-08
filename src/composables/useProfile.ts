@@ -9,6 +9,14 @@ const initialized = ref(false)
 const mutating = ref(false)
 const error = ref<string | null>(null)
 
+export function resetProfileState(): void {
+  profile.value = null
+  loading.value = false
+  initialized.value = false
+  mutating.value = false
+  error.value = null
+}
+
 export function useProfile() {
   async function fetch(): Promise<Profile | null> {
     loading.value = true

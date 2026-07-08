@@ -39,8 +39,7 @@ const summaryFields: Array<{ key: keyof SummaryPatch; label: string }> = [
 ]
 
 onMounted(async () => {
-  await fetchSummary()
-  await fetchMedical()
+  await Promise.all([fetchSummary(), fetchMedical()])
   if (summary.value) {
     Object.assign(summaryForm, summary.value)
   }
@@ -75,7 +74,7 @@ async function retryLoad(): Promise<void> {
       <p class="mt-1 text-slate-600">Summary Glider dates and medical records.</p>
     </div>
 
-    <LoadingState v-if="!initialized && loading" />
+    <LoadingState v-if="!initialized" />
     <ErrorBanner v-else-if="error" :message="error" :retry-busy="loading" @retry="retryLoad" />
     <ErrorBanner v-if="submitError" :message="submitError" />
 

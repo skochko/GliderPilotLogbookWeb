@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
@@ -10,10 +10,8 @@ import { useSettings } from '@/composables/useSettings'
 const { statistics, loading, initialized, error, fetch } = useStatistics()
 const { settings, fetch: fetchSettings } = useSettings()
 
-onMounted(async () => {
-  await fetchSettings()
-  await fetch()
-})
+void fetchSettings()
+void fetch()
 
 const maxGliderCount = computed(() => {
   const items = statistics.value?.flights_by_glider ?? []
@@ -37,7 +35,7 @@ function displayDate(iso: string): string {
       <p class="mt-1 text-slate-600">Overview of your flying activity.</p>
     </div>
 
-    <LoadingState v-if="!initialized && loading" />
+    <LoadingState v-if="!initialized" />
     <ErrorBanner v-else-if="error" :message="error" :retry-busy="loading" @retry="fetch" />
 
     <template v-else-if="statistics">
