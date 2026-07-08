@@ -22,13 +22,27 @@ log() {
   printf '[deploy] %s\n' "$*"
 }
 
+resolve_archive_ref() {
+  if git fetch origin "$BRANCH_NAME" 2>/dev/null && git rev-parse --verify "origin/$BRANCH_NAME" >/dev/null 2>&1; then
+    printf 'origin/%s' "$BRANCH_NAME"
+    return
+  fi
+
+  log "origin/$BRANCH_NAME not found on remote, using local branch"
+  if git rev-parse --verify "$BRANCH_NAME" >/dev/null 2>&1; then
+    printf '%s' "$BRANCH_NAME"
+    return
+  fi
+
+  log "Local branch $BRANCH_NAME not found, using HEAD"
+  printf 'HEAD'
+}
+
 trap 'log "failed at line $LINENO"' ERR
 
-log "Fetching origin/$BRANCH_NAME"
-git fetch origin "$BRANCH_NAME"
-
-log "Creating archive $ARCHIVE"
-git archive --format=tar.gz "origin/$BRANCH_NAME" -o "$ARCHIVE"
+ARCHIVE_REF="$(resolve_archive_ref)"
+log "Creating archive from $ARCHIVE_REF -> $ARCHIVE"
+git archive --format=tar.gz "$ARCHIVE_REF" -o "$ARCHIVE"
 
 log "Ensuring remote directory $USER@$HOST:$REMOTE_DIR"
 ssh "${SSH_OPTS[@]}" "$USER@$HOST" "mkdir -p '$REMOTE_DIR'"
@@ -47,9 +61,9 @@ tar -xzf '$ARCHIVE' --directory '$REMOTE_DIR'
 rm -f '$ARCHIVE'
 docker compose --env-file '$ENV_FILE' -f '$COMPOSE_BASE' -f '$COMPOSE_PROD' up -d --build --remove-orphans
 sleep 5
-if [ -z "\$(docker compose --env-file '$ENV_FILE' -f '$COMPOSE_BASE' -f '$COMPOSE_PROD' ps -q app --status running)" ]; then
-  echo 'App container is not running. Recent logs:'
-  docker compose --env-file '$ENV_FILE' -f '$COMPOSE_BASE' -f '$COMPOSE_PROD' logs --tail=80 app || true
+if [ -z "\$(docker compose --env-file '$ENV_FILE' -f '$COMPOSE_BASE' -f '$COMPOSE_PROD' ps -q web --status running)" ]; then
+  echo 'Web container is not running. Recent logs:'
+  docker compose --env-file '$ENV_FILE' -f '$COMPOSE_BASE' -f '$COMPOSE_PROD' logs --tail=80 web || true
   docker compose --env-file '$ENV_FILE' -f '$COMPOSE_BASE' -f '$COMPOSE_PROD' ps -a
   exit 1
 fi
