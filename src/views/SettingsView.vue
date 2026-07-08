@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { isApiError } from '@/api/errors'
 import { useSettings } from '@/composables/useSettings'
 import type { SheetSettingsPatch } from '@/types'
 
-const { settings, loading, error, fetch, save } = useSettings()
+const { settings, loading, initialized, mutating, error, fetch, save } = useSettings()
 
 const form = reactive<SheetSettingsPatch>({
   date_format: '%Y-%m-%d',
@@ -18,7 +19,6 @@ const form = reactive<SheetSettingsPatch>({
 })
 
 const submitError = ref<string | null>(null)
-const saving = ref(false)
 
 onMounted(async () => {
   await fetch()
@@ -33,8 +33,9 @@ onMounted(async () => {
 })
 
 async function onSubmit(): Promise<void> {
+  if (mutating.value) return
+
   submitError.value = null
-  saving.value = true
   try {
     await save({
       ...form,
@@ -43,8 +44,6 @@ async function onSubmit(): Promise<void> {
     })
   } catch (err) {
     submitError.value = isApiError(err) ? err.message : 'Failed to save settings'
-  } finally {
-    saving.value = false
   }
 }
 </script>
@@ -56,8 +55,8 @@ async function onSubmit(): Promise<void> {
       <p class="mt-1 text-slate-600">Logbook preferences from your Settings sheet.</p>
     </div>
 
-    <LoadingState v-if="loading && !settings" />
-    <ErrorBanner v-else-if="error" :message="error" @retry="fetch" />
+    <LoadingState v-if="!initialized && loading" />
+    <ErrorBanner v-else-if="error" :message="error" :retry-busy="loading" @retry="fetch" />
     <ErrorBanner v-if="submitError" :message="submitError" />
 
     <form
@@ -128,13 +127,7 @@ async function onSubmit(): Promise<void> {
         </div>
       </div>
 
-      <button
-        type="submit"
-        class="rounded-md bg-sky-700 px-4 py-2 text-sm font-medium text-white hover:bg-sky-800 disabled:opacity-50"
-        :disabled="saving"
-      >
-        {{ saving ? 'Saving…' : 'Save settings' }}
-      </button>
+      <ActionButton type="submit" :busy="mutating">Save settings</ActionButton>
     </form>
   </div>
 </template>

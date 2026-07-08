@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { isApiError } from '@/api/errors'
 import { useProfile } from '@/composables/useProfile'
 
-const { profile, loading, error, fetch, save } = useProfile()
+const { profile, loading, initialized, mutating, error, fetch, save } = useProfile()
 
 const preferencesJson = ref('{}')
 const submitError = ref<string | null>(null)
-const saving = ref(false)
 
 const hasLogbook = computed(() => profile.value?.has_logbook ?? false)
 
@@ -21,8 +21,9 @@ onMounted(async () => {
 })
 
 async function onSubmit(): Promise<void> {
+  if (mutating.value) return
+
   submitError.value = null
-  saving.value = true
   try {
     const preferences = JSON.parse(preferencesJson.value) as Record<string, unknown>
     await save({ preferences })
@@ -34,8 +35,6 @@ async function onSubmit(): Promise<void> {
     } else {
       submitError.value = 'Failed to save profile'
     }
-  } finally {
-    saving.value = false
   }
 }
 </script>
@@ -47,8 +46,8 @@ async function onSubmit(): Promise<void> {
       <p class="mt-1 text-slate-600">Your account and application preferences.</p>
     </div>
 
-    <LoadingState v-if="loading && !profile" />
-    <ErrorBanner v-else-if="error" :message="error" @retry="fetch" />
+    <LoadingState v-if="!initialized && loading" />
+    <ErrorBanner v-else-if="error" :message="error" :retry-busy="loading" @retry="fetch" />
     <ErrorBanner v-if="submitError" :message="submitError" />
 
     <div v-if="profile" class="space-y-6">
@@ -78,13 +77,7 @@ async function onSubmit(): Promise<void> {
           rows="8"
           class="mt-4 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm"
         />
-        <button
-          type="submit"
-          class="mt-4 rounded-md bg-sky-700 px-4 py-2 text-sm font-medium text-white hover:bg-sky-800 disabled:opacity-50"
-          :disabled="saving"
-        >
-          {{ saving ? 'Saving…' : 'Save preferences' }}
-        </button>
+        <ActionButton type="submit" class="mt-4" :busy="mutating">Save preferences</ActionButton>
       </form>
     </div>
   </div>

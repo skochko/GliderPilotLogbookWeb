@@ -1,6 +1,7 @@
 import { parseApiError } from './errors'
 
 const API = import.meta.env.VITE_API_URL as string
+const DEFAULT_TIMEOUT_MS = 30_000
 
 let csrfTokenPromise: Promise<string> | null = null
 
@@ -38,7 +39,28 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
     headers.set('Content-Type', 'application/json')
   }
 
-  return fetch(`${API}${path}`, { ...init, headers, credentials: 'include' })
+  if (init.signal) {
+    return fetch(`${API}${path}`, { ...init, headers, credentials: 'include' })
+  }
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS)
+
+  try {
+    return await fetch(`${API}${path}`, {
+      ...init,
+      headers,
+      credentials: 'include',
+      signal: controller.signal,
+    })
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error('Request timed out')
+    }
+    throw err
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }
 
 export async function apiJson<T>(path: string, init: RequestInit = {}): Promise<T> {

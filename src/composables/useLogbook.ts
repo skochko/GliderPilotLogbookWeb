@@ -5,6 +5,8 @@ import type { LogbookStatus } from '@/types'
 
 const status = ref<LogbookStatus | null>(null)
 const loading = ref(false)
+const initialized = ref(false)
+const mutating = ref(false)
 const error = ref<string | null>(null)
 
 export function useLogbook() {
@@ -20,11 +22,12 @@ export function useLogbook() {
       return null
     } finally {
       loading.value = false
+      initialized.value = true
     }
   }
 
   async function connect(payload: { url?: string; spreadsheet_id?: string }): Promise<boolean> {
-    loading.value = true
+    mutating.value = true
     error.value = null
     try {
       status.value = await logbookApi.connectLogbook(payload)
@@ -33,12 +36,12 @@ export function useLogbook() {
       error.value = isApiError(err) ? err.message : 'Failed to connect logbook'
       return false
     } finally {
-      loading.value = false
+      mutating.value = false
     }
   }
 
   async function disconnect(): Promise<boolean> {
-    loading.value = true
+    mutating.value = true
     error.value = null
     try {
       await logbookApi.disconnectLogbook()
@@ -48,13 +51,15 @@ export function useLogbook() {
       error.value = isApiError(err) ? err.message : 'Failed to disconnect logbook'
       return false
     } finally {
-      loading.value = false
+      mutating.value = false
     }
   }
 
   return {
     status: readonly(status),
     loading: readonly(loading),
+    initialized: readonly(initialized),
+    mutating: readonly(mutating),
     error: readonly(error),
     fetchStatus,
     connect,

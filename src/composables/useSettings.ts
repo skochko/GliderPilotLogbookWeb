@@ -6,6 +6,8 @@ import type { SheetSettings, SheetSettingsPatch } from '@/types'
 
 const settings = ref<SheetSettings | null>(null)
 const loading = ref(false)
+const initialized = ref(false)
+const mutating = ref(false)
 const error = ref<string | null>(null)
 
 export function useSettings() {
@@ -23,11 +25,12 @@ export function useSettings() {
       return null
     } finally {
       loading.value = false
+      initialized.value = true
     }
   }
 
   async function save(payload: SheetSettingsPatch): Promise<SheetSettings | null> {
-    loading.value = true
+    mutating.value = true
     error.value = null
     try {
       settings.value = await settingsApi.updateSettings(payload)
@@ -39,13 +42,15 @@ export function useSettings() {
       error.value = isApiError(err) ? err.message : 'Failed to save settings'
       throw err
     } finally {
-      loading.value = false
+      mutating.value = false
     }
   }
 
   return {
     settings: readonly(settings),
     loading: readonly(loading),
+    initialized: readonly(initialized),
+    mutating: readonly(mutating),
     error: readonly(error),
     fetch,
     save,

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
+import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { isApiError } from '@/api/errors'
 import { useSummary } from '@/composables/useSummary'
 import type { MedicalBlock, MedicalEntry, SummaryPatch } from '@/types'
 
-const { summary, medical, loading, error, fetchSummary, saveSummary, fetchMedical, saveMedical } =
+const { summary, medical, loading, initialized, mutating, error, fetchSummary, saveSummary, fetchMedical, saveMedical } =
   useSummary()
 
 const summaryForm = reactive<SummaryPatch>({
@@ -26,7 +27,6 @@ const medicalEntries = ref<MedicalEntry[]>([
 ])
 
 const submitError = ref<string | null>(null)
-const saving = ref(false)
 
 const summaryFields: Array<{ key: keyof SummaryPatch; label: string }> = [
   { key: 'by_date_start', label: 'By date start' },
@@ -50,17 +50,21 @@ onMounted(async () => {
 })
 
 async function saveAll(): Promise<void> {
+  if (mutating.value) return
+
   submitError.value = null
-  saving.value = true
   try {
     await saveSummary({ ...summaryForm })
     const payload: MedicalBlock = { entries: medicalEntries.value }
     await saveMedical(payload)
   } catch (err) {
     submitError.value = isApiError(err) ? err.message : 'Failed to save'
-  } finally {
-    saving.value = false
   }
+}
+
+async function retryLoad(): Promise<void> {
+  await fetchSummary()
+  await fetchMedical()
 }
 </script>
 
@@ -71,8 +75,8 @@ async function saveAll(): Promise<void> {
       <p class="mt-1 text-slate-600">Summary Glider dates and medical records.</p>
     </div>
 
-    <LoadingState v-if="loading && !summary" />
-    <ErrorBanner v-else-if="error" :message="error" @retry="fetchSummary" />
+    <LoadingState v-if="!initialized && loading" />
+    <ErrorBanner v-else-if="error" :message="error" :retry-busy="loading" @retry="retryLoad" />
     <ErrorBanner v-if="submitError" :message="submitError" />
 
     <form v-if="summary" class="space-y-8" @submit.prevent="saveAll">
@@ -127,13 +131,7 @@ async function saveAll(): Promise<void> {
         </div>
       </section>
 
-      <button
-        type="submit"
-        class="rounded-md bg-sky-700 px-4 py-2 text-sm font-medium text-white hover:bg-sky-800 disabled:opacity-50"
-        :disabled="saving"
-      >
-        {{ saving ? 'Saving…' : 'Save summary' }}
-      </button>
+      <ActionButton type="submit" :busy="mutating">Save summary</ActionButton>
     </form>
   </div>
 </template>

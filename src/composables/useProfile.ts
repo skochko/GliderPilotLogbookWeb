@@ -5,6 +5,8 @@ import type { Profile, ProfilePatch } from '@/types'
 
 const profile = ref<Profile | null>(null)
 const loading = ref(false)
+const initialized = ref(false)
+const mutating = ref(false)
 const error = ref<string | null>(null)
 
 export function useProfile() {
@@ -19,11 +21,12 @@ export function useProfile() {
       return null
     } finally {
       loading.value = false
+      initialized.value = true
     }
   }
 
   async function save(payload: ProfilePatch): Promise<Profile | null> {
-    loading.value = true
+    mutating.value = true
     error.value = null
     try {
       profile.value = await profileApi.updateProfile(payload)
@@ -32,13 +35,15 @@ export function useProfile() {
       error.value = isApiError(err) ? err.message : 'Failed to save profile'
       throw err
     } finally {
-      loading.value = false
+      mutating.value = false
     }
   }
 
   return {
     profile: readonly(profile),
     loading: readonly(loading),
+    initialized: readonly(initialized),
+    mutating: readonly(mutating),
     error: readonly(error),
     fetch,
     save,

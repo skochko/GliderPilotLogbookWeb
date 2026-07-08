@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
+import ActionButton from '@/components/ActionButton.vue'
 import type { Flight } from '@/types'
 
 const props = defineProps<{
@@ -28,6 +29,7 @@ const form = reactive({
   launch_type: '',
   landings: 0,
   is_instructor: false,
+  remarks: '',
 })
 
 watch(
@@ -46,6 +48,7 @@ watch(
       form.launch_type = ''
       form.landings = 0
       form.is_instructor = false
+      form.remarks = ''
       return
     }
     form.date = flight.date
@@ -60,6 +63,7 @@ watch(
     form.launch_type = flight.launch_type
     form.landings = flight.landings
     form.is_instructor = flight.is_instructor
+    form.remarks = flight.remarks
   },
   { immediate: true },
 )
@@ -185,6 +189,19 @@ function onSubmit(): void {
         <input v-model="form.is_instructor" type="checkbox" class="rounded border-slate-300" />
         <span class="font-medium text-slate-700">Instructor flight</span>
       </label>
+
+      <label class="block text-sm sm:col-span-2">
+        <span class="font-medium text-slate-700">Remarks and endorsements</span>
+        <textarea
+          v-model="form.remarks"
+          rows="4"
+          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          placeholder="Instructor endorsements, notes, etc."
+        />
+        <span v-if="fieldError('remarks')" class="mt-1 block text-xs text-red-600">{{
+          fieldError('remarks')
+        }}</span>
+      </label>
     </div>
 
     <div
@@ -201,20 +218,12 @@ function onSubmit(): void {
     </div>
 
     <div class="flex flex-wrap gap-3">
-      <button
-        type="submit"
-        class="rounded-md bg-sky-700 px-4 py-2 text-sm font-medium text-white hover:bg-sky-800 disabled:opacity-50"
-        :disabled="saving"
-      >
-        {{ saving ? 'Saving…' : flight ? 'Save changes' : 'Create flight' }}
-      </button>
-      <button
-        type="button"
-        class="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50"
-        @click="emit('cancel')"
-      >
+      <ActionButton type="submit" :busy="saving">
+        {{ flight ? 'Save changes' : 'Create flight' }}
+      </ActionButton>
+      <ActionButton variant="secondary" :disabled="saving" @click="emit('cancel')">
         Cancel
-      </button>
+      </ActionButton>
     </div>
   </form>
 </template>

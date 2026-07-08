@@ -5,6 +5,7 @@ import type { Statistics } from '@/types'
 
 const statistics = ref<Statistics | null>(null)
 const loading = ref(false)
+const initialized = ref(false)
 const error = ref<string | null>(null)
 
 export function useStatistics() {
@@ -19,12 +20,14 @@ export function useStatistics() {
       return null
     } finally {
       loading.value = false
+      initialized.value = true
     }
   }
 
   return {
     statistics: readonly(statistics),
     loading: readonly(loading),
+    initialized: readonly(initialized),
     error: readonly(error),
     fetch,
   }

@@ -1101,6 +1101,8 @@ components:
         instructor_time:
           type: string
           readOnly: true
+        remarks:
+          type: string
       required:
       - arrival_place
       - copilot
@@ -1119,6 +1121,7 @@ components:
       - pic_time
       - pilot
       - registration
+      - remarks
       - row_number
     FlightCreateRequest:
       type: object
@@ -1159,6 +1162,9 @@ components:
         is_instructor:
           type: boolean
           default: false
+        remarks:
+          type: string
+          default: ''
       required:
       - date
     GliderStats:
@@ -1305,6 +1311,8 @@ components:
           type: integer
         is_instructor:
           type: boolean
+        remarks:
+          type: string
     PatchedMedicalBlockPatchRequest:
       type: object
       properties:

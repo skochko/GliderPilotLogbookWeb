@@ -3,26 +3,25 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import FlightForm from '@/components/FlightForm.vue'
-import LoadingState from '@/components/LoadingState.vue'
 import { isApiError } from '@/api/errors'
 import { useFlights } from '@/composables/useFlights'
 import { useSettings } from '@/composables/useSettings'
 import type { FlightCreateRequest } from '@/types'
 
 const router = useRouter()
-const { create, loading, error } = useFlights()
+const { create, mutating, error } = useFlights()
 const { settings, fetch: fetchSettings } = useSettings()
 
 const fieldErrors = ref<Record<string, string[]>>({})
-const saving = ref(false)
 const submitError = ref<string | null>(null)
 
 onMounted(fetchSettings)
 
 async function onSubmit(payload: Record<string, unknown>): Promise<void> {
+  if (mutating.value) return
+
   fieldErrors.value = {}
   submitError.value = null
-  saving.value = true
   try {
     const defaults = {
       pilot: settings.value?.pilot_name ?? '',
@@ -39,8 +38,6 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
     } else {
       submitError.value = 'Failed to create flight'
     }
-  } finally {
-    saving.value = false
   }
 }
 </script>
@@ -53,12 +50,11 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
     </div>
 
     <ErrorBanner v-if="error || submitError" :message="error || submitError || ''" />
-    <LoadingState v-if="loading && saving" label="Creating flight…" />
 
     <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <FlightForm
         :field-errors="fieldErrors"
-        :saving="saving"
+        :saving="mutating"
         @submit="onSubmit"
         @cancel="router.push('/flights')"
       />

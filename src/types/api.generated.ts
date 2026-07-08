@@ -295,6 +295,7 @@ export interface components {
             readonly pic_time: string;
             readonly dual_time: string;
             readonly instructor_time: string;
+            remarks: string;
         };
         FlightCreateRequest: {
             date: string;

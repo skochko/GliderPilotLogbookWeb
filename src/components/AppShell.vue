@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import ActionButton from '@/components/ActionButton.vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
 
-const { user, logout } = useAuth()
+const { user, mutating, logout } = useAuth()
 const { message, kind, clear } = useFlashMessage()
 const route = useRoute()
 const menuOpen = ref(false)
@@ -82,13 +83,9 @@ watch(
         </div>
         <div v-if="user" class="flex shrink-0 items-center gap-2 text-sm sm:gap-3">
           <span class="hidden text-slate-600 md:inline">{{ user.name }}</span>
-          <button
-            type="button"
-            class="rounded-md border border-slate-300 px-2 py-1.5 text-slate-700 hover:bg-slate-50 sm:px-3"
-            @click="logout"
-          >
+          <ActionButton variant="secondary" class="!px-2 !py-1.5 sm:!px-3" :busy="mutating" @click="logout">
             Log out
-          </button>
+          </ActionButton>
         </div>
       </div>
 

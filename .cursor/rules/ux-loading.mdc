@@ -1,0 +1,46 @@
+---
+description: Loading spinners, empty states, and busy buttons for backend requests
+globs: src/**/*.{vue,ts}
+alwaysApply: false
+---
+
+# Backend request UX
+
+## Rule 1 — Loading data
+
+When displaying data from the API:
+
+- Show `LoadingState` (or inline `SpinnerIcon`) while the request is in flight.
+- Do **not** show empty-state text (`No flights yet`, `No data yet`, `Flight not found`, etc.) until the request has **completed** (`initialized` / `listInitialized` / `detailInitialized` is `true`).
+- Use composable flags:
+  - `loading` — read/fetch in progress
+  - `initialized` — first fetch finished (success or error)
+
+```vue
+<LoadingState v-if="!initialized && loading" />
+<ErrorBanner v-else-if="error" :retry-busy="loading" @retry="fetch" />
+<div v-else-if="initialized && !items.length">No items yet.</div>
+```
+
+## Rule 2 — User actions
+
+When a click triggers a backend request:
+
+- Disable the clicked control until response **or timeout** (30s via `apiFetch`).
+- Show spinner on that control (`ActionButton` with `:busy`, or `ConfirmDialog` `:busy`).
+- Prevent duplicate submissions (`if (mutating.value) return` at start of handler).
+- Use `mutating` in composables for writes (create/update/delete/save/connect/logout) — separate from read `loading`.
+
+```vue
+<ActionButton :busy="mutating" @click="save">Save</ActionButton>
+```
+
+## Shared components
+
+| Component | Use |
+|-----------|-----|
+| `SpinnerIcon` | Inline spinner |
+| `LoadingState` | Full-section data loading |
+| `ActionButton` | Buttons with `:busy` + auto-disable |
+| `ConfirmDialog` | `:busy` on confirm during delete |
+| `ErrorBanner` | `:retry-busy` on Retry button |

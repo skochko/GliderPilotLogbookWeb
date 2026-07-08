@@ -7,7 +7,7 @@ import { useStatistics } from '@/composables/useStatistics'
 import { formatDate } from '@/lib/dates'
 import { useSettings } from '@/composables/useSettings'
 
-const { statistics, loading, error, fetch } = useStatistics()
+const { statistics, loading, initialized, error, fetch } = useStatistics()
 const { settings, fetch: fetchSettings } = useSettings()
 
 onMounted(async () => {
@@ -37,8 +37,8 @@ function displayDate(iso: string): string {
       <p class="mt-1 text-slate-600">Overview of your flying activity.</p>
     </div>
 
-    <LoadingState v-if="loading && !statistics" />
-    <ErrorBanner v-else-if="error" :message="error" @retry="fetch" />
+    <LoadingState v-if="!initialized && loading" />
+    <ErrorBanner v-else-if="error" :message="error" :retry-busy="loading" @retry="fetch" />
 
     <template v-else-if="statistics">
       <div class="grid gap-4 sm:grid-cols-3">

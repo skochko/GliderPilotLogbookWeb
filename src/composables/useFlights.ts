@@ -5,6 +5,10 @@ import type { Flight, FlightCreateRequest, FlightPatchRequest } from '@/types'
 
 const flights = ref<Flight[]>([])
 const loading = ref(false)
+const listInitialized = ref(false)
+const detailLoading = ref(false)
+const detailInitialized = ref(false)
+const mutating = ref(false)
 const error = ref<string | null>(null)
 
 export function useFlights() {
@@ -20,11 +24,13 @@ export function useFlights() {
       return []
     } finally {
       loading.value = false
+      listInitialized.value = true
     }
   }
 
   async function get(id: string): Promise<Flight | null> {
-    loading.value = true
+    detailLoading.value = true
+    detailInitialized.value = false
     error.value = null
     try {
       return await flightsApi.getFlight(id)
@@ -32,12 +38,13 @@ export function useFlights() {
       error.value = isApiError(err) ? err.message : 'Failed to load flight'
       return null
     } finally {
-      loading.value = false
+      detailLoading.value = false
+      detailInitialized.value = true
     }
   }
 
   async function create(payload: FlightCreateRequest): Promise<Flight | null> {
-    loading.value = true
+    mutating.value = true
     error.value = null
     try {
       const flight = await flightsApi.createFlight(payload)
@@ -47,12 +54,12 @@ export function useFlights() {
       error.value = isApiError(err) ? err.message : 'Failed to create flight'
       throw err
     } finally {
-      loading.value = false
+      mutating.value = false
     }
   }
 
   async function update(id: string, payload: FlightPatchRequest): Promise<Flight | null> {
-    loading.value = true
+    mutating.value = true
     error.value = null
     try {
       const flight = await flightsApi.updateFlight(id, payload)
@@ -65,12 +72,12 @@ export function useFlights() {
       error.value = isApiError(err) ? err.message : 'Failed to update flight'
       throw err
     } finally {
-      loading.value = false
+      mutating.value = false
     }
   }
 
   async function remove(id: string): Promise<boolean> {
-    loading.value = true
+    mutating.value = true
     error.value = null
     try {
       await flightsApi.deleteFlight(id)
@@ -80,7 +87,7 @@ export function useFlights() {
       error.value = isApiError(err) ? err.message : 'Failed to delete flight'
       return false
     } finally {
-      loading.value = false
+      mutating.value = false
     }
   }
 
@@ -100,6 +107,10 @@ export function useFlights() {
   return {
     flights: readonly(flights),
     loading: readonly(loading),
+    listInitialized: readonly(listInitialized),
+    detailLoading: readonly(detailLoading),
+    detailInitialized: readonly(detailInitialized),
+    mutating: readonly(mutating),
     error: readonly(error),
     list,
     get,

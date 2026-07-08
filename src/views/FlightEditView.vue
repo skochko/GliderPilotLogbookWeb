@@ -11,27 +11,23 @@ import type { Flight, FlightPatchRequest } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
-const { get, update, loading, error } = useFlights()
+const { get, update, detailLoading, detailInitialized, mutating, error } = useFlights()
 
 const flight = ref<Flight | null>(null)
 const fieldErrors = ref<Record<string, string[]>>({})
-const saving = ref(false)
 const submitError = ref<string | null>(null)
-const notFound = ref(false)
 
 const flightId = decodeFlightId(route.params.id as string)
 
 onMounted(async () => {
   flight.value = await get(flightId)
-  if (!flight.value) {
-    notFound.value = true
-  }
 })
 
 async function onSubmit(payload: Record<string, unknown>): Promise<void> {
+  if (mutating.value) return
+
   fieldErrors.value = {}
   submitError.value = null
-  saving.value = true
   try {
     const updated = await update(flightId, payload as FlightPatchRequest)
     if (updated) {
@@ -45,8 +41,6 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
     } else {
       submitError.value = 'Failed to update flight'
     }
-  } finally {
-    saving.value = false
   }
 }
 </script>
@@ -58,8 +52,11 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
       <p class="mt-1 text-slate-600">Update flight details in your logbook.</p>
     </div>
 
-    <LoadingState v-if="loading && !flight && !notFound" />
-    <div v-else-if="notFound" class="rounded-lg border border-slate-200 bg-white p-6 text-slate-600">
+    <LoadingState v-if="detailLoading" />
+    <div
+      v-else-if="detailInitialized && !flight"
+      class="rounded-lg border border-slate-200 bg-white p-6 text-slate-600"
+    >
       Flight not found.
     </div>
 
@@ -69,7 +66,7 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
         <FlightForm
           :flight="flight"
           :field-errors="fieldErrors"
-          :saving="saving"
+          :saving="mutating"
           @submit="onSubmit"
           @cancel="router.push('/flights')"
         />

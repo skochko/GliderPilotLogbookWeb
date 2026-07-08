@@ -1,16 +1,23 @@
-import { readonly, ref } from 'vue'
+import { computed, readonly, ref } from 'vue'
 import * as summaryApi from '@/api/summary'
 import { isApiError } from '@/api/errors'
 import type { MedicalBlock, Summary, SummaryPatch } from '@/types'
 
 const summary = ref<Summary | null>(null)
 const medical = ref<MedicalBlock | null>(null)
-const loading = ref(false)
+const summaryLoading = ref(false)
+const medicalLoading = ref(false)
+const summaryInitialized = ref(false)
+const medicalInitialized = ref(false)
+const mutating = ref(false)
 const error = ref<string | null>(null)
+
+const loading = computed(() => summaryLoading.value || medicalLoading.value)
+const initialized = computed(() => summaryInitialized.value && medicalInitialized.value)
 
 export function useSummary() {
   async function fetchSummary(): Promise<Summary | null> {
-    loading.value = true
+    summaryLoading.value = true
     error.value = null
     try {
       summary.value = await summaryApi.getSummary()
@@ -19,12 +26,13 @@ export function useSummary() {
       error.value = isApiError(err) ? err.message : 'Failed to load summary'
       return null
     } finally {
-      loading.value = false
+      summaryLoading.value = false
+      summaryInitialized.value = true
     }
   }
 
   async function saveSummary(payload: SummaryPatch): Promise<Summary | null> {
-    loading.value = true
+    mutating.value = true
     error.value = null
     try {
       summary.value = await summaryApi.updateSummary(payload)
@@ -33,12 +41,12 @@ export function useSummary() {
       error.value = isApiError(err) ? err.message : 'Failed to save summary'
       throw err
     } finally {
-      loading.value = false
+      mutating.value = false
     }
   }
 
   async function fetchMedical(): Promise<MedicalBlock | null> {
-    loading.value = true
+    medicalLoading.value = true
     error.value = null
     try {
       medical.value = await summaryApi.getMedical()
@@ -47,12 +55,13 @@ export function useSummary() {
       error.value = isApiError(err) ? err.message : 'Failed to load medical records'
       return null
     } finally {
-      loading.value = false
+      medicalLoading.value = false
+      medicalInitialized.value = true
     }
   }
 
   async function saveMedical(payload: MedicalBlock): Promise<MedicalBlock | null> {
-    loading.value = true
+    mutating.value = true
     error.value = null
     try {
       medical.value = await summaryApi.updateMedical(payload)
@@ -61,14 +70,16 @@ export function useSummary() {
       error.value = isApiError(err) ? err.message : 'Failed to save medical records'
       throw err
     } finally {
-      loading.value = false
+      mutating.value = false
     }
   }
 
   return {
     summary: readonly(summary),
     medical: readonly(medical),
-    loading: readonly(loading),
+    loading,
+    initialized,
+    mutating: readonly(mutating),
     error: readonly(error),
     fetchSummary,
     saveSummary,

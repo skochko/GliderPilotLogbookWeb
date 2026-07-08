@@ -8,7 +8,7 @@ alwaysApply: false
 
 ## Flight form — editable fields
 
-`date`, `pilot`, `copilot`, `glider`, `registration`, `departure_place`, `launch_time`, `landing_time`, `arrival_place`, `launch_type`, `landings`, `is_instructor`
+`date`, `pilot`, `copilot`, `glider`, `registration`, `departure_place`, `launch_time`, `landing_time`, `arrival_place`, `launch_type`, `landings`, `is_instructor`, `remarks`
 
 **Read-only** (show after save, from API): `flight_time`, `pic_time`, `dual_time`, `instructor_time`, `row_number`
 

@@ -6,6 +6,7 @@ import type { UserMe } from '@/types'
 const user = ref<UserMe | null>(null)
 const loading = ref(true)
 const initialized = ref(false)
+const mutating = ref(false)
 const error = ref<string | null>(null)
 
 export function useAuth() {
@@ -30,7 +31,7 @@ export function useAuth() {
   }
 
   async function logout(): Promise<void> {
-    loading.value = true
+    mutating.value = true
     error.value = null
     try {
       await authApi.logout()
@@ -38,7 +39,7 @@ export function useAuth() {
     } catch (err) {
       error.value = isApiError(err) ? err.message : 'Logout failed'
     } finally {
-      loading.value = false
+      mutating.value = false
     }
   }
 
@@ -46,6 +47,7 @@ export function useAuth() {
     user: readonly(user),
     loading: readonly(loading),
     initialized: readonly(initialized),
+    mutating: readonly(mutating),
     error: readonly(error),
     fetchMe,
     login,
