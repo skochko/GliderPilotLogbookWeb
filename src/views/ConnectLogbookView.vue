@@ -35,7 +35,7 @@ async function connectByUrl(): Promise<void> {
     if (ok) {
       await fetchMe()
       show('Logbook connected successfully.', 'success')
-      await router.push('/')
+      await router.push('/dashboard')
     }
   } finally {
     urlBusy.value = false
@@ -54,7 +54,7 @@ async function connectByPicker(): Promise<void> {
     if (ok) {
       await fetchMe()
       show('Logbook connected successfully.', 'success')
-      await router.push('/')
+      await router.push('/dashboard')
     }
   } catch (err) {
     pickerError.value = err instanceof Error ? err.message : 'Picker failed'

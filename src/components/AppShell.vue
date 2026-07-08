@@ -11,7 +11,7 @@ const route = useRoute()
 const menuOpen = ref(false)
 
 const navItems = [
-  { to: '/', label: 'Dashboard' },
+  { to: '/dashboard', label: 'Dashboard' },
   { to: '/flights', label: 'Flights' },
   { to: '/settings', label: 'Settings' },
   { to: '/summary', label: 'Summary' },
@@ -19,7 +19,7 @@ const navItems = [
 ]
 
 function isActive(path: string): boolean {
-  if (path === '/') return route.path === '/'
+  if (path === '/dashboard') return route.path === '/dashboard'
   return route.path.startsWith(path)
 }
 
@@ -62,7 +62,7 @@ watch(
               <path v-else stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <RouterLink to="/" class="truncate text-lg font-semibold text-sky-800">
+          <RouterLink to="/dashboard" class="truncate text-lg font-semibold text-sky-800">
             Glider Pilot Logbook
           </RouterLink>
           <nav v-if="user?.has_logbook" class="hidden items-center gap-1 sm:flex">

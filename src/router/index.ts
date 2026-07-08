@@ -6,6 +6,12 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      path: '/',
+      name: 'landing',
+      component: () => import('@/views/LandingView.vue'),
+      meta: { guestLanding: true },
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
@@ -18,7 +24,7 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/',
+      path: '/dashboard',
       name: 'dashboard',
       component: () => import('@/views/DashboardView.vue'),
       meta: { requiresAuth: true, requiresLogbook: true },
@@ -78,7 +84,8 @@ router.beforeEach(async (to) => {
   if (authParam === 'success') {
     await fetchMe()
     show('Signed in successfully.', 'success')
-    return { path: to.path, query: {}, replace: true }
+    const destination = user.value?.has_logbook ? { name: 'dashboard' as const } : { name: 'connect' as const }
+    return { ...destination, replace: true }
   }
   if (authParam === 'error') {
     clear()
@@ -87,8 +94,13 @@ router.beforeEach(async (to) => {
   }
 
   const isGuestRoute = Boolean(to.meta.guest)
+  const isGuestLanding = Boolean(to.meta.guestLanding)
   const requiresAuth = Boolean(to.meta.requiresAuth)
   const requiresLogbook = Boolean(to.meta.requiresLogbook)
+
+  if (isGuestLanding && user.value) {
+    return user.value.has_logbook ? { name: 'dashboard' } : { name: 'connect' }
+  }
 
   if (requiresAuth && !user.value) {
     return { name: 'login', query: { redirect: to.fullPath } }
