@@ -59,7 +59,9 @@ See [`.cursor/rules/`](.cursor/rules/) for full project conventions.
 |----------|-------------|
 | `VITE_API_URL` | Backend API base (e.g. `http://localhost:8000/api`) |
 | `VITE_GOOGLE_CLIENT_ID` | Same OAuth client ID as backend (for Picker) |
-| `VITE_GOOGLE_API_KEY` | Google Cloud API key with Picker API enabled |
+| `VITE_GOOGLE_API_KEY` | Google Cloud API key (`AIza…`) with Picker + Drive APIs enabled |
+
+**Picker error "The API developer key is invalid"?** See [docs/google-picker-setup.md](docs/google-picker-setup.md).
 
 Never commit secrets or `.env`.
 

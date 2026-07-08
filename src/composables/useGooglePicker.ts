@@ -7,7 +7,7 @@ declare global {
     }
     google?: {
       picker: {
-        Action: { PICKED: string; CANCEL: string }
+        Action: { PICKED: string; CANCEL: string; LOADED: string; ERROR: string }
         ViewId: { SPREADSHEETS: string }
         DocsView: new (viewId?: string) => {
           setMimeTypes: (mime: string) => unknown
@@ -109,27 +109,56 @@ export function useGooglePicker() {
     }
 
     return new Promise((resolve, reject) => {
+      let settled = false
+
+      function finish(result: { id: string; name: string } | null): void {
+        if (settled) return
+        settled = true
+        resolve(result)
+      }
+
+      function fail(message: string): void {
+        if (settled) return
+        settled = true
+        reject(new Error(message))
+      }
+
       const view = new google.picker.DocsView(google.picker.ViewId.SPREADSHEETS)
       view.setMimeTypes('application/vnd.google-apps.spreadsheet')
 
-      const origin = window.location.origin
-
       const picker = new google.picker.PickerBuilder()
         .setAppId(getAppId())
-        .setOrigin(origin)
+        .setOrigin(window.location.origin)
         .addView(view)
         .setOAuthToken(accessToken)
         .setDeveloperKey(apiKey)
         .setCallback((data: PickerResponse) => {
-          if (data.action === google.picker.Action.CANCEL) {
-            resolve(null)
+          const action = data.action
+
+          // Picker fires "loaded" when the dialog opens — not a user choice.
+          if (action === google.picker.Action.LOADED || action === 'loaded') {
             return
           }
-          if (data.action === google.picker.Action.PICKED && data.docs?.[0]) {
-            resolve({ id: data.docs[0].id, name: data.docs[0].name })
+
+          if (action === google.picker.Action.CANCEL || action === 'cancel') {
+            finish(null)
             return
           }
-          reject(new Error('Unexpected picker response'))
+
+          if (action === google.picker.Action.ERROR || action === 'error') {
+            fail('Google Picker failed to open')
+            return
+          }
+
+          if (action === google.picker.Action.PICKED || action === 'picked') {
+            const doc = data.docs?.[0]
+            if (doc?.id) {
+              finish({ id: doc.id, name: doc.name || 'Spreadsheet' })
+              return
+            }
+            fail('No spreadsheet selected')
+            return
+          }
         })
         .build()
 
