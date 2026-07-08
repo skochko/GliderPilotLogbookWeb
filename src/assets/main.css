@@ -8,3 +8,96 @@
 body {
   @apply min-h-screen bg-slate-50 text-slate-900 antialiased;
 }
+
+.markdown-content {
+  @apply text-slate-700 leading-relaxed;
+}
+
+.markdown-content > :first-child {
+  @apply mt-0;
+}
+
+.markdown-content > :last-child {
+  @apply mb-0;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+  @apply font-semibold text-slate-900;
+}
+
+.markdown-content h1 {
+  @apply mt-8 mb-4 text-2xl;
+}
+
+.markdown-content h2 {
+  @apply mt-8 mb-3 text-xl;
+}
+
+.markdown-content h3 {
+  @apply mt-6 mb-2 text-lg;
+}
+
+.markdown-content p,
+.markdown-content ul,
+.markdown-content ol,
+.markdown-content blockquote,
+.markdown-content pre {
+  @apply my-4;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  @apply pl-6;
+}
+
+.markdown-content ul {
+  @apply list-disc;
+}
+
+.markdown-content ol {
+  @apply list-decimal;
+}
+
+.markdown-content li {
+  @apply my-1;
+}
+
+.markdown-content a {
+  @apply text-sky-700 underline hover:text-sky-900;
+}
+
+.markdown-content blockquote {
+  @apply border-l-4 border-slate-200 pl-4 text-slate-600 italic;
+}
+
+.markdown-content pre {
+  @apply overflow-x-auto rounded-md bg-slate-100 p-4 text-sm;
+}
+
+.markdown-content code {
+  @apply rounded bg-slate-100 px-1 py-0.5 text-sm;
+}
+
+.markdown-content pre code {
+  @apply bg-transparent p-0;
+}
+
+.markdown-content hr {
+  @apply my-8 border-slate-200;
+}
+
+.markdown-content table {
+  @apply my-4 w-full border-collapse text-sm;
+}
+
+.markdown-content th,
+.markdown-content td {
+  @apply border border-slate-200 px-3 py-2 text-left;
+}
+
+.markdown-content th {
+  @apply bg-slate-100 font-medium text-slate-900;
+}

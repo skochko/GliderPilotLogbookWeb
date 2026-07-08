@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { RouterView } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { RouterView, useRoute } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { useAuth } from '@/composables/useAuth'
 
 const { user, initialized, fetchMe } = useAuth()
+const route = useRoute()
+
+const useAppShell = computed(() => Boolean(user.value) && !route.meta.publicPage)
 
 onMounted(() => {
   if (!initialized.value) {
@@ -16,7 +19,7 @@ onMounted(() => {
 
 <template>
   <LoadingState v-if="!initialized" label="Starting app…" />
-  <AppShell v-else-if="user">
+  <AppShell v-else-if="useAppShell">
     <RouterView />
   </AppShell>
   <RouterView v-else />

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import SiteFooter from '@/components/SiteFooter.vue'
 
 const features = [
   'Mobile-friendly access to your flight records',
@@ -59,10 +60,9 @@ const features = [
         </div>
       </section>
 
-      <footer class="mt-10 text-center text-sm text-slate-500">
-        <p>Good lift and happy soaring!</p>
-        <p class="mt-1">© GliderLogbook.co.uk</p>
-      </footer>
+      <SiteFooter class="mt-10">
+        <p class="mb-4">Good lift and happy soaring!</p>
+      </SiteFooter>
     </div>
   </div>
 </template>

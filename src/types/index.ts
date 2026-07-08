@@ -14,6 +14,8 @@ export type MedicalEntry = components['schemas']['MedicalEntry']
 export type Statistics = components['schemas']['Statistics']
 export type Profile = components['schemas']['Profile']
 export type ProfilePatch = components['schemas']['PatchedProfilePatchRequest']
+export type Page = components['schemas']['Page']
+export type SitePageType = components['schemas']['PageTypeEnum']
 
 export interface ApiErrorBody {
   code: string

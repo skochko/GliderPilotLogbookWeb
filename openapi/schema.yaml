@@ -77,6 +77,44 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
           description: Google API error
+  /api/auth/google/access-token:
+    get:
+      operationId: auth_google_access_token_retrieve
+      tags:
+      - Auth
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleAccessToken'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Validation error
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Not authenticated
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
+        '502':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Google API error
   /api/auth/google/callback:
     get:
       operationId: auth_google_callback_retrieve
@@ -634,6 +672,37 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
           description: Google API error
+  /api/pages/{page_type}:
+    get:
+      operationId: pages_retrieve
+      description: GET /api/pages/{page_type} — public site document (Markdown).
+      parameters:
+      - in: path
+        name: page_type
+        schema:
+          type: string
+        required: true
+      tags:
+      - Pages
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Page not found
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+          description: Rate limit exceeded
   /api/profile:
     get:
       operationId: profile_retrieve
@@ -1181,6 +1250,13 @@ components:
       - count
       - glider
       - hours
+    GoogleAccessToken:
+      type: object
+      properties:
+        accessToken:
+          type: string
+      required:
+      - accessToken
     GoogleCallbackRequest:
       type: object
       properties:
@@ -1283,6 +1359,44 @@ components:
       - expiry_date
       - medical_type
       - start_date
+    Page:
+      type: object
+      properties:
+        page_type:
+          $ref: '#/components/schemas/PageTypeEnum'
+        title:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+          description: Markdown content
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - content
+      - page_type
+      - title
+      - updated_at
+    PageTypeEnum:
+      enum:
+      - about
+      - contact
+      - privacy
+      - terms
+      - cookies
+      - disclaimer
+      - faq
+      type: string
+      description: |-
+        * `about` - About
+        * `contact` - Contact
+        * `privacy` - Privacy Policy
+        * `terms` - Terms of Service
+        * `cookies` - Cookie Policy
+        * `disclaimer` - Disclaimer
+        * `faq` - FAQ
     PatchedFlightPatchRequest:
       type: object
       properties:
@@ -1524,3 +1638,4 @@ tags:
 - name: Flights
 - name: Summary
 - name: Statistics
+- name: Pages

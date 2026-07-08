@@ -36,6 +36,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/google/access-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["auth_google_access_token_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/google/callback": {
         parameters: {
             query?: never;
@@ -181,6 +197,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pages/{page_type}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET /api/pages/{page_type} — public site document (Markdown). */
+        get: operations["pages_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/profile": {
         parameters: {
             query?: never;
@@ -321,12 +354,17 @@ export interface components {
             landings: number;
             /** @default false */
             is_instructor: boolean;
+            /** @default  */
+            remarks: string;
         };
         GliderStats: {
             glider: string;
             count: number;
             /** Format: double */
             hours: number;
+        };
+        GoogleAccessToken: {
+            accessToken: string;
         };
         GoogleCallbackRequest: {
             code: string;
@@ -367,6 +405,25 @@ export interface components {
             medical_type: string;
             expiry_date: string;
         };
+        Page: {
+            page_type: components["schemas"]["PageTypeEnum"];
+            title: string;
+            /** @description Markdown content */
+            content: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        /**
+         * @description * `about` - About
+         *     * `contact` - Contact
+         *     * `privacy` - Privacy Policy
+         *     * `terms` - Terms of Service
+         *     * `cookies` - Cookie Policy
+         *     * `disclaimer` - Disclaimer
+         *     * `faq` - FAQ
+         * @enum {string}
+         */
+        PageTypeEnum: "about" | "contact" | "privacy" | "terms" | "cookies" | "disclaimer" | "faq";
         PatchedFlightPatchRequest: {
             date?: string;
             pilot?: string;
@@ -380,6 +437,7 @@ export interface components {
             launch_type?: string;
             landings?: number;
             is_instructor?: boolean;
+            remarks?: string;
         };
         PatchedMedicalBlockPatchRequest: {
             entries?: components["schemas"]["MedicalEntryRequest"][];
@@ -540,6 +598,61 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Google API error */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    auth_google_access_token_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleAccessToken"];
+                };
             };
             /** @description Validation error */
             400: {
@@ -1365,6 +1478,45 @@ export interface operations {
             };
             /** @description Google API error */
             502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    pages_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                page_type: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"];
+                };
+            };
+            /** @description Page not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

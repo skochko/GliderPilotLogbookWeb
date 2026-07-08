@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import SiteFooter from '@/components/SiteFooter.vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
@@ -171,6 +172,10 @@ watch(
     <main class="mx-auto max-w-6xl px-4 py-6">
       <slot />
     </main>
+
+    <div class="border-t border-slate-200 bg-white px-4 py-6">
+      <SiteFooter />
+    </div>
 
     <ConfirmDialog
       :open="disconnectOpen"

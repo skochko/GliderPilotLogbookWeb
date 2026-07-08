@@ -1,21 +1,41 @@
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
+import SiteFooter from '@/components/SiteFooter.vue'
 import { useAuth } from '@/composables/useAuth'
 
 const { login } = useAuth()
 </script>
 
 <template>
-  <div class="mx-auto max-w-md py-16 text-center">
-    <h1 class="text-3xl font-bold text-slate-900">Glider Pilot Logbook</h1>
-    <p class="mt-3 text-slate-600">
-      Sign in with Google to access your flight logbook stored in Google Sheets.
-    </p>
-    <button
-      type="button"
-      class="mt-8 rounded-md bg-sky-700 px-6 py-3 text-sm font-medium text-white hover:bg-sky-800"
-      @click="login"
-    >
-      Sign in with Google
-    </button>
+  <div class="min-h-screen bg-gradient-to-br from-sky-50 via-white to-slate-50 text-slate-800">
+    <div class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12 sm:px-6">
+      <header class="mb-8 text-center">
+        <RouterLink to="/" class="text-lg font-semibold text-sky-800 hover:text-sky-900">
+          GliderLogbook.co.uk
+        </RouterLink>
+      </header>
+
+      <section class="rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
+        <h1 class="text-3xl font-bold text-slate-900">Glider Pilot Logbook</h1>
+        <p class="mt-3 text-slate-600">
+          Sign in with Google to access your flight logbook stored in Google Sheets.
+        </p>
+        <button
+          type="button"
+          class="mt-8 rounded-md bg-sky-700 px-6 py-3 text-sm font-medium text-white hover:bg-sky-800"
+          @click="login"
+        >
+          Sign in with Google
+        </button>
+        <p class="mt-6 text-xs text-slate-500">
+          By signing in you agree to our
+          <RouterLink to="/terms" class="text-sky-700 hover:underline">Terms of Service</RouterLink>
+          and
+          <RouterLink to="/privacy" class="text-sky-700 hover:underline">Privacy Policy</RouterLink>.
+        </p>
+      </section>
+
+      <SiteFooter class="mt-10" />
+    </div>
   </div>
 </template>

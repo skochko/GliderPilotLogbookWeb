@@ -1,6 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
+import { SITE_PAGES } from '@/lib/sitePages'
+
+const sitePageRoutes = SITE_PAGES.map((page) => ({
+  path: page.path,
+  name: `page-${page.type}`,
+  component: () => import('@/views/SitePageView.vue'),
+  meta: { publicPage: true },
+}))
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -11,6 +19,7 @@ const router = createRouter({
       component: () => import('@/views/LandingView.vue'),
       meta: { guestLanding: true },
     },
+    ...sitePageRoutes,
     {
       path: '/login',
       name: 'login',
