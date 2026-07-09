@@ -481,7 +481,7 @@ export interface components {
             registration: string;
             launch_type: string;
             flight_time: string;
-            landings: number;
+            remarks: string;
         };
         SheetSettings: {
             date_format: string;

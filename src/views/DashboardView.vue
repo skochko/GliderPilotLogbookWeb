@@ -1,12 +1,22 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
+import RemarksDialog from '@/components/RemarksDialog.vue'
 import { useStatistics } from '@/composables/useStatistics'
 import { formatDayNumber, groupByMonth } from '@/lib/dates'
+import { encodeFlightId } from '@/lib/flightId'
+import { hasRemarks, truncateText } from '@/lib/text'
+import type { Statistics } from '@/types'
+
+type RecentActivity = Statistics['recent_activity'][number]
 
 const { statistics, loading, initialized, error, fetch } = useStatistics()
+
+const remarksOpen = ref(false)
+const remarksText = ref('')
+const remarksFlightId = ref<string | null>(null)
 
 void fetch()
 
@@ -23,6 +33,23 @@ const maxLaunchCount = computed(() => {
 const recentActivityGroups = computed(() =>
   groupByMonth(statistics.value?.recent_activity ?? []),
 )
+
+function rowClass(item: RecentActivity, index: number): string {
+  const classes: string[] = []
+  if (index % 2 === 1) {
+    classes.push('bg-[var(--sheet-zebra-color)]')
+  }
+  if (hasRemarks(item.remarks)) {
+    classes.push('border-l-2 border-l-amber-400')
+  }
+  return classes.join(' ')
+}
+
+function openRemarks(item: RecentActivity): void {
+  remarksText.value = item.remarks.trim()
+  remarksFlightId.value = item.id
+  remarksOpen.value = true
+}
 </script>
 
 <template>
@@ -108,15 +135,16 @@ const recentActivityGroups = computed(() =>
               <tr>
                 <th class="w-12 px-2 py-3 text-center font-medium sm:px-4">Day</th>
                 <th class="px-4 py-3 font-medium">Glider</th>
-                <th class="px-4 py-3 font-medium">Launch</th>
+                <th class="hidden px-4 py-3 font-medium sm:table-cell">Launch</th>
                 <th class="px-4 py-3 font-medium">Time</th>
-                <th class="px-4 py-3 font-medium">Landings</th>
+                <th class="hidden max-w-[12rem] px-4 py-3 font-medium lg:table-cell">Remarks</th>
+                <th class="w-14 px-2 py-3 text-center font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               <template v-for="group in recentActivityGroups" :key="group.key">
                 <tr class="border-t border-slate-200 bg-slate-100">
-                  <td colspan="5" class="px-4 py-2 text-sm font-semibold text-slate-700">
+                  <td colspan="6" class="px-4 py-2 text-sm font-semibold text-slate-700">
                     {{ group.label }}
                   </td>
                 </tr>
@@ -124,20 +152,64 @@ const recentActivityGroups = computed(() =>
                   v-for="(item, index) in group.items"
                   :key="item.id"
                   class="border-t border-slate-100"
-                  :class="{ 'bg-[var(--sheet-zebra-color)]': index % 2 === 1 }"
+                  :class="rowClass(item, index)"
                 >
-                  <td class="w-12 px-2 py-3 text-center font-medium tabular-nums text-slate-900 sm:px-4">
-                    <RouterLink
-                      :to="`/flights/${encodeURIComponent(item.id)}`"
-                      class="text-sky-700 hover:underline"
+                  <td class="relative w-12 px-2 py-3 text-center font-medium tabular-nums text-slate-900 sm:px-4">
+                    <button
+                      v-if="hasRemarks(item.remarks)"
+                      type="button"
+                      class="absolute left-0 top-1/2 -translate-y-1/2 rounded p-1 text-amber-600 hover:bg-amber-50 lg:hidden"
+                      aria-label="View remarks"
+                      @click.stop="openRemarks(item)"
                     >
-                      {{ formatDayNumber(item.date) }}
-                    </RouterLink>
+                      <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 4h16a1 1 0 011 1v11a1 1 0 01-1 1H8l-4 3V5a1 1 0 011-1z" />
+                      </svg>
+                    </button>
+                    {{ formatDayNumber(item.date) }}
                   </td>
-                  <td class="px-4 py-3">{{ item.glider }} {{ item.registration }}</td>
-                  <td class="px-4 py-3">{{ item.launch_type }}</td>
-                  <td class="px-4 py-3 whitespace-nowrap">{{ item.flight_time }}</td>
-                  <td class="px-4 py-3">{{ item.landings }}</td>
+                  <td class="max-w-[8rem] truncate px-4 py-3 sm:max-w-none">
+                    {{ item.glider }} {{ item.registration }}
+                  </td>
+                  <td class="hidden px-4 py-3 sm:table-cell">{{ item.launch_type || '—' }}</td>
+                  <td class="px-4 py-3 whitespace-nowrap">{{ item.flight_time || '—' }}</td>
+                  <td class="hidden max-w-[12rem] px-4 py-3 lg:table-cell">
+                    <button
+                      v-if="hasRemarks(item.remarks)"
+                      type="button"
+                      class="block max-w-full truncate text-left text-sm text-amber-900 hover:text-amber-700 hover:underline"
+                      :title="item.remarks.trim()"
+                      @click="openRemarks(item)"
+                    >
+                      {{ truncateText(item.remarks, 48) }}
+                    </button>
+                    <span v-else class="text-slate-300">—</span>
+                  </td>
+                  <td class="px-2 py-3">
+                    <div class="flex items-center justify-center">
+                      <RouterLink
+                        :to="`/flights/${encodeFlightId(item.id)}`"
+                        class="inline-flex rounded-md p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-sky-700"
+                        title="Edit"
+                        aria-label="Edit flight"
+                      >
+                        <svg
+                          class="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          aria-hidden="true"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                          />
+                        </svg>
+                      </RouterLink>
+                    </div>
+                  </td>
                 </tr>
               </template>
             </tbody>
@@ -145,5 +217,12 @@ const recentActivityGroups = computed(() =>
         </div>
       </section>
     </template>
+
+    <RemarksDialog
+      :open="remarksOpen"
+      :text="remarksText"
+      :flight-id="remarksFlightId"
+      @close="remarksOpen = false"
+    />
   </div>
 </template>

@@ -1512,16 +1512,16 @@ components:
           type: string
         flight_time:
           type: string
-        landings:
-          type: integer
+        remarks:
+          type: string
       required:
       - date
       - flight_time
       - glider
       - id
-      - landings
       - launch_type
       - registration
+      - remarks
     SheetSettings:
       type: object
       properties:
