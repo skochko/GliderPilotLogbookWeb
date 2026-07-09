@@ -57,7 +57,7 @@ export function formatMonthYear(iso: string): string {
 }
 
 export function groupByMonth<T extends { date: string }>(
-  items: T[],
+  items: readonly T[],
 ): Array<{ key: string; label: string; items: T[] }> {
   const groups: Array<{ key: string; label: string; items: T[] }> = []
 
