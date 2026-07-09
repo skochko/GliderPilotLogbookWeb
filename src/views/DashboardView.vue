@@ -4,13 +4,10 @@ import { RouterLink } from 'vue-router'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { useStatistics } from '@/composables/useStatistics'
-import { formatDate } from '@/lib/dates'
-import { useSettings } from '@/composables/useSettings'
+import { formatDayNumber, groupByMonth } from '@/lib/dates'
 
 const { statistics, loading, initialized, error, fetch } = useStatistics()
-const { settings, fetch: fetchSettings } = useSettings()
 
-void fetchSettings()
 void fetch()
 
 const maxGliderCount = computed(() => {
@@ -23,9 +20,9 @@ const maxLaunchCount = computed(() => {
   return Math.max(...items.map((i) => i.count), 1)
 })
 
-function displayDate(iso: string): string {
-  return formatDate(iso, settings.value?.date_format ?? '%Y-%m-%d')
-}
+const recentActivityGroups = computed(() =>
+  groupByMonth(statistics.value?.recent_activity ?? []),
+)
 </script>
 
 <template>
@@ -109,7 +106,7 @@ function displayDate(iso: string): string {
           <table class="min-w-full text-sm">
             <thead class="bg-[var(--sheet-header-color)] text-left text-slate-700">
               <tr>
-                <th class="px-4 py-3 font-medium">Date</th>
+                <th class="w-12 px-2 py-3 text-center font-medium sm:px-4">Day</th>
                 <th class="px-4 py-3 font-medium">Glider</th>
                 <th class="px-4 py-3 font-medium">Launch</th>
                 <th class="px-4 py-3 font-medium">Time</th>
@@ -117,22 +114,32 @@ function displayDate(iso: string): string {
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="(item, index) in statistics.recent_activity"
-                :key="item.id"
-                class="border-t border-slate-100"
-                :class="{ 'bg-[var(--sheet-zebra-color)]': index % 2 === 1 }"
-              >
-                <td class="px-4 py-3">
-                  <RouterLink :to="`/flights/${encodeURIComponent(item.id)}`" class="text-sky-700 hover:underline">
-                    {{ displayDate(item.date) }}
-                  </RouterLink>
-                </td>
-                <td class="px-4 py-3">{{ item.glider }} {{ item.registration }}</td>
-                <td class="px-4 py-3">{{ item.launch_type }}</td>
-                <td class="px-4 py-3">{{ item.flight_time }}</td>
-                <td class="px-4 py-3">{{ item.landings }}</td>
-              </tr>
+              <template v-for="group in recentActivityGroups" :key="group.key">
+                <tr class="border-t border-slate-200 bg-slate-100">
+                  <td colspan="5" class="px-4 py-2 text-sm font-semibold text-slate-700">
+                    {{ group.label }}
+                  </td>
+                </tr>
+                <tr
+                  v-for="(item, index) in group.items"
+                  :key="item.id"
+                  class="border-t border-slate-100"
+                  :class="{ 'bg-[var(--sheet-zebra-color)]': index % 2 === 1 }"
+                >
+                  <td class="w-12 px-2 py-3 text-center font-medium tabular-nums text-slate-900 sm:px-4">
+                    <RouterLink
+                      :to="`/flights/${encodeURIComponent(item.id)}`"
+                      class="text-sky-700 hover:underline"
+                    >
+                      {{ formatDayNumber(item.date) }}
+                    </RouterLink>
+                  </td>
+                  <td class="px-4 py-3">{{ item.glider }} {{ item.registration }}</td>
+                  <td class="px-4 py-3">{{ item.launch_type }}</td>
+                  <td class="px-4 py-3 whitespace-nowrap">{{ item.flight_time }}</td>
+                  <td class="px-4 py-3">{{ item.landings }}</td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>

@@ -5,6 +5,7 @@ describe('formatDate', () => {
   it('formats ISO dates using python-style patterns', () => {
     expect(formatDate('2025-11-08', '%Y-%m-%d')).toBe('2025-11-08')
     expect(formatDate('2025-11-08', '%d/%m/%Y')).toBe('08/11/2025')
+    expect(formatDate('2025-11-08', '%d-%b-%y')).toBe('08-Nov-25')
   })
 
   it('returns empty string for blank input', () => {

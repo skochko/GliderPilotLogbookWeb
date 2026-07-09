@@ -1,5 +1,6 @@
 const PYTHON_TO_STRFTIME: Record<string, string> = {
   '%Y': 'yyyy',
+  '%y': 'yy',
   '%m': 'mm',
   '%d': 'dd',
   '%b': 'MMM',
@@ -18,11 +19,12 @@ export function formatDate(iso: string, dateFormat: string): string {
 
   const replacements: Record<string, string> = {
     yyyy: year,
+    yy: year.slice(-2),
     mm: month,
     dd: day,
   }
 
-  return pattern.replace(/yyyy|mm|dd|MMM|MMMM/g, (token) => {
+  return pattern.replace(/yyyy|yy|mm|dd|MMM|MMMM/g, (token) => {
     if (token === 'MMM') {
       return new Date(Number(year), Number(month) - 1, Number(day)).toLocaleString('en', {
         month: 'short',
