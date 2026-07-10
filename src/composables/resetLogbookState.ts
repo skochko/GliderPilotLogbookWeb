@@ -1,3 +1,4 @@
+import { resetDashboardStatusState } from '@/composables/useDashboardStatus'
 import { resetFlightsState } from '@/composables/useFlights'
 import { resetLogbookState as resetLogbookStatus } from '@/composables/useLogbook'
 import { resetProfileState } from '@/composables/useProfile'
@@ -10,6 +11,7 @@ export function resetLogbookState(): void {
   resetFlightsState()
   resetSettingsState()
   resetStatisticsState()
+  resetDashboardStatusState()
   resetSummaryState()
   resetProfileState()
   resetLogbookStatus()

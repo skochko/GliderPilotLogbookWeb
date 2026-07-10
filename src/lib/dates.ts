@@ -56,6 +56,36 @@ export function formatMonthYear(iso: string): string {
   })
 }
 
+export function formatDisplayDate(iso: string): string {
+  if (!iso) return '—'
+  const [year, month, day] = iso.split('-').map(Number)
+  if (!year || !month || !day) return iso
+  return new Date(year, month - 1, day).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+export function formatRemainingDays(days: number | null | undefined): string {
+  if (days == null) return '—'
+  if (days <= 0) return 'Expired'
+  if (days === 1) return '1 day left'
+  if (days < 60) return `${days} days left`
+
+  if (days < 365) {
+    const months = Math.max(1, Math.round(days / 30))
+    return months === 1 ? '1 month left' : `${months} months left`
+  }
+
+  const years = Math.floor(days / 365)
+  const months = Math.round((days % 365) / 30)
+  if (months === 0) {
+    return years === 1 ? '1 year left' : `${years} years left`
+  }
+  return `${years}y ${months}m left`
+}
+
 export function groupByMonth<T extends { date: string }>(
   items: readonly T[],
 ): Array<{ key: string; label: string; items: T[] }> {

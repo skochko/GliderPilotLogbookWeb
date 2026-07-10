@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { formatDate, formatDayNumber, formatMonthYear, groupByMonth } from '../dates'
+import {
+  formatDate,
+  formatDayNumber,
+  formatDisplayDate,
+  formatMonthYear,
+  formatRemainingDays,
+  groupByMonth,
+} from '../dates'
 
 describe('formatDate', () => {
   it('formats ISO dates using python-style patterns', () => {
@@ -23,6 +30,23 @@ describe('formatDayNumber', () => {
 describe('formatMonthYear', () => {
   it('returns localized month and year', () => {
     expect(formatMonthYear('2025-11-08')).toBe('November 2025')
+  })
+})
+
+describe('formatDisplayDate', () => {
+  it('formats ISO dates for display', () => {
+    expect(formatDisplayDate('2035-10-07')).toBe('7 Oct 2035')
+  })
+})
+
+describe('formatRemainingDays', () => {
+  it('formats remaining days in human-readable text', () => {
+    expect(formatRemainingDays(1)).toBe('1 day left')
+    expect(formatRemainingDays(45)).toBe('45 days left')
+    expect(formatRemainingDays(365)).toBe('1 year left')
+    expect(formatRemainingDays(3377)).toBe('9y 3m left')
+    expect(formatRemainingDays(0)).toBe('Expired')
+    expect(formatRemainingDays(null)).toBe('—')
   })
 })
 

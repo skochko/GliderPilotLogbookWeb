@@ -1,33 +1,53 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import type { DeepReadonly } from 'vue'
 import { RouterLink } from 'vue-router'
+import DashboardLegalitySection from '@/components/DashboardLegalitySection.vue'
+import DashboardMonthlyChart from '@/components/DashboardMonthlyChart.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import RemarksDialog from '@/components/RemarksDialog.vue'
+import { useDashboardStatus } from '@/composables/useDashboardStatus'
+import { useFlashMessage } from '@/composables/useFlashMessage'
 import { useStatistics } from '@/composables/useStatistics'
+import { formatDurationDisplay, formatDecimalHours } from '@/lib/duration'
 import { formatDayNumber, groupByMonth } from '@/lib/dates'
 import { encodeFlightId } from '@/lib/flightId'
+import { pilotRoleLabel, type PilotRole } from '@/lib/pilotRoles'
 import { hasRemarks, truncateText } from '@/lib/text'
 import type { Statistics } from '@/types'
 
-type RecentActivity = Statistics['recent_activity'][number]
+type RecentActivity = DeepReadonly<Statistics['recent_activity'][number]>
 
-const { statistics, loading, initialized, error, fetch } = useStatistics()
+const { statistics, loading: statsLoading, initialized: statsInitialized, error: statsError, fetch: fetchStatistics } =
+  useStatistics()
+const {
+  status: dashboardStatus,
+  loading: statusLoading,
+  initialized: statusInitialized,
+  error: statusError,
+  fetch: fetchDashboardStatus,
+} = useDashboardStatus()
+const { clear: clearFlashMessage, kind: flashKind } = useFlashMessage()
 
 const remarksOpen = ref(false)
 const remarksText = ref('')
 const remarksFlightId = ref<string | null>(null)
 
-void fetch()
+const loading = computed(() => statsLoading.value || statusLoading.value)
+const initialized = computed(() => statsInitialized.value && statusInitialized.value)
+const error = computed(() => statsError.value || statusError.value)
 
-const maxGliderCount = computed(() => {
-  const items = statistics.value?.flights_by_glider ?? []
-  return Math.max(...items.map((i) => i.count), 1)
-})
+async function fetchDashboard(): Promise<void> {
+  await Promise.all([fetchStatistics(), fetchDashboardStatus()])
+}
 
-const maxLaunchCount = computed(() => {
-  const items = statistics.value?.flights_by_launch_type ?? []
-  return Math.max(...items.map((i) => i.count), 1)
+void fetchDashboard()
+
+watch(initialized, (ready) => {
+  if (ready && flashKind.value === 'success') {
+    clearFlashMessage()
+  }
 })
 
 const recentActivityGroups = computed(() =>
@@ -50,76 +70,45 @@ function openRemarks(item: RecentActivity): void {
   remarksFlightId.value = item.id
   remarksOpen.value = true
 }
+
+const pilotRoleStyles: Record<PilotRole, string> = {
+  p1: 'bg-sky-100 text-sky-800 ring-sky-200',
+  p2: 'bg-violet-100 text-violet-800 ring-violet-200',
+  instructor: 'bg-amber-100 text-amber-900 ring-amber-200',
+}
 </script>
 
 <template>
-  <div class="space-y-8">
-    <div>
-      <h1 class="text-2xl font-bold text-slate-900">Dashboard</h1>
-      <p class="mt-1 text-slate-600">Overview of your flying activity.</p>
+  <div class="space-y-4 md:space-y-8">
+    <div class="hidden md:block">
+      <h1 class="text-xl font-semibold text-slate-900">Dashboard</h1>
+      <p class="mt-0.5 text-sm text-slate-500">Overview of your flying activity.</p>
     </div>
 
     <LoadingState v-if="!initialized" />
-    <ErrorBanner v-else-if="error" :message="error" :retry-busy="loading" @retry="fetch" />
+    <ErrorBanner
+      v-else-if="error"
+      :message="error"
+      :retry-busy="loading"
+      @retry="fetchDashboard"
+    />
 
     <template v-else-if="statistics">
-      <div class="grid gap-4 sm:grid-cols-3">
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <DashboardLegalitySection v-if="dashboardStatus" :status="dashboardStatus" />
+
+      <DashboardMonthlyChart :data="statistics.flights_by_month ?? []" />
+
+      <div class="grid grid-cols-2 gap-3 md:gap-4">
+        <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
           <p class="text-sm text-slate-500">Total flights</p>
-          <p class="mt-1 text-3xl font-bold text-slate-900">{{ statistics.total_flights }}</p>
+          <p class="mt-1 text-2xl font-bold text-slate-900 md:text-3xl">{{ statistics.total_flights }}</p>
         </div>
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="text-sm text-slate-500">Flight hours</p>
-          <p class="mt-1 text-3xl font-bold text-slate-900">{{ statistics.total_flight_hours }}</p>
+        <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+          <p class="text-sm text-slate-500">Flight time</p>
+          <p class="mt-1 text-2xl font-bold text-slate-900 md:text-3xl">
+            {{ formatDecimalHours(statistics.total_flight_hours) }}
+          </p>
         </div>
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="text-sm text-slate-500">Total launches</p>
-          <p class="mt-1 text-3xl font-bold text-slate-900">{{ statistics.total_launches }}</p>
-        </div>
-      </div>
-
-      <div class="grid gap-6 lg:grid-cols-2">
-        <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 class="font-semibold text-slate-900">Flights by glider</h2>
-          <ul class="mt-4 space-y-3">
-            <li v-for="item in statistics.flights_by_glider" :key="item.glider">
-              <div class="mb-1 flex justify-between text-sm">
-                <span>{{ item.glider }}</span>
-                <span class="text-slate-500">{{ item.count }} · {{ item.hours }}h</span>
-              </div>
-              <div class="h-2 rounded-full bg-slate-100">
-                <div
-                  class="h-2 rounded-full bg-sky-600"
-                  :style="{ width: `${(item.count / maxGliderCount) * 100}%` }"
-                />
-              </div>
-            </li>
-            <li v-if="!statistics.flights_by_glider.length" class="text-sm text-slate-500">
-              No data yet.
-            </li>
-          </ul>
-        </section>
-
-        <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 class="font-semibold text-slate-900">Flights by launch type</h2>
-          <ul class="mt-4 space-y-3">
-            <li v-for="item in statistics.flights_by_launch_type" :key="item.launch_type">
-              <div class="mb-1 flex justify-between text-sm">
-                <span>{{ item.launch_type }}</span>
-                <span class="text-slate-500">{{ item.count }}</span>
-              </div>
-              <div class="h-2 rounded-full bg-slate-100">
-                <div
-                  class="h-2 rounded-full bg-emerald-600"
-                  :style="{ width: `${(item.count / maxLaunchCount) * 100}%` }"
-                />
-              </div>
-            </li>
-            <li v-if="!statistics.flights_by_launch_type.length" class="text-sm text-slate-500">
-              No data yet.
-            </li>
-          </ul>
-        </section>
       </div>
 
       <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -133,18 +122,19 @@ function openRemarks(item: RecentActivity): void {
           <table class="min-w-full text-sm">
             <thead class="bg-[var(--sheet-header-color)] text-left text-slate-700">
               <tr>
-                <th class="w-12 px-2 py-3 text-center font-medium sm:px-4">Day</th>
-                <th class="px-4 py-3 font-medium">Glider</th>
-                <th class="hidden px-4 py-3 font-medium sm:table-cell">Launch</th>
-                <th class="px-4 py-3 font-medium">Time</th>
-                <th class="hidden max-w-[12rem] px-4 py-3 font-medium lg:table-cell">Remarks</th>
-                <th class="w-14 px-2 py-3 text-center font-medium">Actions</th>
+                <th class="w-12 px-2 py-2 text-center font-medium sm:px-4">Day</th>
+                <th class="px-3 py-2 font-medium">Role</th>
+                <th class="px-4 py-2 font-medium">Glider</th>
+                <th class="hidden px-4 py-2 font-medium sm:table-cell">Launch</th>
+                <th class="px-4 py-2 font-medium">Time</th>
+                <th class="hidden max-w-[12rem] px-4 py-2 font-medium lg:table-cell">Remarks</th>
+                <th class="w-14 px-2 py-2 text-center font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               <template v-for="group in recentActivityGroups" :key="group.key">
                 <tr class="border-t border-slate-200 bg-slate-100">
-                  <td colspan="6" class="px-4 py-2 text-sm font-semibold text-slate-700">
+                  <td colspan="7" class="px-4 py-1.5 text-sm font-semibold text-slate-700">
                     {{ group.label }}
                   </td>
                 </tr>
@@ -154,7 +144,7 @@ function openRemarks(item: RecentActivity): void {
                   class="border-t border-slate-100"
                   :class="rowClass(item, index)"
                 >
-                  <td class="relative w-12 px-2 py-3 text-center font-medium tabular-nums text-slate-900 sm:px-4">
+                  <td class="relative w-12 px-2 py-2 text-center font-medium tabular-nums text-slate-900 sm:px-4">
                     <button
                       v-if="hasRemarks(item.remarks)"
                       type="button"
@@ -168,12 +158,28 @@ function openRemarks(item: RecentActivity): void {
                     </button>
                     {{ formatDayNumber(item.date) }}
                   </td>
-                  <td class="max-w-[8rem] truncate px-4 py-3 sm:max-w-none">
-                    {{ item.glider }} {{ item.registration }}
+                  <td class="whitespace-nowrap px-3 py-2">
+                    <div v-if="item.pilot_roles?.length" class="inline-flex flex-nowrap items-center gap-1">
+                      <span
+                        v-for="role in item.pilot_roles"
+                        :key="role"
+                        class="inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset"
+                        :class="pilotRoleStyles[role]"
+                      >
+                        {{ pilotRoleLabel(role) }}
+                      </span>
+                    </div>
+                    <span v-else class="text-slate-300">—</span>
                   </td>
-                  <td class="hidden px-4 py-3 sm:table-cell">{{ item.launch_type || '—' }}</td>
-                  <td class="px-4 py-3 whitespace-nowrap">{{ item.flight_time || '—' }}</td>
-                  <td class="hidden max-w-[12rem] px-4 py-3 lg:table-cell">
+                  <td class="max-w-[8rem] px-4 py-2 sm:max-w-none">
+                    <p class="truncate text-slate-900">{{ item.glider }} {{ item.registration }}</p>
+                    <p v-if="item.copilot?.trim()" class="mt-0.5 truncate text-xs text-slate-500">
+                      {{ item.copilot.trim() }}
+                    </p>
+                  </td>
+                  <td class="hidden px-4 py-2 sm:table-cell">{{ item.launch_type || '—' }}</td>
+                  <td class="px-4 py-2 whitespace-nowrap">{{ formatDurationDisplay(item.flight_time) }}</td>
+                  <td class="hidden max-w-[12rem] px-4 py-2 lg:table-cell">
                     <button
                       v-if="hasRemarks(item.remarks)"
                       type="button"
@@ -185,7 +191,7 @@ function openRemarks(item: RecentActivity): void {
                     </button>
                     <span v-else class="text-slate-300">—</span>
                   </td>
-                  <td class="px-2 py-3">
+                  <td class="px-2 py-2">
                     <div class="flex items-center justify-center">
                       <RouterLink
                         :to="`/flights/${encodeFlightId(item.id)}`"

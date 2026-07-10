@@ -1,4 +1,16 @@
 import type { components } from './api.generated'
+import type {
+  DashboardLegalityChip,
+  DashboardLegalityGroup,
+  DashboardLegalityRow,
+  DashboardMedical,
+  DashboardQualification,
+  DashboardRequirement,
+  DashboardStatus,
+  DashboardStatusEnum,
+  DashboardSummary,
+  DashboardSummaryItem,
+} from './dashboard'
 
 export type UserMe = components['schemas']['UserMe']
 export type Flight = components['schemas']['Flight']
@@ -16,6 +28,19 @@ export type Profile = components['schemas']['Profile']
 export type ProfilePatch = components['schemas']['PatchedProfilePatchRequest']
 export type Page = components['schemas']['Page']
 export type SitePageType = components['schemas']['PageTypeEnum']
+
+export type {
+  DashboardLegalityChip,
+  DashboardLegalityGroup,
+  DashboardLegalityRow,
+  DashboardMedical,
+  DashboardQualification,
+  DashboardRequirement,
+  DashboardStatus,
+  DashboardStatusEnum,
+  DashboardSummary,
+  DashboardSummaryItem,
+}
 
 export interface ApiErrorBody {
   code: string

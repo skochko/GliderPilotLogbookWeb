@@ -246,6 +246,22 @@ export interface paths {
         patch: operations["settings_partial_update"];
         trace?: never;
     };
+    "/api/compliance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["compliance_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/statistics": {
         parameters: {
             query?: never;
@@ -359,6 +375,12 @@ export interface components {
         };
         GliderStats: {
             glider: string;
+            count: number;
+            /** Format: double */
+            hours: number;
+        };
+        MonthStats: {
+            month: string;
             count: number;
             /** Format: double */
             hours: number;
@@ -481,6 +503,8 @@ export interface components {
             registration: string;
             launch_type: string;
             flight_time: string;
+            copilot?: string;
+            pilot_roles: ("p1" | "p2" | "instructor")[];
             remarks: string;
         };
         SheetSettings: {
@@ -493,11 +517,104 @@ export interface components {
             zebra_color: string;
             header_color: string;
         };
+        ComplianceRow: {
+            /** @enum {string} */
+            row_type: "metric" | "validity" | "section" | "note";
+            label: string;
+            current: string;
+            required: string;
+            date: string;
+            days_remaining: string;
+            text: string;
+            /** @enum {string} */
+            status: "ok" | "warning" | "fail" | "unknown";
+            status_label: string;
+        };
+        ComplianceBlock: {
+            id: string;
+            title: string;
+            subtitle: string;
+            /** @enum {string} */
+            status: "ok" | "warning" | "fail" | "unknown";
+            status_label: string;
+            headline: string;
+            available: boolean;
+            rows: components["schemas"]["ComplianceRow"][];
+        };
+        ComplianceCurrentMedical: {
+            date: string;
+            type: string;
+            expiry_date: string;
+            days_remaining: string;
+            /** @enum {string} */
+            status: "ok" | "warning" | "fail" | "unknown";
+            status_label: string;
+        };
+        SummaryTotals: {
+            time?: string;
+            pic?: string;
+            p2?: string;
+            instructor?: string;
+            landings?: string;
+            kms_flown?: string;
+        };
+        SummaryTotalsByDate: components["schemas"]["SummaryTotals"] & {
+            start_date?: string;
+            end_date?: string;
+        };
+        SummarySoloFcn: {
+            solo_time: string;
+            solo_count: string;
+            fcn_time: string;
+            fcn_count: string;
+        };
+        DashboardSummary: {
+            available: boolean;
+            show_instructor_columns: boolean;
+            totals: components["schemas"]["SummaryTotals"];
+            totals_by_date: components["schemas"]["SummaryTotalsByDate"];
+            solo_fcn: components["schemas"]["SummarySoloFcn"];
+            current_medical: components["schemas"]["ComplianceCurrentMedical"];
+        };
+        ComplianceMedicalEntry: {
+            start_date: string;
+            medical_type: string;
+            expiry_date: string;
+            /** @enum {string} */
+            status: "ok" | "warning" | "fail" | "unknown";
+            status_label: string;
+        };
+        ComplianceMedical: {
+            title: string;
+            /** @enum {string} */
+            status: "ok" | "warning" | "fail" | "unknown";
+            status_label: string;
+            headline: string;
+            current?: components["schemas"]["ComplianceCurrentMedical"];
+            entries: components["schemas"]["ComplianceMedicalEntry"][];
+        };
+        Compliance: {
+            supported: boolean;
+            has_data: boolean;
+            template_version: string;
+            /** @enum {string} */
+            pilot_privilege: "pilot" | "bi" | "fi";
+            /** @enum {string} */
+            overall_status: "ok" | "warning" | "fail" | "unknown";
+            overall_label: string;
+            template_upgrade_available?: string | null;
+            public_template_copy_url: string;
+            message: string;
+            blocks: components["schemas"]["ComplianceBlock"][];
+            summary: components["schemas"]["DashboardSummary"];
+            medical: components["schemas"]["ComplianceMedical"];
+        };
         Statistics: {
             total_flights: number;
             /** Format: double */
             total_flight_hours: number;
             total_launches: number;
+            flights_by_month: components["schemas"]["MonthStats"][];
             flights_by_glider: components["schemas"]["GliderStats"][];
             flights_by_launch_type: components["schemas"]["LaunchTypeStats"][];
             recent_activity: components["schemas"]["RecentActivity"][];
@@ -1754,6 +1871,52 @@ export interface operations {
             };
             /** @description Rate limit exceeded */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Google API error */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    compliance_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Compliance"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
