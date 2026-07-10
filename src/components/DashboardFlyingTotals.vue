@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { DeepReadonly } from 'vue'
 import { formatDecimalHours } from '@/lib/duration'
 import type { Statistics } from '@/types'
@@ -7,6 +7,8 @@ import type { Statistics } from '@/types'
 const props = defineProps<{
   statistics: DeepReadonly<Statistics>
 }>()
+
+const expanded = ref(false)
 
 type FlyingRow = {
   key: string
@@ -66,21 +68,66 @@ const rows = computed((): FlyingRow[] => {
 
   return items
 })
+
+const totalRow = computed(() => rows.value[0]!)
+const breakdownRows = computed(() => rows.value.slice(1))
+
+function rowHoursClass(key: string): string {
+  return key === 'total'
+    ? 'text-lg font-semibold md:text-xl'
+    : 'text-sm font-medium text-slate-800 md:text-base'
+}
+
+function rowCountClass(key: string): string {
+  return key === 'total' ? 'text-xs' : 'text-[11px]'
+}
 </script>
 
 <template>
   <section class="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-4">
     <h2 class="text-sm font-medium text-slate-500">Your flying</h2>
-    <dl class="mt-2">
+
+    <button
+      type="button"
+      class="mt-2 flex w-full items-baseline justify-between gap-4 rounded-md text-left transition hover:bg-slate-50"
+      :class="expanded ? 'pb-2' : ''"
+      :aria-expanded="expanded"
+      aria-controls="flying-breakdown"
+      @click="expanded = !expanded"
+    >
+      <span class="text-sm font-medium text-slate-700">{{ totalRow.label }}</span>
+      <span class="flex items-center gap-2">
+        <span class="text-right">
+          <span class="block tabular-nums text-slate-900" :class="rowHoursClass('total')">
+            {{ formatDecimalHours(totalRow.hours) }}
+          </span>
+          <span class="block text-slate-500" :class="rowCountClass('total')">
+            {{ totalRow.count }} {{ totalRow.countLabel }}
+          </span>
+        </span>
+        <svg
+          class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+          :class="expanded ? 'rotate-180' : ''"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </span>
+    </button>
+
+    <dl
+      v-show="expanded"
+      id="flying-breakdown"
+      class="border-t border-slate-100 pt-1"
+    >
       <div
-        v-for="row in rows"
+        v-for="row in breakdownRows"
         :key="row.key"
-        class="flex items-baseline justify-between gap-4"
-        :class="
-          row.key === 'total'
-            ? 'border-b border-slate-100 pb-2.5 pt-0'
-            : 'py-1 pl-2'
-        "
+        class="flex items-baseline justify-between gap-4 py-1 pl-2"
       >
         <dt class="flex min-w-0 items-center gap-2">
           <span
@@ -90,24 +137,12 @@ const rows = computed((): FlyingRow[] => {
           >
             {{ row.label }}
           </span>
-          <span v-else class="text-sm font-medium text-slate-700">{{ row.label }}</span>
         </dt>
         <dd class="text-right">
-          <p
-            class="tabular-nums text-slate-900"
-            :class="
-              row.key === 'total'
-                ? 'text-lg font-semibold md:text-xl'
-                : 'text-sm font-medium text-slate-800 md:text-base'
-            "
-          >
+          <p class="tabular-nums text-slate-900" :class="rowHoursClass(row.key)">
             {{ formatDecimalHours(row.hours) }}
           </p>
-          <p
-            v-if="row.countLabel"
-            class="text-slate-500"
-            :class="row.key === 'total' ? 'text-xs' : 'text-[11px]'"
-          >
+          <p v-if="row.countLabel" class="text-slate-500" :class="rowCountClass(row.key)">
             {{ row.count }} {{ row.countLabel }}
           </p>
         </dd>
