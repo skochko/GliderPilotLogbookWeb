@@ -1561,6 +1561,8 @@ components:
           type: string
         copilot:
           type: string
+        pilot:
+          type: string
         pilot_roles:
           type: array
           items:
@@ -1572,6 +1574,7 @@ components:
       - date
       - flight_time
       - copilot
+      - pilot
       - glider
       - id
       - launch_type

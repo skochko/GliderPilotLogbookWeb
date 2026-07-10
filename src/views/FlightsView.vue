@@ -10,7 +10,7 @@ import { useSettings } from '@/composables/useSettings'
 import { formatDayNumber, groupByMonth } from '@/lib/dates'
 import { formatDurationDisplay } from '@/lib/duration'
 import { encodeFlightId } from '@/lib/flightId'
-import { pilotRoleLabel, pilotRoleStyles, pilotRolesFromFlight } from '@/lib/pilotRoles'
+import { pilotRoleLabel, pilotRoleStyles, pilotRolesFromFlight, formatRoleCompanionDisplay, roleCompanionName } from '@/lib/pilotRoles'
 import { hasRemarks, truncateText } from '@/lib/text'
 import type { Flight } from '@/types'
 
@@ -131,7 +131,7 @@ async function confirmDelete(): Promise<void> {
                 </button>
                 {{ formatDayNumber(flight.date) }}
               </td>
-              <td class="whitespace-nowrap px-3 py-2">
+              <td class="px-3 py-2">
                 <div
                   v-if="pilotRolesFromFlight(flight).length"
                   class="inline-flex flex-nowrap items-center gap-1"
@@ -146,11 +146,18 @@ async function confirmDelete(): Promise<void> {
                   </span>
                 </div>
                 <span v-else class="text-slate-300">—</span>
+                <p
+                  v-if="roleCompanionName(pilotRolesFromFlight(flight), flight)"
+                  class="mt-0.5 truncate text-xs text-slate-500"
+                  :title="roleCompanionName(pilotRolesFromFlight(flight), flight)"
+                >
+                  {{ formatRoleCompanionDisplay(pilotRolesFromFlight(flight), flight) }}
+                </p>
               </td>
               <td class="max-w-[8rem] px-4 py-2 sm:max-w-none">
-                <p class="truncate text-slate-900">{{ flight.glider }} {{ flight.registration }}</p>
-                <p v-if="flight.copilot?.trim()" class="mt-0.5 truncate text-xs text-slate-500">
-                  {{ flight.copilot.trim() }}
+                <p class="truncate text-slate-900">{{ flight.glider }}</p>
+                <p v-if="flight.registration?.trim()" class="mt-0.5 truncate text-xs text-slate-500">
+                  {{ flight.registration.trim() }}
                 </p>
               </td>
               <td class="hidden px-4 py-2 sm:table-cell">{{ flight.launch_type || '—' }}</td>

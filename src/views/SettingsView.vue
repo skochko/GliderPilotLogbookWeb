@@ -67,7 +67,7 @@ async function onSubmit(): Promise<void> {
       <div class="grid gap-4 sm:grid-cols-2">
         <label class="block text-sm">
           <span class="font-medium text-slate-700">Date format</span>
-          <select v-model="form.date_format" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2">
+          <select v-model="form.date_format" class="field-control">
             <option value="%Y-%m-%d">2025-11-08</option>
             <option value="%d/%m/%Y">08/11/2025</option>
             <option value="%m/%d/%Y">11/08/2025</option>
@@ -76,7 +76,7 @@ async function onSubmit(): Promise<void> {
 
         <label class="block text-sm">
           <span class="font-medium text-slate-700">Sort direction</span>
-          <select v-model="form.sort_direction" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2">
+          <select v-model="form.sort_direction" class="field-control">
             <option value="newest_first">Newest first</option>
             <option value="oldest_first">Oldest first</option>
           </select>
@@ -84,7 +84,7 @@ async function onSubmit(): Promise<void> {
 
         <label class="block text-sm">
           <span class="font-medium text-slate-700">Pilot name</span>
-          <input v-model="form.pilot_name" type="text" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" />
+          <input v-model="form.pilot_name" type="text" class="field-control" />
         </label>
 
         <label class="block text-sm">

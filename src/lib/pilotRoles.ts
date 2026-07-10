@@ -42,3 +42,42 @@ export function pilotRolesFromFlight(flight: {
   }
   return roles
 }
+
+export function roleCompanionName(
+  roles: readonly PilotRole[],
+  names: { pilot?: string | null; copilot?: string | null },
+): string {
+  const pilot = names.pilot?.trim() ?? ''
+  const copilot = names.copilot?.trim() ?? ''
+
+  if (roles.includes('p2')) {
+    return pilot
+  }
+  if (roles.includes('p1')) {
+    return copilot
+  }
+  if (roles.includes('instructor')) {
+    return copilot
+  }
+  return ''
+}
+
+export const ROLE_COMPANION_NAME_MAX_LENGTH = 17
+
+export function formatRoleCompanionName(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed) {
+    return ''
+  }
+  if (trimmed.length <= ROLE_COMPANION_NAME_MAX_LENGTH) {
+    return trimmed
+  }
+  return `${trimmed.slice(0, ROLE_COMPANION_NAME_MAX_LENGTH - 3)}...`
+}
+
+export function formatRoleCompanionDisplay(
+  roles: readonly PilotRole[],
+  names: { pilot?: string | null; copilot?: string | null },
+): string {
+  return formatRoleCompanionName(roleCompanionName(roles, names))
+}

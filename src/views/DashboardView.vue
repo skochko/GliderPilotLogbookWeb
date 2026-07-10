@@ -13,7 +13,7 @@ import { useStatistics } from '@/composables/useStatistics'
 import { formatDurationDisplay, formatDecimalHours } from '@/lib/duration'
 import { formatDayNumber, groupByMonth } from '@/lib/dates'
 import { encodeFlightId } from '@/lib/flightId'
-import { pilotRoleLabel, pilotRoleStyles } from '@/lib/pilotRoles'
+import { pilotRoleLabel, pilotRoleStyles, formatRoleCompanionDisplay, roleCompanionName } from '@/lib/pilotRoles'
 import { hasRemarks, truncateText } from '@/lib/text'
 import type { Statistics } from '@/types'
 
@@ -152,7 +152,7 @@ function openRemarks(item: RecentActivity): void {
                     </button>
                     {{ formatDayNumber(item.date) }}
                   </td>
-                  <td class="whitespace-nowrap px-3 py-2">
+                  <td class="px-3 py-2">
                     <div v-if="item.pilot_roles?.length" class="inline-flex flex-nowrap items-center gap-1">
                       <span
                         v-for="role in item.pilot_roles"
@@ -164,11 +164,18 @@ function openRemarks(item: RecentActivity): void {
                       </span>
                     </div>
                     <span v-else class="text-slate-300">—</span>
+                    <p
+                      v-if="roleCompanionName(item.pilot_roles ?? [], item)"
+                      class="mt-0.5 truncate text-xs text-slate-500"
+                      :title="roleCompanionName(item.pilot_roles ?? [], item)"
+                    >
+                      {{ formatRoleCompanionDisplay(item.pilot_roles ?? [], item) }}
+                    </p>
                   </td>
                   <td class="max-w-[8rem] px-4 py-2 sm:max-w-none">
-                    <p class="truncate text-slate-900">{{ item.glider }} {{ item.registration }}</p>
-                    <p v-if="item.copilot?.trim()" class="mt-0.5 truncate text-xs text-slate-500">
-                      {{ item.copilot.trim() }}
+                    <p class="truncate text-slate-900">{{ item.glider }}</p>
+                    <p v-if="item.registration?.trim()" class="mt-0.5 truncate text-xs text-slate-500">
+                      {{ item.registration.trim() }}
                     </p>
                   </td>
                   <td class="hidden px-4 py-2 sm:table-cell">{{ item.launch_type || '—' }}</td>

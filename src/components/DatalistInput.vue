@@ -6,11 +6,11 @@ defineProps<{
   listId: string
 }>()
 
-const inputClass = 'mt-1 w-full rounded-md border border-slate-300 px-3 py-2'
+const fieldClass = 'field-control'
 </script>
 
 <template>
-  <input v-model="model" type="text" :list="listId" :class="inputClass" />
+  <input v-model="model" type="text" :list="listId" :class="fieldClass" />
   <datalist :id="listId">
     <option v-for="option in options" :key="option" :value="option" />
   </datalist>

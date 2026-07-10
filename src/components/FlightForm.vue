@@ -18,7 +18,7 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-const inputClass = 'mt-1 w-full rounded-md border border-slate-300 px-3 py-2'
+const fieldClass = 'field-control'
 
 const form = reactive({
   date: '',
@@ -94,7 +94,7 @@ function onSubmit(): void {
           v-model="form.date"
           type="date"
           required
-          :class="inputClass"
+          :class="fieldClass"
         />
         <span v-if="fieldError('date')" class="mt-1 block text-xs text-red-600">{{
           fieldError('date')
@@ -103,7 +103,7 @@ function onSubmit(): void {
 
       <label class="block text-sm">
         <span class="font-medium text-slate-700">Launch type</span>
-        <select v-model="form.launch_type" :class="inputClass">
+        <select v-model="form.launch_type" :class="fieldClass">
           <option value="">Select launch type</option>
           <option v-for="option in launchTypes" :key="option.value" :value="option.value">
             {{ option.label }}
@@ -179,7 +179,7 @@ function onSubmit(): void {
         <input
           v-model="form.launch_time"
           type="time"
-          :class="inputClass"
+          :class="fieldClass"
         />
         <span v-if="fieldError('launch_time')" class="mt-1 block text-xs text-red-600">{{
           fieldError('launch_time')
@@ -203,7 +203,7 @@ function onSubmit(): void {
         <input
           v-model="form.landing_time"
           type="time"
-          :class="inputClass"
+          :class="fieldClass"
         />
         <span v-if="fieldError('landing_time')" class="mt-1 block text-xs text-red-600">{{
           fieldError('landing_time')
@@ -216,7 +216,7 @@ function onSubmit(): void {
           v-model.number="form.landings"
           type="number"
           min="0"
-          :class="inputClass"
+          :class="fieldClass"
         />
         <span v-if="fieldError('landings')" class="mt-1 block text-xs text-red-600">{{
           fieldError('landings')
@@ -233,7 +233,7 @@ function onSubmit(): void {
         <textarea
           v-model="form.remarks"
           rows="4"
-          :class="inputClass"
+          :class="fieldClass"
           placeholder="Instructor endorsements, notes, etc."
         />
         <span v-if="fieldError('remarks')" class="mt-1 block text-xs text-red-600">{{

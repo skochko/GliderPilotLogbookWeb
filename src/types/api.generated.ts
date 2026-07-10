@@ -503,7 +503,8 @@ export interface components {
             registration: string;
             launch_type: string;
             flight_time: string;
-            copilot?: string;
+            copilot: string;
+            pilot: string;
             pilot_roles: ("p1" | "p2" | "instructor")[];
             remarks: string;
         };
