@@ -3,23 +3,13 @@ import { ref } from 'vue'
 import type { DeepReadonly } from 'vue'
 import DashboardLegalityGroups from '@/components/DashboardLegalityGroups.vue'
 import DashboardMedicalCard from '@/components/DashboardMedicalCard.vue'
-import DashboardQualificationCard from '@/components/DashboardQualificationCard.vue'
 import type { DashboardStatus } from '@/types'
 
-const props = defineProps<{
+defineProps<{
   status: DeepReadonly<DashboardStatus>
 }>()
 
 const medicalExpanded = ref(false)
-const expandedQualificationId = ref<string | null>(null)
-
-function toggleQualification(id: string): void {
-  expandedQualificationId.value = expandedQualificationId.value === id ? null : id
-}
-
-function isQualificationExpanded(id: string): boolean {
-  return expandedQualificationId.value === id
-}
 </script>
 
 <template>
@@ -45,25 +35,12 @@ function isQualificationExpanded(id: string): boolean {
         </p>
       </div>
 
-      <div class="px-4 py-3 md:hidden">
+      <div class="px-4 py-3 md:px-5 md:py-5">
         <DashboardLegalityGroups
           v-if="status.legality_groups?.length"
           :groups="status.legality_groups"
         />
         <p v-else class="text-sm text-slate-500">
-          No qualification data configured in the logbook yet.
-        </p>
-      </div>
-
-      <div class="hidden space-y-4 px-5 py-5 md:block">
-        <DashboardQualificationCard
-          v-for="qualification in status.qualifications"
-          :key="qualification.id"
-          :qualification="qualification"
-          :expanded="isQualificationExpanded(qualification.id)"
-          @toggle="toggleQualification(qualification.id)"
-        />
-        <p v-if="!status.qualifications.length" class="text-sm text-slate-500">
           No qualification data configured in the logbook yet.
         </p>
       </div>

@@ -12,6 +12,14 @@ export interface RequirementProgressInput {
 
 const BOOLEAN_TYPES = new Set(['boolean', 'proficiency_check'])
 const COUNT_TYPES = new Set(['count', 'launch_method', 'training_flight'])
+const DATE_TYPES = new Set(['date', 'validity'])
+
+function isDateRequirement(input: RequirementProgressInput): boolean {
+  if (input.requirement_type && DATE_TYPES.has(input.requirement_type)) {
+    return true
+  }
+  return /^\d{4}-\d{2}-\d{2}$/.test(input.obtained.trim())
+}
 
 function isBooleanRequirement(input: RequirementProgressInput): boolean {
   if (input.requirement_type && BOOLEAN_TYPES.has(input.requirement_type)) {
@@ -66,6 +74,19 @@ function formatCountProgress(input: RequirementProgressInput): string {
   return `${obtained} of ${required} ${unit} required`
 }
 
+function formatDateProgress(input: RequirementProgressInput): string {
+  const obtained = input.obtained.trim()
+  const lookback = formatLookbackSuffix(input.lookback_period)
+
+  if (!obtained) {
+    return `Not recorded${lookback}`
+  }
+  if (input.status === 'current' || input.status === 'expiring_soon') {
+    return `Recorded on ${obtained}`
+  }
+  return `Last recorded ${obtained}${lookback}`
+}
+
 /** Format obtained/required as variant A: "3h of 5h required", "2 of 5 launches required", etc. */
 export function formatRequirementProgress(input: RequirementProgressInput): string {
   const obtained = (input.obtained ?? '').trim()
@@ -73,6 +94,10 @@ export function formatRequirementProgress(input: RequirementProgressInput): stri
 
   if (!obtained && !required) {
     return ''
+  }
+
+  if (isDateRequirement(input)) {
+    return formatDateProgress(input)
   }
 
   if (isBooleanRequirement(input)) {
