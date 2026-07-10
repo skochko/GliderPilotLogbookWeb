@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import type { DeepReadonly } from 'vue'
 import { RouterLink } from 'vue-router'
+import DashboardFlyingTotals from '@/components/DashboardFlyingTotals.vue'
 import DashboardLegalitySection from '@/components/DashboardLegalitySection.vue'
 import DashboardMonthlyChart from '@/components/DashboardMonthlyChart.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
@@ -10,7 +11,7 @@ import RemarksDialog from '@/components/RemarksDialog.vue'
 import { useDashboardStatus } from '@/composables/useDashboardStatus'
 import { useFlashMessage } from '@/composables/useFlashMessage'
 import { useStatistics } from '@/composables/useStatistics'
-import { formatDurationDisplay, formatDecimalHours } from '@/lib/duration'
+import { formatDurationDisplay } from '@/lib/duration'
 import { formatDayNumber, groupByMonth } from '@/lib/dates'
 import { encodeFlightId } from '@/lib/flightId'
 import { pilotRoleLabel, pilotRoleStyles, formatRoleCompanionDisplay, roleCompanionName } from '@/lib/pilotRoles'
@@ -92,18 +93,7 @@ function openRemarks(item: RecentActivity): void {
 
       <DashboardMonthlyChart :data="statistics.flights_by_month ?? []" />
 
-      <div class="grid grid-cols-2 gap-3 md:gap-4">
-        <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-          <p class="text-sm text-slate-500">Total flights</p>
-          <p class="mt-1 text-2xl font-bold text-slate-900 md:text-3xl">{{ statistics.total_flights }}</p>
-        </div>
-        <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-          <p class="text-sm text-slate-500">Flight time</p>
-          <p class="mt-1 text-2xl font-bold text-slate-900 md:text-3xl">
-            {{ formatDecimalHours(statistics.total_flight_hours) }}
-          </p>
-        </div>
-      </div>
+      <DashboardFlyingTotals :statistics="statistics" />
 
       <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-200 px-5 py-4">

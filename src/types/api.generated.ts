@@ -517,6 +517,11 @@ export interface components {
             instructor_from_date?: string | null;
             zebra_color: string;
             header_color: string;
+            prior_total_time?: string;
+            prior_pic_time?: string;
+            prior_p2_time?: string;
+            prior_instructor_time?: string;
+            prior_flight_count?: number;
         };
         ComplianceRow: {
             /** @enum {string} */
@@ -614,6 +619,19 @@ export interface components {
             total_flights: number;
             /** Format: double */
             total_flight_hours: number;
+            /** Format: double */
+            total_pic_hours: number;
+            /** Format: double */
+            total_p2_hours: number;
+            /** Format: double */
+            total_instructor_hours: number;
+            /** Format: double */
+            solo_hours: number;
+            pic_flights: number;
+            p2_flights: number;
+            instructor_flights: number;
+            solo_flights: number;
+            solo_landings: number;
             total_launches: number;
             flights_by_month: components["schemas"]["MonthStats"][];
             flights_by_glider: components["schemas"]["GliderStats"][];

@@ -1602,6 +1602,16 @@ components:
           type: string
         header_color:
           type: string
+        prior_total_time:
+          type: string
+        prior_pic_time:
+          type: string
+        prior_p2_time:
+          type: string
+        prior_instructor_time:
+          type: string
+        prior_flight_count:
+          type: integer
       required:
       - date_format
       - header_color
@@ -1854,6 +1864,28 @@ components:
         total_flight_hours:
           type: number
           format: double
+        total_pic_hours:
+          type: number
+          format: double
+        total_p2_hours:
+          type: number
+          format: double
+        total_instructor_hours:
+          type: number
+          format: double
+        solo_hours:
+          type: number
+          format: double
+        pic_flights:
+          type: integer
+        p2_flights:
+          type: integer
+        instructor_flights:
+          type: integer
+        solo_flights:
+          type: integer
+        solo_landings:
+          type: integer
         total_launches:
           type: integer
         flights_by_month:
@@ -1878,6 +1910,15 @@ components:
       - flights_by_month
       - recent_activity
       - total_flight_hours
+      - total_pic_hours
+      - total_p2_hours
+      - total_instructor_hours
+      - pic_flights
+      - p2_flights
+      - instructor_flights
+      - solo_flights
+      - solo_landings
+      - solo_hours
       - total_flights
       - total_launches
     Summary:
