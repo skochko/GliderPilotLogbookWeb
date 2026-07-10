@@ -60,17 +60,17 @@ function statusLabel(status: DashboardStatusEnum): string {
           <span v-if="medical.type" class="font-normal text-slate-500"> · </span>
           <span v-if="medical.type" class="font-normal text-slate-600">{{ medical.type }}</span>
         </h2>
-        <p class="mt-0.5 text-xs text-slate-500 md:hidden">
-          {{ medicalSummary }}
+        <p class="mt-0.5 flex items-center gap-2 text-xs text-slate-500 md:hidden">
+          <span
+            class="inline-block h-2 w-2 shrink-0 rounded-full"
+            :class="statusDotStyles[medical.status]"
+            :title="statusLabel(medical.status)"
+            role="img"
+            :aria-label="statusLabel(medical.status)"
+          />
+          <span>{{ medicalSummary }}</span>
         </p>
       </div>
-      <span
-        class="mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full md:hidden"
-        :class="statusDotStyles[medical.status]"
-        :title="statusLabel(medical.status)"
-        role="img"
-        :aria-label="statusLabel(medical.status)"
-      />
       <span
         class="hidden shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset md:inline-flex"
         :class="statusStyles[medical.status]"

@@ -108,12 +108,21 @@ function statusLabel(status: DashboardStatusEnum): string {
             <div
               v-for="requirement in row.requirements"
               :key="requirement.id"
-              class="text-xs text-slate-600"
+              class="flex items-start gap-3"
             >
-              <p class="font-medium text-slate-800">{{ requirement.label || requirement.title }}</p>
-              <p class="mt-0.5 tabular-nums text-slate-500">
-                {{ requirementProgress(requirement) }}
-              </p>
+              <span
+                class="mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full"
+                :class="statusDotStyles[requirement.status]"
+                :title="statusLabel(requirement.status)"
+                role="img"
+                :aria-label="statusLabel(requirement.status)"
+              />
+              <div class="min-w-0 flex-1 text-xs text-slate-600">
+                <p class="font-medium text-slate-800">{{ requirement.label || requirement.title }}</p>
+                <p v-if="requirementProgress(requirement)" class="mt-0.5 tabular-nums text-slate-500">
+                  {{ requirementProgress(requirement) }}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -146,12 +155,23 @@ function statusLabel(status: DashboardStatusEnum): string {
         >
           <div
             v-if="isExpanded(group.id, chip.id)"
-            class="mt-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600"
+            class="mt-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
           >
-            <p class="font-medium text-slate-800">{{ chip.label }}</p>
-            <p class="mt-0.5 tabular-nums text-slate-500">
-              {{ requirementProgress(chip) }}
-            </p>
+            <div class="flex items-start gap-3">
+              <span
+                class="mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full"
+                :class="statusDotStyles[chip.status]"
+                :title="statusLabel(chip.status)"
+                role="img"
+                :aria-label="statusLabel(chip.status)"
+              />
+              <div class="min-w-0 flex-1 text-xs text-slate-600">
+                <p class="font-medium text-slate-800">{{ chip.label }}</p>
+                <p v-if="requirementProgress(chip)" class="mt-0.5 tabular-nums text-slate-500">
+                  {{ requirementProgress(chip) }}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
