@@ -11,7 +11,7 @@ import type { Flight, FlightPatchRequest } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
-const { get, update, detailLoading, detailInitialized, mutating, error } = useFlights()
+const { get, update, detailLoading, detailInitialized, mutating, error, flights, list } = useFlights()
 
 const flight = ref<Flight | null>(null)
 const fieldErrors = ref<Record<string, string[]>>({})
@@ -19,7 +19,7 @@ const submitError = ref<string | null>(null)
 
 const flightId = decodeFlightId(route.params.id as string)
 
-void get(flightId).then((result) => {
+void Promise.all([get(flightId), list()]).then(([result]) => {
   flight.value = result
 })
 
@@ -65,6 +65,7 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
       <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <FlightForm
           :flight="flight"
+          :flights="flights"
           :field-errors="fieldErrors"
           :saving="mutating"
           @submit="onSubmit"

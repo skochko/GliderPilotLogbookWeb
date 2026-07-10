@@ -13,7 +13,7 @@ import { useStatistics } from '@/composables/useStatistics'
 import { formatDurationDisplay, formatDecimalHours } from '@/lib/duration'
 import { formatDayNumber, groupByMonth } from '@/lib/dates'
 import { encodeFlightId } from '@/lib/flightId'
-import { pilotRoleLabel, type PilotRole } from '@/lib/pilotRoles'
+import { pilotRoleLabel, pilotRoleStyles } from '@/lib/pilotRoles'
 import { hasRemarks, truncateText } from '@/lib/text'
 import type { Statistics } from '@/types'
 
@@ -69,12 +69,6 @@ function openRemarks(item: RecentActivity): void {
   remarksText.value = item.remarks.trim()
   remarksFlightId.value = item.id
   remarksOpen.value = true
-}
-
-const pilotRoleStyles: Record<PilotRole, string> = {
-  p1: 'bg-sky-100 text-sky-800 ring-sky-200',
-  p2: 'bg-violet-100 text-violet-800 ring-violet-200',
-  instructor: 'bg-amber-100 text-amber-900 ring-amber-200',
 }
 </script>
 

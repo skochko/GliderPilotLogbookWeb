@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
+import DatalistInput from '@/components/DatalistInput.vue'
+import { collectFlightFieldSuggestions } from '@/lib/flightSuggestions'
+import { launchTypeSelectOptions, normalizeLaunchTypeCode } from '@/lib/launchTypes'
 import type { Flight } from '@/types'
 
 const props = defineProps<{
   flight?: Flight | null
+  flights?: readonly Flight[]
   fieldErrors?: Record<string, string[]>
   saving?: boolean
 }>()
@@ -14,7 +18,7 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-const LAUNCH_TYPES = ['Aerotow', 'Winch']
+const inputClass = 'mt-1 w-full rounded-md border border-slate-300 px-3 py-2'
 
 const form = reactive({
   date: '',
@@ -27,10 +31,14 @@ const form = reactive({
   arrival_place: '',
   landing_time: '',
   launch_type: '',
-  landings: 0,
+  landings: 1,
   is_instructor: false,
   remarks: '',
 })
+
+const fieldSuggestions = computed(() => collectFlightFieldSuggestions(props.flights ?? []))
+
+const launchTypes = computed(() => launchTypeSelectOptions(form.launch_type))
 
 watch(
   () => props.flight,
@@ -46,7 +54,7 @@ watch(
       form.arrival_place = ''
       form.landing_time = ''
       form.launch_type = ''
-      form.landings = 0
+      form.landings = 1
       form.is_instructor = false
       form.remarks = ''
       return
@@ -60,7 +68,7 @@ watch(
     form.launch_time = flight.launch_time
     form.arrival_place = flight.arrival_place
     form.landing_time = flight.landing_time
-    form.launch_type = flight.launch_type
+    form.launch_type = normalizeLaunchTypeCode(flight.launch_type)
     form.landings = flight.landings
     form.is_instructor = flight.is_instructor
     form.remarks = flight.remarks
@@ -86,7 +94,7 @@ function onSubmit(): void {
           v-model="form.date"
           type="date"
           required
-          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          :class="inputClass"
         />
         <span v-if="fieldError('date')" class="mt-1 block text-xs text-red-600">{{
           fieldError('date')
@@ -95,48 +103,75 @@ function onSubmit(): void {
 
       <label class="block text-sm">
         <span class="font-medium text-slate-700">Launch type</span>
-        <input
-          v-model="form.launch_type"
-          type="text"
-          list="launch-types"
-          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
-        />
-        <datalist id="launch-types">
-          <option v-for="type in LAUNCH_TYPES" :key="type" :value="type" />
-        </datalist>
+        <select v-model="form.launch_type" :class="inputClass">
+          <option value="">Select launch type</option>
+          <option v-for="option in launchTypes" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+        <span v-if="fieldError('launch_type')" class="mt-1 block text-xs text-red-600">{{
+          fieldError('launch_type')
+        }}</span>
       </label>
 
       <label class="block text-sm">
         <span class="font-medium text-slate-700">Pilot</span>
-        <input v-model="form.pilot" type="text" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" />
+        <DatalistInput
+          v-model="form.pilot"
+          list-id="flight-pilot-options"
+          :options="fieldSuggestions.pilot"
+        />
+        <span v-if="fieldError('pilot')" class="mt-1 block text-xs text-red-600">{{
+          fieldError('pilot')
+        }}</span>
       </label>
 
       <label class="block text-sm">
         <span class="font-medium text-slate-700">Copilot</span>
-        <input v-model="form.copilot" type="text" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" />
+        <DatalistInput
+          v-model="form.copilot"
+          list-id="flight-copilot-options"
+          :options="fieldSuggestions.copilot"
+        />
+        <span v-if="fieldError('copilot')" class="mt-1 block text-xs text-red-600">{{
+          fieldError('copilot')
+        }}</span>
       </label>
 
       <label class="block text-sm">
         <span class="font-medium text-slate-700">Glider</span>
-        <input v-model="form.glider" type="text" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" />
+        <DatalistInput
+          v-model="form.glider"
+          list-id="flight-glider-options"
+          :options="fieldSuggestions.glider"
+        />
+        <span v-if="fieldError('glider')" class="mt-1 block text-xs text-red-600">{{
+          fieldError('glider')
+        }}</span>
       </label>
 
       <label class="block text-sm">
         <span class="font-medium text-slate-700">Registration</span>
-        <input
+        <DatalistInput
           v-model="form.registration"
-          type="text"
-          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          list-id="flight-registration-options"
+          :options="fieldSuggestions.registration"
         />
+        <span v-if="fieldError('registration')" class="mt-1 block text-xs text-red-600">{{
+          fieldError('registration')
+        }}</span>
       </label>
 
       <label class="block text-sm">
         <span class="font-medium text-slate-700">Departure</span>
-        <input
+        <DatalistInput
           v-model="form.departure_place"
-          type="text"
-          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          list-id="flight-departure-options"
+          :options="fieldSuggestions.departure_place"
         />
+        <span v-if="fieldError('departure_place')" class="mt-1 block text-xs text-red-600">{{
+          fieldError('departure_place')
+        }}</span>
       </label>
 
       <label class="block text-sm">
@@ -144,7 +179,7 @@ function onSubmit(): void {
         <input
           v-model="form.launch_time"
           type="time"
-          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          :class="inputClass"
         />
         <span v-if="fieldError('launch_time')" class="mt-1 block text-xs text-red-600">{{
           fieldError('launch_time')
@@ -153,11 +188,14 @@ function onSubmit(): void {
 
       <label class="block text-sm">
         <span class="font-medium text-slate-700">Arrival</span>
-        <input
+        <DatalistInput
           v-model="form.arrival_place"
-          type="text"
-          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          list-id="flight-arrival-options"
+          :options="fieldSuggestions.arrival_place"
         />
+        <span v-if="fieldError('arrival_place')" class="mt-1 block text-xs text-red-600">{{
+          fieldError('arrival_place')
+        }}</span>
       </label>
 
       <label class="block text-sm">
@@ -165,7 +203,7 @@ function onSubmit(): void {
         <input
           v-model="form.landing_time"
           type="time"
-          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          :class="inputClass"
         />
         <span v-if="fieldError('landing_time')" class="mt-1 block text-xs text-red-600">{{
           fieldError('landing_time')
@@ -178,7 +216,7 @@ function onSubmit(): void {
           v-model.number="form.landings"
           type="number"
           min="0"
-          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          :class="inputClass"
         />
         <span v-if="fieldError('landings')" class="mt-1 block text-xs text-red-600">{{
           fieldError('landings')
@@ -195,7 +233,7 @@ function onSubmit(): void {
         <textarea
           v-model="form.remarks"
           rows="4"
-          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          :class="inputClass"
           placeholder="Instructor endorsements, notes, etc."
         />
         <span v-if="fieldError('remarks')" class="mt-1 block text-xs text-red-600">{{

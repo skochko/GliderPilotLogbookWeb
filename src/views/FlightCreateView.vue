@@ -9,13 +9,16 @@ import { useSettings } from '@/composables/useSettings'
 import type { FlightCreateRequest } from '@/types'
 
 const router = useRouter()
-const { create, mutating, error } = useFlights()
+const { create, mutating, error, flights, list } = useFlights()
 const { settings, fetch: fetchSettings } = useSettings()
 
 const fieldErrors = ref<Record<string, string[]>>({})
 const submitError = ref<string | null>(null)
 
-onMounted(fetchSettings)
+onMounted(() => {
+  void fetchSettings()
+  void list()
+})
 
 async function onSubmit(payload: Record<string, unknown>): Promise<void> {
   if (mutating.value) return
@@ -53,6 +56,7 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
 
     <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <FlightForm
+        :flights="flights"
         :field-errors="fieldErrors"
         :saving="mutating"
         @submit="onSubmit"

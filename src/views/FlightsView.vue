@@ -8,7 +8,9 @@ import RemarksDialog from '@/components/RemarksDialog.vue'
 import { useFlights } from '@/composables/useFlights'
 import { useSettings } from '@/composables/useSettings'
 import { formatDayNumber, groupByMonth } from '@/lib/dates'
+import { formatDurationDisplay } from '@/lib/duration'
 import { encodeFlightId } from '@/lib/flightId'
+import { pilotRoleLabel, pilotRoleStyles, pilotRolesFromFlight } from '@/lib/pilotRoles'
 import { hasRemarks, truncateText } from '@/lib/text'
 import type { Flight } from '@/types'
 
@@ -30,17 +32,15 @@ const sortedFlights = computed(() =>
 
 const flightGroups = computed(() => groupByMonth(sortedFlights.value))
 
-function rowZebraClass(flight: Flight): string {
-  const index = sortedFlights.value.findIndex((item) => item.id === flight.id)
-  return index % 2 === 1 ? 'bg-[var(--sheet-zebra-color)]' : ''
-}
-
-function rowClass(flight: Flight): string {
-  const classes = [rowZebraClass(flight)]
+function rowClass(flight: Flight, index: number): string {
+  const classes: string[] = []
+  if (index % 2 === 1) {
+    classes.push('bg-[var(--sheet-zebra-color)]')
+  }
   if (hasRemarks(flight.remarks)) {
     classes.push('border-l-2 border-l-amber-400')
   }
-  return classes.filter(Boolean).join(' ')
+  return classes.join(' ')
 }
 
 function openRemarks(flight: Flight): void {
@@ -93,30 +93,29 @@ async function confirmDelete(): Promise<void> {
       <table class="min-w-full text-sm">
         <thead class="bg-[var(--sheet-header-color)] text-left text-slate-700">
           <tr>
-            <th class="w-12 px-2 py-3 text-center font-medium sm:px-4">Day</th>
-            <th class="px-4 py-3 font-medium">Pilot</th>
-            <th class="px-4 py-3 font-medium">Glider</th>
-            <th class="hidden px-4 py-3 font-medium sm:table-cell">Launch</th>
-            <th class="px-4 py-3 font-medium">Time</th>
-            <th class="hidden px-4 py-3 font-medium md:table-cell">Landings</th>
-            <th class="hidden max-w-[12rem] px-4 py-3 font-medium lg:table-cell">Remarks</th>
-            <th class="w-20 px-2 py-3 text-center font-medium">Actions</th>
+            <th class="w-12 px-2 py-2 text-center font-medium sm:px-4">Day</th>
+            <th class="px-3 py-2 font-medium">Role</th>
+            <th class="px-4 py-2 font-medium">Glider</th>
+            <th class="hidden px-4 py-2 font-medium sm:table-cell">Launch</th>
+            <th class="px-4 py-2 font-medium">Time</th>
+            <th class="hidden max-w-[12rem] px-4 py-2 font-medium lg:table-cell">Remarks</th>
+            <th class="w-20 px-2 py-2 text-center font-medium">Actions</th>
           </tr>
         </thead>
         <tbody>
           <template v-for="group in flightGroups" :key="group.key">
             <tr class="border-t border-slate-200 bg-slate-100">
-              <td colspan="8" class="px-4 py-2 text-sm font-semibold text-slate-700">
+              <td colspan="7" class="px-4 py-1.5 text-sm font-semibold text-slate-700">
                 {{ group.label }}
               </td>
             </tr>
             <tr
-              v-for="flight in group.items"
+              v-for="(flight, index) in group.items"
               :key="flight.id"
               class="border-t border-slate-100"
-              :class="rowClass(flight)"
+              :class="rowClass(flight, index)"
             >
-              <td class="relative w-12 px-2 py-3 text-center font-medium tabular-nums text-slate-900 sm:px-4">
+              <td class="relative w-12 px-2 py-2 text-center font-medium tabular-nums text-slate-900 sm:px-4">
                 <button
                   v-if="hasRemarks(flight.remarks)"
                   type="button"
@@ -132,14 +131,31 @@ async function confirmDelete(): Promise<void> {
                 </button>
                 {{ formatDayNumber(flight.date) }}
               </td>
-              <td class="px-4 py-3">{{ flight.pilot || '—' }}</td>
-              <td class="max-w-[8rem] truncate px-4 py-3 sm:max-w-none">
-                {{ flight.glider }} {{ flight.registration }}
+              <td class="whitespace-nowrap px-3 py-2">
+                <div
+                  v-if="pilotRolesFromFlight(flight).length"
+                  class="inline-flex flex-nowrap items-center gap-1"
+                >
+                  <span
+                    v-for="role in pilotRolesFromFlight(flight)"
+                    :key="role"
+                    class="inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset"
+                    :class="pilotRoleStyles[role]"
+                  >
+                    {{ pilotRoleLabel(role) }}
+                  </span>
+                </div>
+                <span v-else class="text-slate-300">—</span>
               </td>
-              <td class="hidden px-4 py-3 sm:table-cell">{{ flight.launch_type || '—' }}</td>
-              <td class="px-4 py-3 whitespace-nowrap">{{ flight.flight_time || '—' }}</td>
-              <td class="hidden px-4 py-3 md:table-cell">{{ flight.landings }}</td>
-              <td class="hidden max-w-[12rem] px-4 py-3 lg:table-cell">
+              <td class="max-w-[8rem] px-4 py-2 sm:max-w-none">
+                <p class="truncate text-slate-900">{{ flight.glider }} {{ flight.registration }}</p>
+                <p v-if="flight.copilot?.trim()" class="mt-0.5 truncate text-xs text-slate-500">
+                  {{ flight.copilot.trim() }}
+                </p>
+              </td>
+              <td class="hidden px-4 py-2 sm:table-cell">{{ flight.launch_type || '—' }}</td>
+              <td class="px-4 py-2 whitespace-nowrap">{{ formatDurationDisplay(flight.flight_time) }}</td>
+              <td class="hidden max-w-[12rem] px-4 py-2 lg:table-cell">
                 <button
                   v-if="hasRemarks(flight.remarks)"
                   type="button"
@@ -151,7 +167,7 @@ async function confirmDelete(): Promise<void> {
                 </button>
                 <span v-else class="text-slate-300">—</span>
               </td>
-              <td class="px-2 py-3">
+              <td class="px-2 py-2">
                 <div class="flex items-center justify-center gap-1">
                   <RouterLink
                     :to="`/flights/${encodeFlightId(flight.id)}`"

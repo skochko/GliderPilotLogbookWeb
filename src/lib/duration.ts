@@ -1,5 +1,35 @@
 const DURATION_PATTERN = /^(\d{1,3}):(\d{2})(?::(\d{2}))?$/
 
+function parseDurationParts(value: string | null | undefined): { hours: number; minutes: number; seconds: number } | null {
+  const trimmed = (value ?? '').trim()
+  if (!trimmed) {
+    return null
+  }
+  const match = trimmed.match(DURATION_PATTERN)
+  if (!match) {
+    return null
+  }
+  return {
+    hours: Number(match[1]),
+    minutes: Number(match[2]),
+    seconds: Number(match[3] ?? '0'),
+  }
+}
+
+/** Parse H:MM or H:MM:SS duration strings to fractional hours. */
+export function parseDurationHours(value: string | null | undefined): number {
+  const parts = parseDurationParts(value)
+  if (!parts) {
+    const trimmed = (value ?? '').trim()
+    if (!trimmed) {
+      return 0
+    }
+    const numeric = Number(trimmed.replace(',', '.'))
+    return Number.isFinite(numeric) ? numeric : 0
+  }
+  return parts.hours + parts.minutes / 60 + parts.seconds / 3600
+}
+
 export function isDurationValue(value: string | null | undefined): boolean {
   return DURATION_PATTERN.test((value ?? '').trim())
 }
