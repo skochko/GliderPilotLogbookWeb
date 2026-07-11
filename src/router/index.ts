@@ -75,12 +75,6 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresLogbook: true },
     },
     {
-      path: '/summary',
-      name: 'summary',
-      component: () => import('@/views/SummaryView.vue'),
-      meta: { requiresAuth: true, requiresLogbook: true },
-    },
-    {
       path: '/automation',
       name: 'automation',
       component: () => import('@/views/AutomationView.vue'),
