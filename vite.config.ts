@@ -13,7 +13,14 @@ export default defineConfig({
     vueDevTools(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'favicon-16x16.png', 'favicon-32x32.png', 'apple-touch-icon.png'],
+      includeAssets: [
+        'favicon.ico',
+        'favicon-16x16.png',
+        'favicon-32x32.png',
+        'apple-touch-icon.png',
+        'robots.txt',
+        'sitemap.xml',
+      ],
       manifest: {
         name: 'Glider Pilot Logbook',
         short_name: 'Logbook',
@@ -44,10 +51,16 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: '/index.html',
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        navigateFallbackDenylist: [/^\/robots\.txt$/, /^\/sitemap\.xml$/],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,txt,xml}'],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: ({ url }) =>
+              url.pathname === '/robots.txt' || url.pathname === '/sitemap.xml',
             handler: 'NetworkOnly',
           },
         ],
