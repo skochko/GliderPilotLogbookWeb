@@ -4,7 +4,7 @@ import { SITE_PAGES } from '@/lib/sitePages'
 </script>
 
 <template>
-  <footer class="text-center text-sm text-slate-500">
+  <footer class="text-center text-sm text-landing-muted">
     <div v-if="$slots.default" class="mb-4">
       <slot />
     </div>
@@ -13,7 +13,7 @@ import { SITE_PAGES } from '@/lib/sitePages'
         v-for="item in SITE_PAGES"
         :key="item.type"
         :to="item.path"
-        class="transition hover:text-sky-700 hover:underline"
+        class="transition hover:text-landing-primary hover:underline"
       >
         {{ item.label }}
       </RouterLink>

@@ -1,67 +1,350 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import LandingNav from '@/components/landing/LandingNav.vue'
+import LandingScreenshotFrame from '@/components/landing/LandingScreenshotFrame.vue'
 import SiteFooter from '@/components/SiteFooter.vue'
+import { useLanding } from '@/composables/useLanding'
+
+const { fetchLanding, screenshotFor } = useLanding()
+
+const badges = ['Google Sheets sync', 'Mobile friendly', 'Your data stays yours']
 
 const features = [
-  'Automatic flight import from participating gliding clubs',
-  'Our club automation stack: logbook template + GliderPilotLogbookSync',
-  'Your Google Spreadsheet stays the source of truth',
-  'Mobile-friendly logbook access, statistics, and dashboard',
+  {
+    title: 'Digital Logbook',
+    description: 'View, add, and edit flights in a clean interface built for glider pilots.',
+  },
+  {
+    title: 'Google Sheets Sync',
+    description: 'Every change is written to your spreadsheet — the logbook you already own.',
+  },
+  {
+    title: 'Medical Tracking',
+    description: 'Keep medical certificate dates visible alongside your flying summary.',
+  },
+  {
+    title: 'Legality Tracking',
+    description: 'See currency and qualification status on your dashboard at a glance.',
+  },
+  {
+    title: 'Statistics',
+    description: 'Track totals, trends, and monthly activity without manual spreadsheet work.',
+  },
+  {
+    title: 'Privacy First',
+    description: 'Your spreadsheet stays in Google Drive. We cache data only to keep the app fast.',
+  },
 ]
+
+const steps = [
+  {
+    title: 'Sign in with Google',
+    description: 'Use your existing Google account — no separate password to manage.',
+  },
+  {
+    title: 'Connect your logbook',
+    description: 'Link an existing Glider Pilot Logbook spreadsheet or create a new one.',
+  },
+  {
+    title: 'Fly and review',
+    description: 'Log flights, check legality, and optionally enable club automation where offered.',
+  },
+]
+
+const faqItems = [
+  {
+    question: 'Where is my flight data stored?',
+    answer:
+      'The official copy is in your Google Spreadsheet. We keep a temporary synced cache on our servers for speed, which is removed when you disconnect.',
+  },
+  {
+    question: 'Can my club add flights automatically?',
+    answer:
+      'Participating clubs can import flight records into your spreadsheet with your consent. Manual entries always remain available.',
+  },
+  {
+    question: 'Do I need a separate username and password?',
+    answer: 'No. Sign in uses Google OAuth only.',
+  },
+  {
+    question: 'What happens if I disconnect my logbook?',
+    answer:
+      'Your spreadsheet and flight data remain in Google Drive. Disconnecting removes the link between the app and that spreadsheet and deletes our cached copy.',
+  },
+]
+
+onMounted(() => {
+  document.title = 'GliderLogbook.co.uk — Modern digital logbook for glider pilots'
+  void fetchLanding()
+})
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-sky-50 via-white to-slate-50 text-slate-800">
-    <div class="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-4 py-12 sm:px-6">
-      <header class="text-center">
-        <h1 class="text-3xl font-bold text-sky-800 sm:text-4xl">GliderLogbook.co.uk</h1>
-        <p class="mt-3 text-lg text-slate-600 sm:text-xl">
-          Automate your gliding logbook. Connect to club flight systems.
-        </p>
-      </header>
+  <div class="landing-page min-h-screen">
+    <LandingNav />
 
-      <section class="mt-10 rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h2 class="text-xl font-semibold text-slate-900">Logbook automation for glider pilots</h2>
+    <main>
+      <!-- Hero -->
+      <section class="landing-section landing-animate">
+        <div class="mx-auto max-w-landing px-4 sm:px-6">
+          <div class="mx-auto max-w-3xl text-center">
+            <h1 class="text-[2.125rem] font-semibold tracking-tight text-landing-text sm:text-[2.625rem]">
+              Modern digital logbook for glider pilots.
+            </h1>
+            <p class="mt-5 text-base leading-relaxed text-landing-secondary sm:text-lg">
+              Track flights, monitor legality, manage medical certificates and keep your data safely
+              stored in your own Google Sheets. Participating clubs can optionally sync flight
+              records so you spend less time retyping at the airfield.
+            </p>
 
-        <p class="mt-4 text-slate-600 leading-relaxed">
-          GliderLogbook.co.uk links your personal Google Sheets logbook to the flight records your
-          club already keeps. Less retyping, fewer missed flights, and a clear view of your flying
-          from any device.
-        </p>
+            <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <RouterLink
+                to="/login"
+                class="inline-flex w-full items-center justify-center rounded-lg bg-landing-primary px-5 py-3 text-sm font-medium text-white transition hover:bg-landing-primary-hover sm:w-auto"
+              >
+                Get started
+              </RouterLink>
+              <a
+                href="#landing-preview"
+                class="inline-flex w-full items-center justify-center rounded-lg border border-landing-border bg-landing-card px-5 py-3 text-sm font-medium text-landing-text transition hover:border-landing-primary/30 hover:bg-white sm:w-auto"
+              >
+                View demo
+              </a>
+            </div>
 
-        <p class="mt-4 text-slate-600 leading-relaxed">
-          You stay in control: your spreadsheet remains yours, manual entries always work, and club
-          import is optional and consent-based.
-        </p>
-
-        <h2 class="mt-8 text-xl font-semibold text-slate-900">Key features</h2>
-
-        <ul class="mt-4 space-y-3 text-slate-700">
-          <li v-for="feature in features" :key="feature" class="flex gap-3">
-            <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-600" aria-hidden="true" />
-            <span>{{ feature }}</span>
-          </li>
-        </ul>
-
-        <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <RouterLink
-            to="/login"
-            class="inline-flex items-center justify-center rounded-md bg-sky-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-800"
-          >
-            Sign in
-          </RouterLink>
-          <RouterLink
-            to="/about"
-            class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            Learn more
-          </RouterLink>
+            <ul class="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-landing-secondary">
+              <li v-for="badge in badges" :key="badge" class="inline-flex items-center gap-2">
+                <svg
+                  class="h-4 w-4 text-landing-success"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                {{ badge }}
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 
-      <SiteFooter class="mt-10">
-        <p class="mb-4">Good lift and happy soaring!</p>
-      </SiteFooter>
-    </div>
+      <!-- Product screenshot -->
+      <section id="landing-preview" class="landing-section landing-animate landing-animate-delay-1">
+        <div class="mx-auto max-w-landing px-4 sm:px-6">
+          <LandingScreenshotFrame
+            :image-url="screenshotFor('product')?.image_url"
+            :alt-text="screenshotFor('product')?.alt_text ?? 'Glider Pilot Logbook product screenshot'"
+            caption="Flights, statistics, and settings in one pilot-focused interface."
+          />
+        </div>
+      </section>
+
+      <!-- Features -->
+      <section id="features" class="landing-section landing-animate landing-animate-delay-2">
+        <div class="mx-auto max-w-landing px-4 sm:px-6">
+          <div class="mx-auto max-w-2xl text-center">
+            <h2 class="text-[1.75rem] font-semibold text-landing-text sm:text-[2rem]">
+              Everything you need for day-to-day logbook work
+            </h2>
+            <p class="mt-4 text-base text-landing-secondary sm:text-lg">
+              A calm, professional interface that mirrors the app experience — not a generic marketing site.
+            </p>
+          </div>
+
+          <ul class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <li
+              v-for="feature in features"
+              :key="feature.title"
+              class="rounded-2xl border border-landing-border bg-landing-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <h3 class="text-lg font-semibold text-landing-text">{{ feature.title }}</h3>
+              <p class="mt-2 text-sm leading-relaxed text-landing-secondary sm:text-base">
+                {{ feature.description }}
+              </p>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Google Sheets -->
+      <section id="google-sheets" class="landing-section">
+        <div class="mx-auto max-w-landing px-4 sm:px-6">
+          <div class="grid items-center gap-10 rounded-3xl border border-landing-border bg-landing-card p-8 shadow-sm lg:grid-cols-2 lg:p-12">
+            <div>
+              <h2 class="text-[1.75rem] font-semibold text-landing-text sm:text-[2rem]">
+                Your data stays in your Google account.
+              </h2>
+              <p class="mt-4 text-base leading-relaxed text-landing-secondary sm:text-lg">
+                GliderLogbook.co.uk connects to a spreadsheet in your Google Drive. You keep full
+                ownership of your records, can export or share through Google at any time, and avoid
+                vendor lock-in.
+              </p>
+              <p class="mt-4 text-base leading-relaxed text-landing-secondary sm:text-lg">
+                Disconnecting removes our link and cached copy — your spreadsheet and flight history
+                remain in Drive.
+              </p>
+            </div>
+            <div class="rounded-2xl border border-landing-border bg-landing-bg p-6">
+              <ul class="space-y-4 text-sm text-landing-secondary sm:text-base">
+                <li class="flex gap-3">
+                  <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-landing-primary" aria-hidden="true" />
+                  Spreadsheet remains yours in Google Drive
+                </li>
+                <li class="flex gap-3">
+                  <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-landing-primary" aria-hidden="true" />
+                  Writes go to Google Sheets; reads are fast via cache
+                </li>
+                <li class="flex gap-3">
+                  <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-landing-primary" aria-hidden="true" />
+                  Optional club sync with your explicit consent
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Dashboard preview -->
+      <section class="landing-section">
+        <div class="mx-auto max-w-landing px-4 sm:px-6">
+          <div class="mx-auto max-w-2xl text-center">
+            <h2 class="text-[1.75rem] font-semibold text-landing-text sm:text-[2rem]">
+              Dashboard at a glance
+            </h2>
+            <p class="mt-4 text-base text-landing-secondary sm:text-lg">
+              Flying totals, medical dates, and legality groups — the information you check before
+              you go flying.
+            </p>
+          </div>
+          <div class="mt-10">
+            <LandingScreenshotFrame
+              :image-url="screenshotFor('dashboard')?.image_url"
+              :alt-text="screenshotFor('dashboard')?.alt_text ?? 'Dashboard preview'"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- Mobile -->
+      <section class="landing-section">
+        <div class="mx-auto max-w-landing px-4 sm:px-6">
+          <div class="grid items-center gap-10 lg:grid-cols-2">
+            <div class="order-2 lg:order-1">
+              <LandingScreenshotFrame
+                tall
+                :image-url="screenshotFor('mobile')?.image_url"
+                :alt-text="screenshotFor('mobile')?.alt_text ?? 'Mobile logbook experience'"
+              />
+            </div>
+            <div class="order-1 lg:order-2">
+              <h2 class="text-[1.75rem] font-semibold text-landing-text sm:text-[2rem]">
+                Designed for the airfield.
+              </h2>
+              <p class="mt-4 text-base leading-relaxed text-landing-secondary sm:text-lg">
+                Check legality, review recent flights, and confirm logbook entries from your phone
+                or tablet — wherever you are on the field.
+              </p>
+              <p class="mt-4 text-base leading-relaxed text-landing-secondary sm:text-lg">
+                The interface is mobile-first so the same tools work comfortably on small screens.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- How it works -->
+      <section id="how-it-works" class="landing-section">
+        <div class="mx-auto max-w-landing px-4 sm:px-6">
+          <div class="mx-auto max-w-2xl text-center">
+            <h2 class="text-[1.75rem] font-semibold text-landing-text sm:text-[2rem]">How it works</h2>
+            <p class="mt-4 text-base text-landing-secondary sm:text-lg">
+              Connect once, then use the app like an extension of your spreadsheet.
+            </p>
+          </div>
+
+          <ol class="mt-12 grid gap-6 md:grid-cols-3">
+            <li
+              v-for="(step, index) in steps"
+              :key="step.title"
+              class="rounded-2xl border border-landing-border bg-landing-card p-6 shadow-sm"
+            >
+              <p class="text-sm font-semibold text-landing-primary">Step {{ index + 1 }}</p>
+              <h3 class="mt-2 text-lg font-semibold text-landing-text">{{ step.title }}</h3>
+              <p class="mt-2 text-sm leading-relaxed text-landing-secondary sm:text-base">
+                {{ step.description }}
+              </p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section id="faq" class="landing-section">
+        <div class="mx-auto max-w-landing px-4 sm:px-6">
+          <div class="mx-auto max-w-2xl text-center">
+            <h2 class="text-[1.75rem] font-semibold text-landing-text sm:text-[2rem]">
+              Frequently asked questions
+            </h2>
+          </div>
+
+          <div class="mx-auto mt-10 max-w-3xl space-y-3">
+            <details
+              v-for="item in faqItems"
+              :key="item.question"
+              class="group rounded-2xl border border-landing-border bg-landing-card px-5 py-4 shadow-sm"
+            >
+              <summary
+                class="cursor-pointer list-none text-base font-medium text-landing-text marker:content-none [&::-webkit-details-marker]:hidden"
+              >
+                <span class="flex items-center justify-between gap-4">
+                  {{ item.question }}
+                  <span class="text-landing-muted transition group-open:rotate-45" aria-hidden="true">+</span>
+                </span>
+              </summary>
+              <p class="mt-3 text-sm leading-relaxed text-landing-secondary sm:text-base">
+                {{ item.answer }}
+              </p>
+            </details>
+          </div>
+
+          <p class="mt-8 text-center text-sm text-landing-secondary">
+            More answers on our
+            <RouterLink to="/faq" class="font-medium text-landing-primary hover:underline">FAQ page</RouterLink>.
+          </p>
+        </div>
+      </section>
+
+      <!-- Final CTA -->
+      <section class="landing-section pb-8">
+        <div class="mx-auto max-w-landing px-4 sm:px-6">
+          <div
+            class="rounded-3xl bg-landing-primary px-6 py-12 text-center text-white sm:px-10 sm:py-14"
+          >
+            <h2 class="text-[1.75rem] font-semibold sm:text-[2rem]">Ready to connect your logbook?</h2>
+            <p class="mx-auto mt-4 max-w-2xl text-base text-white/85 sm:text-lg">
+              Sign in with Google, connect your spreadsheet, and start using a modern interface built
+              around the logbook you already own.
+            </p>
+            <RouterLink
+              to="/login"
+              class="mt-8 inline-flex items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-medium text-landing-primary transition hover:bg-white/95"
+            >
+              Get started
+            </RouterLink>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="border-t border-landing-border bg-landing-card">
+      <div class="mx-auto max-w-landing px-4 py-10 sm:px-6">
+        <SiteFooter>
+          <p class="mb-4 text-landing-secondary">Good lift and happy soaring!</p>
+        </SiteFooter>
+      </div>
+    </footer>
   </div>
 </template>

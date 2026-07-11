@@ -1,5 +1,19 @@
 @import 'tailwindcss';
 
+@theme {
+  --color-landing-bg: #f4f7fb;
+  --color-landing-card: #ffffff;
+  --color-landing-primary: #0b5e97;
+  --color-landing-primary-hover: #095081;
+  --color-landing-text: #1a2640;
+  --color-landing-secondary: #5b6b82;
+  --color-landing-muted: #94a3b8;
+  --color-landing-border: #dce5ef;
+  --color-landing-success: #10b981;
+  --spacing-landing: 72px;
+  --width-landing: 1200px;
+}
+
 :root {
   --sheet-zebra-color: #f8fafc;
   --sheet-header-color: #e2e8f0;
@@ -7,6 +21,62 @@
 
 body {
   @apply min-h-screen bg-slate-50 text-slate-900 antialiased;
+}
+
+.landing-page {
+  @apply bg-landing-bg text-landing-text;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+}
+
+.max-w-landing {
+  max-width: var(--width-landing);
+}
+
+.landing-section {
+  @apply py-[var(--spacing-landing)];
+}
+
+@media (min-width: 768px) {
+  .landing-section {
+    padding-top: 96px;
+    padding-bottom: 96px;
+  }
+}
+
+@keyframes landing-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-animate {
+  animation: landing-fade-in-up 0.6s ease-out both;
+}
+
+.landing-animate-delay-1 {
+  animation-delay: 0.08s;
+}
+
+.landing-animate-delay-2 {
+  animation-delay: 0.16s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-animate,
+  .landing-animate-delay-1,
+  .landing-animate-delay-2 {
+    animation: none;
+  }
 }
 
 @layer components {
