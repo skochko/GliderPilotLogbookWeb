@@ -4,7 +4,7 @@ import SiteFooter from '@/components/SiteFooter.vue'
 
 const features = [
   'Automatic flight import from participating gliding clubs',
-  'Integration with club flight accounting and GliderPilotLogbookSync',
+  'Our club automation stack: logbook template + GliderPilotLogbookSync',
   'Your Google Spreadsheet stays the source of truth',
   'Mobile-friendly logbook access, statistics, and dashboard',
 ]

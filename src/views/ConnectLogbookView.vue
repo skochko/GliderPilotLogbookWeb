@@ -69,7 +69,7 @@ async function connectByPicker(): Promise<void> {
     <div>
       <h1 class="text-2xl font-bold text-slate-900">Connect your logbook</h1>
       <p class="mt-2 text-slate-600">
-        Select your GliderPilotLogbookSync spreadsheet or paste its URL to get started.
+        Select your logbook spreadsheet (our template) or paste its URL to get started.
       </p>
     </div>
 
