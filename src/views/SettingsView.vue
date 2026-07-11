@@ -3,6 +3,7 @@ import { onMounted, reactive, ref } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
+import PwaInstallSection from '@/components/PwaInstallSection.vue'
 import { isApiError } from '@/api/errors'
 import { useSettings } from '@/composables/useSettings'
 import type { SheetSettingsPatch } from '@/types'
@@ -58,6 +59,8 @@ async function onSubmit(): Promise<void> {
     <LoadingState v-if="!initialized" />
     <ErrorBanner v-else-if="error" :message="error" :retry-busy="loading" @retry="fetch" />
     <ErrorBanner v-if="submitError" :message="submitError" />
+
+    <PwaInstallSection />
 
     <form
       v-if="settings"
