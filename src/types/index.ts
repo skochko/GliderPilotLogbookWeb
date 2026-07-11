@@ -28,6 +28,7 @@ export type Profile = components['schemas']['Profile']
 export type ProfilePatch = components['schemas']['PatchedProfilePatchRequest']
 export type Page = components['schemas']['Page']
 export type SitePageType = components['schemas']['PageTypeEnum']
+export type { LogbookCreateRequest } from './logbookCreate'
 
 export type {
   DashboardLegalityChip,

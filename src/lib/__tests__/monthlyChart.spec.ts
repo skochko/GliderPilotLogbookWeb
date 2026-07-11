@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildMonthlyChartSeries,
+  buildWeeklyChartSeries,
   buildYearChartSeries,
   defaultChartYear,
   formatChartHours,
   formatMonthShortLabel,
+  formatWeekShortLabel,
+  formatWeekWindowChipLabel,
   listAvailableChartYears,
   niceAxisMax,
+  weekAnchorsForYear,
 } from '../monthlyChart'
 
 describe('formatMonthShortLabel', () => {
@@ -27,9 +31,9 @@ describe('buildYearChartSeries', () => {
     )
 
     expect(series).toHaveLength(12)
-    expect(series[0]).toEqual({ month: '2025-01', count: 1, hours: 1 })
-    expect(series[10]).toEqual({ month: '2025-11', count: 2, hours: 3 })
-    expect(series[1]).toEqual({ month: '2025-02', count: 0, hours: 0 })
+    expect(series[0]).toEqual({ key: '2025-01', count: 1, hours: 1 })
+    expect(series[10]).toEqual({ key: '2025-11', count: 2, hours: 3 })
+    expect(series[1]).toEqual({ key: '2025-02', count: 0, hours: 0 })
   })
 })
 
@@ -70,6 +74,64 @@ describe('buildMonthlyChartSeries', () => {
       { month: '2025-10', count: 2, hours: 3 },
       { month: '2025-11', count: 1, hours: 1.5 },
     ])
+  })
+})
+
+describe('buildWeeklyChartSeries', () => {
+  it('returns the requested number of weeks ending at the latest data week', () => {
+    const series = buildWeeklyChartSeries(
+      [
+        { week: '2025-W44', count: 1, hours: 1 },
+        { week: '2025-W45', count: 2, hours: 3 },
+      ],
+      3,
+    )
+
+    expect(series).toHaveLength(3)
+    expect(series[1]).toEqual({ key: '2025-W44', count: 1, hours: 1 })
+    expect(series[2]).toEqual({ key: '2025-W45', count: 2, hours: 3 })
+  })
+
+  it('can end at a selected week anchor', () => {
+    const series = buildWeeklyChartSeries(
+      [
+        { week: '2025-W44', count: 1, hours: 1 },
+        { week: '2025-W45', count: 2, hours: 3 },
+      ],
+      2,
+      '2025-W44',
+    )
+
+    expect(series).toEqual([
+      { key: '2025-W43', count: 0, hours: 0 },
+      { key: '2025-W44', count: 1, hours: 1 },
+    ])
+  })
+})
+
+describe('weekAnchorsForYear', () => {
+  it('fills week anchors between first and last data week in a year', () => {
+    expect(
+      weekAnchorsForYear(
+        [
+          { week: '2025-W44', count: 1, hours: 1 },
+          { week: '2025-W46', count: 1, hours: 1 },
+        ],
+        2025,
+      ),
+    ).toEqual(['2025-W44', '2025-W45', '2025-W46'])
+  })
+})
+
+describe('formatWeekWindowChipLabel', () => {
+  it('returns a range label for multi-week windows', () => {
+    expect(formatWeekWindowChipLabel('2025-W45', 3)).toBe('20 Oct – 3 Nov')
+  })
+})
+
+describe('formatWeekShortLabel', () => {
+  it('returns the Monday date for the ISO week', () => {
+    expect(formatWeekShortLabel('2025-W45')).toBe('3 Nov')
   })
 })
 

@@ -22,6 +22,7 @@ const navItems = [
   { to: '/flights', label: 'Flights' },
   { to: '/settings', label: 'Settings' },
   { to: '/summary', label: 'Summary' },
+  { to: '/automation', label: 'Automation' },
   { to: '/profile', label: 'Profile' },
 ]
 

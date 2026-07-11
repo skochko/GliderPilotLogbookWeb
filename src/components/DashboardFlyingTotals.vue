@@ -94,17 +94,17 @@ function rowCountClass(key: string): string {
 
     <button
       type="button"
-      class="mt-2 flex w-full items-start justify-between gap-4 rounded-md text-left transition hover:bg-slate-50"
+      class="mt-2 flex w-full items-center justify-between gap-4 rounded-md text-left transition hover:bg-slate-50"
       :class="expanded ? 'pb-2' : ''"
       :aria-expanded="expanded"
       aria-controls="flying-breakdown"
       @click="expanded = !expanded"
     >
-      <div class="grid min-w-0 flex-1 gap-3 sm:grid-cols-2">
+      <div class="min-w-0 flex-1 space-y-2">
         <div
           v-for="row in summaryRows"
           :key="row.key"
-          class="min-w-0"
+          class="flex items-baseline justify-between gap-4"
         >
           <span
             v-if="row.badgeClass"
@@ -113,22 +113,19 @@ function rowCountClass(key: string): string {
           >
             {{ row.label }}
           </span>
-          <span
-            v-else
-            class="text-sm font-medium text-slate-700"
-          >
-            {{ row.label }}
-          </span>
-          <span class="mt-1 block tabular-nums text-slate-900" :class="rowHoursClass(row.key)">
-            {{ formatDecimalHours(row.hours) }}
-          </span>
-          <span class="block text-slate-500" :class="rowCountClass(row.key)">
-            {{ row.count }} {{ row.countLabel }}
+          <span v-else class="text-sm font-medium text-slate-700">{{ row.label }}</span>
+          <span class="text-right">
+            <span class="block tabular-nums text-slate-900" :class="rowHoursClass(row.key)">
+              {{ formatDecimalHours(row.hours) }}
+            </span>
+            <span class="block text-slate-500" :class="rowCountClass(row.key)">
+              {{ row.count }} {{ row.countLabel }}
+            </span>
           </span>
         </div>
       </div>
       <svg
-        class="mt-1 h-4 w-4 shrink-0 text-slate-400 transition-transform"
+        class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
         :class="expanded ? 'rotate-180' : ''"
         fill="none"
         viewBox="0 0 24 24"

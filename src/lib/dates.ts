@@ -67,6 +67,19 @@ export function formatDisplayDate(iso: string): string {
   })
 }
 
+export function formatDateTime(iso: string): string {
+  if (!iso) return '—'
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return iso
+  return date.toLocaleString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export function formatRemainingDays(days: number | null | undefined): string {
   if (days == null) return '—'
   if (days <= 0) return 'Expired'

@@ -91,7 +91,10 @@ function openRemarks(item: RecentActivity): void {
     <template v-else-if="statistics">
       <DashboardLegalitySection v-if="dashboardStatus" :status="dashboardStatus" />
 
-      <DashboardMonthlyChart :data="statistics.flights_by_month ?? []" />
+      <DashboardMonthlyChart
+        :monthly-data="statistics.flights_by_month ?? []"
+        :weekly-data="statistics.flights_by_week ?? []"
+      />
 
       <DashboardFlyingTotals :statistics="statistics" />
 

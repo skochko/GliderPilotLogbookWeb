@@ -4,6 +4,44 @@ export interface MonthlyFlightStats {
   hours: number
 }
 
+export interface WeeklyFlightStats {
+  week: string
+  count: number
+  hours: number
+}
+
+export interface ChartPeriodStats {
+  key: string
+  count: number
+  hours: number
+}
+
+export type ChartPeriodMode = 'month' | '3weeks' | '2weeks' | '1week'
+
+export const CHART_PERIOD_OPTIONS: ReadonlyArray<{ value: ChartPeriodMode; label: string }> = [
+  { value: 'month', label: 'month' },
+  { value: '3weeks', label: '3 weeks' },
+  { value: '2weeks', label: '2 weeks' },
+  { value: '1week', label: '1 week' },
+]
+
+export function chartPeriodLabel(mode: ChartPeriodMode): string {
+  return CHART_PERIOD_OPTIONS.find((option) => option.value === mode)?.label ?? mode
+}
+
+export function weekCountForPeriod(mode: ChartPeriodMode): number {
+  switch (mode) {
+    case '3weeks':
+      return 3
+    case '2weeks':
+      return 2
+    case '1week':
+      return 1
+    default:
+      return 0
+  }
+}
+
 function parseMonthKey(monthKey: string): { year: number; month: number } | null {
   const match = monthKey.match(/^(\d{4})-(\d{2})$/)
   if (!match) {
@@ -35,6 +73,131 @@ export function formatMonthShortLabel(monthKey: string): string {
   return new Date(parsed.year, parsed.month - 1, 1).toLocaleString('en', { month: 'short' })
 }
 
+function parseWeekKey(weekKey: string): { year: number; week: number } | null {
+  const match = weekKey.match(/^(\d{4})-W(\d{2})$/)
+  if (!match) {
+    return null
+  }
+  const year = Number(match[1])
+  const week = Number(match[2])
+  if (!year || week < 1 || week > 53) {
+    return null
+  }
+  return { year, week }
+}
+
+function toWeekKey({ year, week }: { year: number; week: number }): string {
+  return `${year}-W${String(week).padStart(2, '0')}`
+}
+
+function mondayOfIsoWeek(year: number, week: number): Date {
+  const jan4 = new Date(Date.UTC(year, 0, 4))
+  const day = jan4.getUTCDay() || 7
+  const monday = new Date(jan4)
+  monday.setUTCDate(jan4.getUTCDate() - day + 1 + (week - 1) * 7)
+  return monday
+}
+
+function isoWeekFromDate(value: Date): { year: number; week: number } {
+  const utc = new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()))
+  const day = utc.getUTCDay() || 7
+  utc.setUTCDate(utc.getUTCDate() + 4 - day)
+  const year = utc.getUTCFullYear()
+  const yearStart = new Date(Date.UTC(year, 0, 1))
+  const week = Math.ceil((((utc.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
+  return { year, week }
+}
+
+function shiftWeek(year: number, week: number, delta: number): { year: number; week: number } {
+  const monday = mondayOfIsoWeek(year, week)
+  monday.setUTCDate(monday.getUTCDate() + delta * 7)
+  return isoWeekFromDate(
+    new Date(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate()),
+  )
+}
+
+/** Week start label for chart axis, e.g. 2025-W45 → 3 Nov. */
+export function formatWeekShortLabel(weekKey: string): string {
+  const parsed = parseWeekKey(weekKey)
+  if (!parsed) {
+    return weekKey
+  }
+  const monday = mondayOfIsoWeek(parsed.year, parsed.week)
+  return monday.toLocaleString('en-GB', { day: 'numeric', month: 'short' })
+}
+
+export function formatWeekDetailLabel(weekKey: string): string {
+  const parsed = parseWeekKey(weekKey)
+  if (!parsed) {
+    return weekKey
+  }
+  const monday = mondayOfIsoWeek(parsed.year, parsed.week)
+  const sunday = new Date(monday)
+  sunday.setUTCDate(monday.getUTCDate() + 6)
+  const start = monday.toLocaleString('en-GB', { day: 'numeric', month: 'short' })
+  const end = sunday.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  return `${start} – ${end}`
+}
+
+export function formatWeekWindowChipLabel(endWeekKey: string, weekCount: number): string {
+  if (weekCount <= 1) {
+    return formatWeekShortLabel(endWeekKey)
+  }
+  const end = parseWeekKey(endWeekKey)
+  if (!end) {
+    return endWeekKey
+  }
+  const start = shiftWeek(end.year, end.week, -(weekCount - 1))
+  return `${formatWeekShortLabel(toWeekKey(start))} – ${formatWeekShortLabel(endWeekKey)}`
+}
+
+export function weekAnchorsForYear(
+  items: readonly WeeklyFlightStats[],
+  year: number,
+): string[] {
+  const inYear = [...items]
+    .map((item) => item.week)
+    .filter((weekKey) => parseWeekKey(weekKey)?.year === year)
+    .sort()
+
+  if (!inYear.length) {
+    return []
+  }
+
+  const first = parseWeekKey(inYear[0]!)
+  const last = parseWeekKey(inYear[inYear.length - 1]!)
+  if (!first || !last) {
+    return inYear
+  }
+
+  const anchors: string[] = []
+  let current = first
+  while (true) {
+    anchors.push(toWeekKey(current))
+    if (current.year === last.year && current.week === last.week) {
+      break
+    }
+    current = shiftWeek(current.year, current.week, 1)
+  }
+  return anchors
+}
+
+export function defaultWeekAnchorForYear(
+  items: readonly WeeklyFlightStats[],
+  year: number,
+  referenceDate = new Date(),
+): string {
+  const anchors = weekAnchorsForYear(items, year)
+  if (anchors.length) {
+    return anchors[anchors.length - 1]!
+  }
+  const current = isoWeekFromDate(referenceDate)
+  if (current.year === year) {
+    return toWeekKey(current)
+  }
+  return toWeekKey({ year, week: 1 })
+}
+
 /** Years with flight data, limited to the most recent `maxYears`. */
 export function listAvailableChartYears(
   items: readonly MonthlyFlightStats[],
@@ -43,6 +206,49 @@ export function listAvailableChartYears(
   const years = new Set<number>()
   for (const item of items) {
     const parsed = parseMonthKey(item.month)
+    if (parsed) {
+      years.add(parsed.year)
+    }
+  }
+  const sorted = [...years].sort((a, b) => a - b)
+  if (sorted.length <= maxYears) {
+    return sorted
+  }
+  return sorted.slice(-maxYears)
+}
+
+export function listAvailableChartYearsFromWeeks(
+  items: readonly WeeklyFlightStats[],
+  maxYears = 4,
+): number[] {
+  const years = new Set<number>()
+  for (const item of items) {
+    const parsed = parseWeekKey(item.week)
+    if (parsed) {
+      years.add(parsed.year)
+    }
+  }
+  const sorted = [...years].sort((a, b) => a - b)
+  if (sorted.length <= maxYears) {
+    return sorted
+  }
+  return sorted.slice(-maxYears)
+}
+
+export function listAvailableChartYearsCombined(
+  monthlyItems: readonly MonthlyFlightStats[],
+  weeklyItems: readonly WeeklyFlightStats[],
+  maxYears = 4,
+): number[] {
+  const years = new Set<number>()
+  for (const item of monthlyItems) {
+    const parsed = parseMonthKey(item.month)
+    if (parsed) {
+      years.add(parsed.year)
+    }
+  }
+  for (const item of weeklyItems) {
+    const parsed = parseWeekKey(item.week)
     if (parsed) {
       years.add(parsed.year)
     }
@@ -73,18 +279,52 @@ export function defaultChartYear(
 export function buildYearChartSeries(
   items: readonly MonthlyFlightStats[],
   year: number,
-): MonthlyFlightStats[] {
+): ChartPeriodStats[] {
   const byMonth = new Map(items.map((item) => [item.month, item]))
   return Array.from({ length: 12 }, (_, index) => {
     const key = toMonthKey({ year, month: index + 1 })
-    return (
-      byMonth.get(key) ?? {
-        month: key,
-        count: 0,
-        hours: 0,
-      }
-    )
+    const existing = byMonth.get(key)
+    return {
+      key,
+      count: existing?.count ?? 0,
+      hours: existing?.hours ?? 0,
+    }
   })
+}
+
+/** Build a fixed-length weekly series ending at the selected week. */
+export function buildWeeklyChartSeries(
+  items: readonly WeeklyFlightStats[],
+  weekCount: number,
+  endWeekKey?: string,
+  referenceDate = new Date(),
+): ChartPeriodStats[] {
+  if (weekCount < 1) {
+    return []
+  }
+
+  const byWeek = new Map(items.map((item) => [item.week, item]))
+  const sortedKeys = [...byWeek.keys()].sort()
+  const resolvedEndKey =
+    endWeekKey ??
+    sortedKeys[sortedKeys.length - 1] ??
+    toWeekKey(isoWeekFromDate(referenceDate))
+  const end = parseWeekKey(resolvedEndKey)
+  if (!end) {
+    return []
+  }
+
+  const series: ChartPeriodStats[] = []
+  for (let offset = weekCount - 1; offset >= 0; offset -= 1) {
+    const key = toWeekKey(shiftWeek(end.year, end.week, -offset))
+    const existing = byWeek.get(key)
+    series.push({
+      key,
+      count: existing?.count ?? 0,
+      hours: existing?.hours ?? 0,
+    })
+  }
+  return series
 }
 
 /** Build a fixed-length monthly series ending at the latest month in the data. */

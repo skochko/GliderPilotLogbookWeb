@@ -385,6 +385,12 @@ export interface components {
             /** Format: double */
             hours: number;
         };
+        WeekStats: {
+            week: string;
+            count: number;
+            /** Format: double */
+            hours: number;
+        };
         GoogleAccessToken: {
             accessToken: string;
         };
@@ -651,6 +657,7 @@ export interface components {
             solo_landings: number;
             total_launches: number;
             flights_by_month: components["schemas"]["MonthStats"][];
+            flights_by_week: components["schemas"]["WeekStats"][];
             flights_by_glider: components["schemas"]["GliderStats"][];
             flights_by_launch_type: components["schemas"]["LaunchTypeStats"][];
             recent_activity: components["schemas"]["RecentActivity"][];

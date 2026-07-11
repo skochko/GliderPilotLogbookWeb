@@ -1297,6 +1297,21 @@ components:
       - count
       - hours
       - month
+    WeekStats:
+      type: object
+      properties:
+        week:
+          type: string
+          pattern: ^\d{4}-W\d{2}$
+        count:
+          type: integer
+        hours:
+          type: number
+          format: double
+      required:
+      - count
+      - hours
+      - week
     GoogleAccessToken:
       type: object
       properties:
@@ -1892,6 +1907,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MonthStats'
+        flights_by_week:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekStats'
         flights_by_glider:
           type: array
           items:
@@ -1908,6 +1927,7 @@ components:
       - flights_by_glider
       - flights_by_launch_type
       - flights_by_month
+      - flights_by_week
       - recent_activity
       - total_flight_hours
       - total_pic_hours

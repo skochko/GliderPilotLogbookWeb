@@ -39,6 +39,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/logbook/create',
+      name: 'logbook-create',
+      component: () => import('@/views/CreateLogbookView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('@/views/DashboardView.vue'),
@@ -72,6 +78,12 @@ const router = createRouter({
       path: '/summary',
       name: 'summary',
       component: () => import('@/views/SummaryView.vue'),
+      meta: { requiresAuth: true, requiresLogbook: true },
+    },
+    {
+      path: '/automation',
+      name: 'automation',
+      component: () => import('@/views/AutomationView.vue'),
       meta: { requiresAuth: true, requiresLogbook: true },
     },
     {
@@ -130,6 +142,10 @@ router.beforeEach(async (to) => {
   }
 
   if (to.name === 'connect' && user.value?.has_logbook) {
+    return { name: 'dashboard' }
+  }
+
+  if (to.name === 'logbook-create' && user.value?.has_logbook) {
     return { name: 'dashboard' }
   }
 

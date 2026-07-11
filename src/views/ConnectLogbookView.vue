@@ -81,6 +81,21 @@ async function connectByPicker(): Promise<void> {
       @retry="connectByPicker"
     />
 
+    <section class="rounded-lg border border-sky-200 bg-sky-50 p-6 shadow-sm">
+      <h2 class="font-semibold text-slate-900">Create a new logbook</h2>
+      <p class="mt-1 text-sm text-slate-600">
+        Copy the public template to your Google Drive and set up your pilot details.
+      </p>
+      <ActionButton class="mt-4" @click="router.push('/logbook/create')">
+        Create logbook
+      </ActionButton>
+    </section>
+
+    <div class="relative text-center text-sm text-slate-500">
+      <span class="bg-slate-50 px-3">or connect an existing spreadsheet</span>
+      <div class="absolute inset-x-0 top-1/2 -z-10 border-t border-slate-200" aria-hidden="true" />
+    </div>
+
     <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <h2 class="font-semibold text-slate-900">Google Drive Picker</h2>
       <p class="mt-1 text-sm text-slate-600">Recommended — browse and select your spreadsheet.</p>
