@@ -69,8 +69,13 @@ const rows = computed((): FlyingRow[] => {
   return items
 })
 
-const totalRow = computed(() => rows.value[0]!)
-const breakdownRows = computed(() => rows.value.slice(1))
+const summaryRows = computed(() =>
+  rows.value.filter((row) => row.key === 'total' || row.key === 'solo'),
+)
+
+const breakdownRows = computed(() =>
+  rows.value.filter((row) => row.key !== 'total' && row.key !== 'solo'),
+)
 
 function rowHoursClass(key: string): string {
   return key === 'total'
@@ -89,34 +94,50 @@ function rowCountClass(key: string): string {
 
     <button
       type="button"
-      class="mt-2 flex w-full items-baseline justify-between gap-4 rounded-md text-left transition hover:bg-slate-50"
+      class="mt-2 flex w-full items-start justify-between gap-4 rounded-md text-left transition hover:bg-slate-50"
       :class="expanded ? 'pb-2' : ''"
       :aria-expanded="expanded"
       aria-controls="flying-breakdown"
       @click="expanded = !expanded"
     >
-      <span class="text-sm font-medium text-slate-700">{{ totalRow.label }}</span>
-      <span class="flex items-center gap-2">
-        <span class="text-right">
-          <span class="block tabular-nums text-slate-900" :class="rowHoursClass('total')">
-            {{ formatDecimalHours(totalRow.hours) }}
-          </span>
-          <span class="block text-slate-500" :class="rowCountClass('total')">
-            {{ totalRow.count }} {{ totalRow.countLabel }}
-          </span>
-        </span>
-        <svg
-          class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
-          :class="expanded ? 'rotate-180' : ''"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-          aria-hidden="true"
+      <div class="grid min-w-0 flex-1 gap-3 sm:grid-cols-2">
+        <div
+          v-for="row in summaryRows"
+          :key="row.key"
+          class="min-w-0"
         >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
-      </span>
+          <span
+            v-if="row.badgeClass"
+            class="inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset"
+            :class="row.badgeClass"
+          >
+            {{ row.label }}
+          </span>
+          <span
+            v-else
+            class="text-sm font-medium text-slate-700"
+          >
+            {{ row.label }}
+          </span>
+          <span class="mt-1 block tabular-nums text-slate-900" :class="rowHoursClass(row.key)">
+            {{ formatDecimalHours(row.hours) }}
+          </span>
+          <span class="block text-slate-500" :class="rowCountClass(row.key)">
+            {{ row.count }} {{ row.countLabel }}
+          </span>
+        </div>
+      </div>
+      <svg
+        class="mt-1 h-4 w-4 shrink-0 text-slate-400 transition-transform"
+        :class="expanded ? 'rotate-180' : ''"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+      </svg>
     </button>
 
     <dl

@@ -27,6 +27,12 @@ const router = createRouter({
       meta: { guest: true },
     },
     {
+      path: '/unsubscribe',
+      name: 'unsubscribe',
+      component: () => import('@/views/UnsubscribeView.vue'),
+      meta: { publicPage: true },
+    },
+    {
       path: '/connect',
       name: 'connect',
       component: () => import('@/views/ConnectLogbookView.vue'),

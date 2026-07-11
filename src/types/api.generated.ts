@@ -464,10 +464,24 @@ export interface components {
         PatchedMedicalBlockPatchRequest: {
             entries?: components["schemas"]["MedicalEntryRequest"][];
         };
+        OrganizationList: {
+            id: number;
+            name: string;
+            slug: string;
+            organization_type: "club" | "school" | "association" | "other";
+            website_url: string;
+            logo_url: string;
+        };
+        ProfileOrganization: components["schemas"]["OrganizationList"] & {
+            service_account_email: string;
+        };
         PatchedProfilePatchRequest: {
             preferences?: {
                 [key: string]: unknown;
             };
+            email_notifications_enabled?: boolean;
+            language?: "" | "en" | "ru";
+            organization_id?: number | null;
         };
         PatchedSheetSettingsPatchRequest: {
             date_format?: string;
@@ -495,6 +509,9 @@ export interface components {
             preferences: {
                 [key: string]: unknown;
             };
+            email_notifications_enabled: boolean;
+            language: "" | "en" | "ru";
+            organization: components["schemas"]["ProfileOrganization"] | null;
         };
         RecentActivity: {
             id: string;
