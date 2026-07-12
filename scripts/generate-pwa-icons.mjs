@@ -138,6 +138,7 @@ async function writeSized(name, size, dir, input = squared) {
 await writeSized('icon-512x512.png', 512, iconsDir)
 await writeSized('icon-512-maskable.png', 512, iconsDir, maskable)
 await writeSized('icon-192x192.png', 192, iconsDir)
+await writeSized('email-logo.png', 128, iconsDir)
 await writeSized('apple-touch-icon.png', 180, publicDir)
 await writeSized('favicon-32x32.png', 32, publicDir)
 await writeSized('favicon-16x16.png', 16, publicDir)
