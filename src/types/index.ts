@@ -16,6 +16,7 @@ import type { SheetSettingsDateFormatFields, SheetSettingsProfileFields } from '
 
 export type UserMe = components['schemas']['UserMe']
 export type Flight = components['schemas']['Flight']
+export type { FlightListParams, FlightListResponse } from './flights'
 export type FlightCreateRequest = components['schemas']['FlightCreateRequest']
 export type FlightPatchRequest = components['schemas']['PatchedFlightPatchRequest']
 export type LogbookStatus = components['schemas']['LogbookStatus']
