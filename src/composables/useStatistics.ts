@@ -1,7 +1,7 @@
 import { readonly, ref } from 'vue'
 import * as statisticsApi from '@/api/statistics'
 import { isApiError } from '@/api/errors'
-import type { Statistics } from '@/types'
+import type { Statistics, StatisticsQuery } from '@/types'
 
 const statistics = ref<Statistics | null>(null)
 const loading = ref(false)
@@ -16,14 +16,15 @@ export function resetStatisticsState(): void {
 }
 
 export function useStatistics() {
-  async function fetch(): Promise<Statistics | null> {
+  async function fetch(query?: StatisticsQuery): Promise<Statistics | null> {
     loading.value = true
     error.value = null
     try {
-      statistics.value = await statisticsApi.getStatistics()
+      statistics.value = await statisticsApi.getStatistics(query)
       return statistics.value
     } catch (err) {
       error.value = isApiError(err) ? err.message : 'Failed to load statistics'
+      statistics.value = null
       return null
     } finally {
       loading.value = false

@@ -27,6 +27,7 @@ import {
 const props = defineProps<{
   monthlyData: DeepReadonly<MonthlyFlightStats[]>
   weeklyData: DeepReadonly<WeeklyFlightStats[]>
+  defaultPeriodMode?: ChartPeriodMode
 }>()
 
 const CHART_WIDTH = 560
@@ -232,8 +233,20 @@ function handleDocumentClick(event: MouseEvent): void {
 }
 
 onMounted(() => {
+  if (props.defaultPeriodMode) {
+    periodMode.value = props.defaultPeriodMode
+  }
   document.addEventListener('click', handleDocumentClick)
 })
+
+watch(
+  () => props.defaultPeriodMode,
+  (mode) => {
+    if (mode) {
+      periodMode.value = mode
+    }
+  },
+)
 
 onUnmounted(() => {
   document.removeEventListener('click', handleDocumentClick)

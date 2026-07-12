@@ -57,6 +57,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresLogbook: true },
     },
     {
+      path: '/statistics',
+      name: 'statistics',
+      component: () => import('@/views/StatisticsView.vue'),
+      meta: { requiresAuth: true, requiresLogbook: true },
+    },
+    {
       path: '/flights/new',
       name: 'flight-create',
       component: () => import('@/views/FlightCreateView.vue'),

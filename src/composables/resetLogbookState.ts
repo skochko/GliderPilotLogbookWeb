@@ -5,6 +5,7 @@ import { resetFlightsState } from '@/composables/useFlights'
 import { resetLogbookState as resetLogbookStatus } from '@/composables/useLogbook'
 import { resetProfileState } from '@/composables/useProfile'
 import { resetSettingsState } from '@/composables/useSettings'
+import { resetStatisticsPeriodState } from '@/composables/useStatisticsPeriod'
 import { resetStatisticsState } from '@/composables/useStatistics'
 
 /** Clear cached logbook data after disconnect or before switching spreadsheets. */
@@ -13,6 +14,7 @@ export function resetLogbookState(): void {
   resetDisplaySettingsState()
   resetSettingsState()
   resetStatisticsState()
+  resetStatisticsPeriodState()
   resetDashboardStatusState()
   resetProfileState()
   resetLogbookStatus()

@@ -22,6 +22,7 @@ const disconnectOpen = ref(false)
 const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/flights', label: 'Flights' },
+  { to: '/statistics', label: 'Statistics' },
   { to: '/settings', label: 'Settings' },
   { to: '/automation', label: 'Automation' },
   { to: '/profile', label: 'Profile' },

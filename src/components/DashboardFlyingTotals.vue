@@ -137,6 +137,11 @@ function rowCountClass(key: string): string {
       </svg>
     </button>
 
+    <div class="mt-2 flex flex-wrap gap-x-5 gap-y-1 border-t border-slate-100 pt-2 text-xs text-slate-500">
+      <span>{{ statistics.days_flown }} {{ statistics.days_flown === 1 ? 'day' : 'days' }} flown</span>
+      <span>Avg flight {{ formatDecimalHours(statistics.avg_flight_hours) }}</span>
+    </div>
+
     <dl
       v-show="expanded"
       id="flying-breakdown"

@@ -25,7 +25,8 @@ export type SheetSettings = components['schemas']['SheetSettings'] &
   SheetSettingsProfileFields
 export type SheetSettingsPatch = components['schemas']['PatchedSheetSettingsPatchRequest'] &
   SheetSettingsProfileFields
-export type Statistics = components['schemas']['Statistics']
+export type Statistics = import('./statistics').Statistics
+export type { StatisticsQuery } from './statistics'
 export type Profile = components['schemas']['Profile']
 export type ProfilePatch = components['schemas']['PatchedProfilePatchRequest']
 export type Page = components['schemas']['Page']
