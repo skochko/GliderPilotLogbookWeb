@@ -9,6 +9,12 @@ export interface SheetSettingsDateFormatFields {
   date_format_options?: DateFormatOption[]
 }
 
+export interface SheetDisplaySettings {
+  sort_direction: string
+  zebra_color: string
+  header_color: string
+}
+
 export type PilotPrivilege = 'pilot' | 'bi' | 'fi'
 
 export interface SheetSettingsProfileFields {

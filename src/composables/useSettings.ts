@@ -1,7 +1,7 @@
 import { readonly, ref } from 'vue'
 import * as settingsApi from '@/api/settings'
-import { applySheetTheme } from '@/lib/dates'
 import { isApiError } from '@/api/errors'
+import { applyDisplaySettingsFromSheet } from '@/composables/useDisplaySettings'
 import type { SheetSettings, SheetSettingsPatch } from '@/types'
 
 const settings = ref<SheetSettings | null>(null)
@@ -25,7 +25,7 @@ export function useSettings() {
     try {
       settings.value = await settingsApi.getSettings()
       if (settings.value) {
-        applySheetTheme(settings.value.zebra_color, settings.value.header_color)
+        applyDisplaySettingsFromSheet(settings.value)
       }
       return settings.value
     } catch (err) {
@@ -43,7 +43,7 @@ export function useSettings() {
     try {
       settings.value = await settingsApi.updateSettings(payload)
       if (settings.value) {
-        applySheetTheme(settings.value.zebra_color, settings.value.header_color)
+        applyDisplaySettingsFromSheet(settings.value)
       }
       return settings.value
     } catch (err) {

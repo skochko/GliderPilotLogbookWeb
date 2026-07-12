@@ -6,7 +6,7 @@ import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import RemarksDialog from '@/components/RemarksDialog.vue'
 import { useFlights } from '@/composables/useFlights'
-import { useSettings } from '@/composables/useSettings'
+import { useDisplaySettings } from '@/composables/useDisplaySettings'
 import { formatDayNumber, groupByMonth } from '@/lib/dates'
 import { formatDurationDisplay } from '@/lib/duration'
 import { encodeFlightId } from '@/lib/flightId'
@@ -15,7 +15,7 @@ import { hasRemarks, truncateText } from '@/lib/text'
 import type { Flight } from '@/types'
 
 const { flights, loading, listInitialized, mutating, error, list, remove, sortFlights } = useFlights()
-const { settings, fetch: fetchSettings } = useSettings()
+const { displaySettings, ensureLoaded } = useDisplaySettings()
 
 const deleteTargetId = ref<string | null>(null)
 const deleteOpen = ref(false)
@@ -23,11 +23,11 @@ const remarksOpen = ref(false)
 const remarksText = ref('')
 const remarksFlightId = ref<string | null>(null)
 
-void fetchSettings()
+void ensureLoaded()
 void list()
 
 const sortedFlights = computed(() =>
-  sortFlights([...flights.value], settings.value?.sort_direction ?? 'newest_first'),
+  sortFlights([...flights.value], displaySettings.value?.sort_direction ?? 'newest_first'),
 )
 
 const flightGroups = computed(() => groupByMonth(sortedFlights.value))

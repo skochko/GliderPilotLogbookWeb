@@ -1,5 +1,9 @@
 import { apiJson } from './client'
-import type { SheetSettings, SheetSettingsPatch } from '@/types'
+import type { SheetDisplaySettings, SheetSettings, SheetSettingsPatch } from '@/types'
+
+export function getDisplaySettings(): Promise<SheetDisplaySettings> {
+  return apiJson<SheetDisplaySettings>('/settings/display')
+}
 
 export function getSettings(): Promise<SheetSettings> {
   return apiJson<SheetSettings>('/settings')

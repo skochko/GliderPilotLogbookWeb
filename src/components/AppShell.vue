@@ -5,11 +5,13 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import SiteFooter from '@/components/SiteFooter.vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { useDisplaySettings } from '@/composables/useDisplaySettings'
 import { useFlashMessage } from '@/composables/useFlashMessage'
 import { useLogbookDisconnect } from '@/composables/useLogbookDisconnect'
 import { resetLogbookState } from '@/composables/resetLogbookState'
 
 const { user, mutating, logout } = useAuth()
+const { ensureLoaded: ensureDisplaySettingsLoaded } = useDisplaySettings()
 const { disconnectLogbook, disconnecting } = useLogbookDisconnect()
 const { message, kind, clear } = useFlashMessage()
 const route = useRoute()
@@ -37,6 +39,16 @@ function toggleMenu(): void {
 function closeMenu(): void {
   menuOpen.value = false
 }
+
+watch(
+  () => user.value?.has_logbook,
+  (hasLogbook) => {
+    if (hasLogbook) {
+      void ensureDisplaySettingsLoaded()
+    }
+  },
+  { immediate: true },
+)
 
 function openDisconnectDialog(): void {
   closeMenu()
