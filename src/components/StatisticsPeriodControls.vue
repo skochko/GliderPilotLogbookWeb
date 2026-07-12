@@ -20,21 +20,23 @@ const emit = defineEmits<{
 
 <template>
   <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-    <div class="flex flex-wrap gap-2">
-      <button
-        v-for="option in STATISTICS_PRESET_OPTIONS"
-        :key="option.id"
-        type="button"
-        class="rounded-full px-3 py-1.5 text-sm font-medium transition"
-        :class="
-          preset === option.id
-            ? 'bg-sky-700 text-white'
-            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-        "
-        @click="emit('preset', option.id)"
-      >
-        {{ option.label }}
-      </button>
+    <div class="-mx-1 overflow-x-auto px-1 [scrollbar-width:thin] sm:mx-0 sm:overflow-visible sm:px-0">
+      <div class="flex w-max gap-1.5 sm:w-auto sm:flex-wrap sm:gap-2">
+        <button
+          v-for="option in STATISTICS_PRESET_OPTIONS"
+          :key="option.id"
+          type="button"
+          class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium transition sm:px-3 sm:py-1.5 sm:text-sm"
+          :class="
+            preset === option.id
+              ? 'bg-sky-700 text-white'
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          "
+          @click="emit('preset', option.id)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
     </div>
 
     <div
