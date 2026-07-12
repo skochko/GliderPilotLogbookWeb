@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import GliderLogo from '@/components/GliderLogo.vue'
 import SiteFooter from '@/components/SiteFooter.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
@@ -27,7 +28,8 @@ const { message, kind, clear } = useFlashMessage()
 
     <div class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12 sm:px-6">
       <header class="mb-8 text-center">
-        <RouterLink to="/" class="text-lg font-semibold text-sky-800 hover:text-sky-900">
+        <RouterLink to="/" class="inline-flex flex-col items-center gap-3 text-lg font-semibold text-sky-800 hover:text-sky-900">
+          <GliderLogo size-class="h-12 w-12" label="GliderLogbook.co.uk" />
           GliderLogbook.co.uk
         </RouterLink>
       </header>

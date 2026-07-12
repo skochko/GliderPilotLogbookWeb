@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import GliderLogo from '@/components/GliderLogo.vue'
 import SiteFooter from '@/components/SiteFooter.vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
@@ -102,8 +103,9 @@ watch(
               <path v-else stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <RouterLink to="/dashboard" class="truncate text-lg font-semibold text-sky-800">
-            Glider Pilot Logbook
+          <RouterLink to="/dashboard" class="flex min-w-0 items-center gap-2 truncate text-lg font-semibold text-sky-800">
+            <GliderLogo size-class="h-7 w-7 shrink-0" />
+            <span class="truncate">Glider Pilot Logbook</span>
           </RouterLink>
           <nav v-if="user?.has_logbook" class="hidden items-center gap-1 sm:flex">
             <RouterLink

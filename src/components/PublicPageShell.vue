@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import GliderLogo from '@/components/GliderLogo.vue'
 import SiteFooter from '@/components/SiteFooter.vue'
 import { useAuth } from '@/composables/useAuth'
 
@@ -10,8 +11,9 @@ const { user } = useAuth()
   <div class="min-h-screen bg-gradient-to-br from-sky-50 via-white to-slate-50 text-slate-800">
     <div class="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-8 sm:px-6">
       <header class="mb-8 flex items-center justify-between gap-4">
-        <RouterLink to="/" class="text-lg font-semibold text-sky-800 hover:text-sky-900">
-          GliderLogbook.co.uk
+        <RouterLink to="/" class="flex items-center gap-2 text-lg font-semibold text-sky-800 hover:text-sky-900">
+          <GliderLogo size-class="h-7 w-7 shrink-0" label="GliderLogbook.co.uk" />
+          <span>GliderLogbook.co.uk</span>
         </RouterLink>
         <RouterLink
           v-if="user"

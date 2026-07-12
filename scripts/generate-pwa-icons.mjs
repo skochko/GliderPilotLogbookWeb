@@ -11,6 +11,7 @@ const secretsDir = join(__dirname, '..', '..', 'GliderPilotLogbookCore', 'secret
 
 const sourceCandidates = [
   process.argv[2],
+  join(designDir, 'icon.svg'),
   join(secretsDir, 'icon.png'),
   join(__dirname, '..', 'secrets', 'icon.png'),
   join(designDir, 'icon-master.png'),
@@ -18,7 +19,7 @@ const sourceCandidates = [
 
 const sourcePath = sourceCandidates.find((path) => existsSync(path))
 if (!sourcePath) {
-  throw new Error('Icon source not found. Add secrets/icon.png or pass a path.')
+  throw new Error('Icon source not found. Add design/icon.svg or secrets/icon.png.')
 }
 
 mkdirSync(iconsDir, { recursive: true })
@@ -85,7 +86,20 @@ async function loadIconWithTransparency(path) {
     .toBuffer()
 }
 
-const source = await loadIconWithTransparency(sourcePath)
+async function loadIconSource(path) {
+  if (path.endsWith('.svg')) {
+    return sharp(path, { density: 384 })
+      .resize(512, 512, {
+        fit: 'contain',
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      })
+      .png()
+      .toBuffer()
+  }
+  return loadIconWithTransparency(path)
+}
+
+const source = await loadIconSource(sourcePath)
 const trimmed = await sharp(source).trim().png().toBuffer()
 const squared = await sharp(trimmed)
   .resize(512, 512, {
@@ -95,16 +109,34 @@ const squared = await sharp(trimmed)
   .png()
   .toBuffer()
 
+const maskable = await sharp({
+  create: {
+    width: 512,
+    height: 512,
+    channels: 4,
+    background: { r: 0, g: 33, b: 71, alpha: 1 },
+  },
+})
+  .composite([
+    {
+      input: await sharp(squared).resize(384, 384, { fit: 'contain' }).png().toBuffer(),
+      gravity: 'center',
+    },
+  ])
+  .png()
+  .toBuffer()
+
 console.log(`source ${sourcePath}`)
 
-async function writeSized(name, size, dir) {
+async function writeSized(name, size, dir, input = squared) {
   const outPath = join(dir, name)
-  const buffer = await sharp(squared).resize(size, size, { kernel: sharp.kernel.lanczos3 }).png().toBuffer()
+  const buffer = await sharp(input).resize(size, size, { kernel: sharp.kernel.lanczos3 }).png().toBuffer()
   writeFileSync(outPath, buffer)
   console.log(`wrote ${outPath} (${size}x${size})`)
 }
 
 await writeSized('icon-512x512.png', 512, iconsDir)
+await writeSized('icon-512-maskable.png', 512, iconsDir, maskable)
 await writeSized('icon-192x192.png', 192, iconsDir)
 await writeSized('apple-touch-icon.png', 180, publicDir)
 await writeSized('favicon-32x32.png', 32, publicDir)

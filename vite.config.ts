@@ -15,6 +15,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: [
         'favicon.ico',
+        'icon.svg',
         'favicon-16x16.png',
         'favicon-32x32.png',
         'apple-touch-icon.png',
@@ -42,7 +43,7 @@ export default defineConfig({
             type: 'image/png',
           },
           {
-            src: 'icons/icon-512x512.png',
+            src: 'icons/icon-512-maskable.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
