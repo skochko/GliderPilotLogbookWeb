@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDecimalHours, formatDurationDisplay, formatRequirementValue } from '../duration'
+import { formatDecimalHours, formatDurationDisplay, formatDurationProse, formatRequirementValue, hasDurationValue, splitDurationDisplay } from '../duration'
 
 describe('formatDurationDisplay', () => {
   it('formats hour-only durations without leading zeros', () => {
@@ -28,6 +28,31 @@ describe('formatDurationDisplay', () => {
   it('returns dash for empty values', () => {
     expect(formatDurationDisplay('')).toBe('—')
     expect(formatRequirementValue(null)).toBe('—')
+  })
+})
+
+describe('splitDurationDisplay', () => {
+  it('splits hours and minutes onto two lines', () => {
+    expect(splitDurationDisplay('1:30')).toEqual({ primary: '1h', secondary: '30m' })
+    expect(splitDurationDisplay('5:00')).toEqual({ primary: '5h', secondary: null })
+    expect(splitDurationDisplay('0:30')).toEqual({ primary: '30m', secondary: null })
+  })
+})
+
+describe('formatDurationProse', () => {
+  it('formats readable durations for detail views', () => {
+    expect(formatDurationProse('0:01')).toBe('1 min')
+    expect(formatDurationProse('1:00')).toBe('1 h')
+    expect(formatDurationProse('1:30')).toBe('1 h 30 min')
+    expect(formatDurationProse('0:30')).toBe('30 min')
+  })
+})
+
+describe('hasDurationValue', () => {
+  it('detects non-empty durations', () => {
+    expect(hasDurationValue('1:00')).toBe(true)
+    expect(hasDurationValue('')).toBe(false)
+    expect(hasDurationValue('0:00')).toBe(false)
   })
 })
 

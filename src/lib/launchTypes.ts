@@ -1,3 +1,6 @@
+import { dashboardChipStatusStyles, launchTypeChipStyles } from './dashboardChips'
+import { flightSummaryMetaBadgeClass } from './pilotRoles'
+
 export type LaunchTypeOption = {
   label: string
   code: string
@@ -47,6 +50,37 @@ export function launchTypeSelectLabel(value: string): string {
     return `${label} (${code})`
   }
   return trimmed
+}
+
+/** Chip label matching dashboard legality pills, e.g. "Winch". */
+export function launchTypeChipLabel(value: string | null | undefined): string {
+  const trimmed = (value ?? '').trim()
+  if (!trimmed) {
+    return ''
+  }
+  const code = normalizeLaunchTypeCode(trimmed)
+  return CODE_TO_LABEL.get(code) ?? trimmed
+}
+
+export function launchTypeBadgeClass(value: string | null | undefined): string {
+  const code = normalizeLaunchTypeCode(value)
+  if (!code) {
+    return flightSummaryMetaBadgeClass
+  }
+  return launchTypeChipStyles[code] ?? dashboardChipStatusStyles.unknown
+}
+
+/** Badge label for flight summary chips, e.g. "Winch Launch". */
+export function launchTypeBadgeLabel(value: string | null | undefined): string {
+  const label = launchTypeChipLabel(value)
+  if (!label) {
+    return ''
+  }
+  const code = normalizeLaunchTypeCode(value)
+  if (CODE_TO_LABEL.has(code)) {
+    return `${label} Launch`
+  }
+  return label
 }
 
 export function launchTypeSelectOptions(currentValue?: string): LaunchTypeSelectOption[] {

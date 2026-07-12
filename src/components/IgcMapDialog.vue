@@ -264,7 +264,7 @@ onBeforeUnmount(() => {
   <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-x-0 bottom-0 top-14 z-40 flex flex-col bg-white sm:inset-0 sm:top-0 sm:items-center sm:justify-center sm:bg-slate-900/40 sm:p-4"
+      class="fixed inset-x-0 bottom-0 top-14 z-[60] flex flex-col bg-white sm:inset-0 sm:top-0 sm:items-center sm:justify-center sm:bg-slate-900/40 sm:p-4"
       @click.self="emit('close')"
     >
       <div

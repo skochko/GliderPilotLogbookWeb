@@ -2,6 +2,11 @@
 import { ref } from 'vue'
 import type { DeepReadonly } from 'vue'
 import { formatRequirementProgress } from '@/lib/requirementProgress'
+import {
+  dashboardChipBaseClass,
+  dashboardChipStatusDotStyles,
+  dashboardChipStatusStyles,
+} from '@/lib/dashboardChips'
 import type { DashboardLegalityChip, DashboardLegalityGroup, DashboardLegalityRow, DashboardRequirement, DashboardStatusEnum } from '@/types'
 
 defineProps<{
@@ -10,19 +15,8 @@ defineProps<{
 
 const expandedItemId = ref<string | null>(null)
 
-const statusDotStyles: Record<DashboardStatusEnum, string> = {
-  current: 'bg-emerald-500',
-  expiring_soon: 'bg-amber-500',
-  expired: 'bg-red-500',
-  unknown: 'bg-slate-400',
-}
-
-const chipStyles: Record<DashboardStatusEnum, string> = {
-  current: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
-  expiring_soon: 'bg-amber-50 text-amber-900 ring-amber-200',
-  expired: 'bg-red-50 text-red-800 ring-red-200',
-  unknown: 'bg-slate-50 text-slate-600 ring-slate-200',
-}
+const statusDotStyles = dashboardChipStatusDotStyles
+const chipStyles = dashboardChipStatusStyles
 
 function itemKey(groupId: string, itemId: string): string {
   return `${groupId}:${itemId}`
@@ -137,8 +131,7 @@ function statusLabel(status: DashboardStatusEnum): string {
             v-for="chip in group.chips"
             :key="chip.id"
             type="button"
-            class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset"
-            :class="chipStyles[chip.status]"
+            :class="[dashboardChipBaseClass, chipStyles[chip.status]]"
             @click="toggleItem(group.id, chip.id)"
           >
             <span

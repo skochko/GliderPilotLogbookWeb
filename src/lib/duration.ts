@@ -67,6 +67,70 @@ export function formatDurationDisplay(value: string | null | undefined): string 
   return `${remainingMinutes}m`
 }
 
+/** Human-readable duration for detail views, e.g. 1:00 → "1 min", 1:30 → "1 h 30 min". */
+export function formatDurationProse(value: string | null | undefined): string {
+  const trimmed = (value ?? '').trim()
+  if (!trimmed) {
+    return '—'
+  }
+
+  const match = trimmed.match(DURATION_PATTERN)
+  if (!match) {
+    return trimmed
+  }
+
+  const hours = Number(match[1])
+  const minutes = Number(match[2])
+  const seconds = Number(match[3] ?? '0')
+
+  if (hours === 0 && minutes === 0 && seconds === 0) {
+    return '0 min'
+  }
+
+  const roundedMinutes = minutes + (seconds >= 30 ? 1 : 0)
+  const totalHours = hours + Math.floor(roundedMinutes / 60)
+  const remainingMinutes = roundedMinutes % 60
+
+  if (totalHours > 0 && remainingMinutes > 0) {
+    return `${totalHours} h ${remainingMinutes} min`
+  }
+  if (totalHours > 0) {
+    return `${totalHours} h`
+  }
+  if (remainingMinutes === 1) {
+    return '1 min'
+  }
+  return `${remainingMinutes} min`
+}
+
+export function hasDurationValue(value: string | null | undefined): boolean {
+  const trimmed = (value ?? '').trim()
+  if (!trimmed) {
+    return false
+  }
+  if (!isDurationValue(trimmed)) {
+    return true
+  }
+  return parseDurationHours(trimmed) > 0
+}
+
+export function splitDurationDisplay(value: string | null | undefined): {
+  primary: string
+  secondary: string | null
+} {
+  const display = formatDurationDisplay(value)
+  if (display === '—') {
+    return { primary: display, secondary: null }
+  }
+
+  const match = display.match(/^(\d+h)\s+(\d+m)$/)
+  if (match) {
+    return { primary: match[1]!, secondary: match[2]! }
+  }
+
+  return { primary: display, secondary: null }
+}
+
 /** Format decimal flight hours from statistics, e.g. 3.5 → 3h 30m. */
 export function formatDecimalHours(hours: number | null | undefined): string {
   if (hours == null || hours <= 0) {

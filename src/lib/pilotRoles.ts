@@ -2,6 +2,13 @@ import { parseDurationHours } from '@/lib/duration'
 
 export type PilotRole = 'p1' | 'p2' | 'instructor'
 
+export type CrewMemberRole = 'p1' | 'p2'
+
+export type CrewMember = {
+  name: string
+  role: CrewMemberRole
+}
+
 const PILOT_ROLE_LABELS: Record<PilotRole, string> = {
   p1: 'P1',
   p2: 'P2',
@@ -13,6 +20,13 @@ export const pilotRoleStyles: Record<PilotRole, string> = {
   p2: 'bg-violet-100 text-violet-800 ring-violet-200',
   instructor: 'bg-amber-100 text-amber-900 ring-amber-200',
 }
+
+/** Shared pill styling for flight list and detail badges. */
+export const flightSummaryBadgeBaseClass =
+  'inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset'
+
+/** Neutral badge styling for launch type, landings, etc. */
+export const flightSummaryMetaBadgeClass = 'bg-slate-100 text-slate-700 ring-slate-200'
 
 export function pilotRoleLabel(role: PilotRole): string {
   return PILOT_ROLE_LABELS[role]
@@ -41,6 +55,24 @@ export function pilotRolesFromFlight(flight: {
     roles.push('instructor')
   }
   return roles
+}
+
+export function crewMembersFromFlight(flight: {
+  pilot?: string | null
+  copilot?: string | null
+}): CrewMember[] {
+  const members: CrewMember[] = []
+  const pilot = flight.pilot?.trim()
+  const copilot = flight.copilot?.trim()
+
+  if (pilot) {
+    members.push({ name: pilot, role: 'p1' })
+  }
+  if (copilot) {
+    members.push({ name: copilot, role: 'p2' })
+  }
+
+  return members
 }
 
 export function roleCompanionName(

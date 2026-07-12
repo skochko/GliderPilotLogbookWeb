@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatPilotRoles, formatRoleCompanionDisplay, formatRoleCompanionName, pilotRoleLabel, roleCompanionName } from '../pilotRoles'
+import { crewMembersFromFlight, formatPilotRoles, formatRoleCompanionDisplay, formatRoleCompanionName, pilotRoleLabel, roleCompanionName } from '../pilotRoles'
 
 describe('pilotRoles', () => {
   it('maps role codes to labels', () => {
@@ -28,5 +28,18 @@ describe('pilotRoles', () => {
     expect(
       formatRoleCompanionDisplay(['p2'], { pilot: 'This name is way too long', copilot: '' }),
     ).toBe('This name is w...')
+  })
+
+  it('builds crew members from pilot and copilot columns', () => {
+    expect(
+      crewMembersFromFlight({ pilot: 'Rick Wiles', copilot: 'Bob Smith' }),
+    ).toEqual([
+      { name: 'Rick Wiles', role: 'p1' },
+      { name: 'Bob Smith', role: 'p2' },
+    ])
+    expect(crewMembersFromFlight({ pilot: 'Rick Wiles', copilot: '' })).toEqual([
+      { name: 'Rick Wiles', role: 'p1' },
+    ])
+    expect(crewMembersFromFlight({ pilot: '', copilot: '' })).toEqual([])
   })
 })

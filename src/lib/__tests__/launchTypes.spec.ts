@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   isKnownLaunchTypeCode,
+  launchTypeBadgeClass,
+  launchTypeBadgeLabel,
+  launchTypeChipLabel,
   launchTypeSelectLabel,
   launchTypeSelectOptions,
   normalizeLaunchTypeCode,
@@ -32,5 +35,13 @@ describe('launchTypes', () => {
     expect(options[0]).toEqual({ value: 'Car tow', label: 'Car tow' })
     expect(options.some((option) => option.value === 'W')).toBe(true)
     expect(launchTypeSelectOptions('W').some((option) => option.value === 'Car tow')).toBe(false)
+  })
+
+  it('maps launch chip labels and badge classes to dashboard styles', () => {
+    expect(launchTypeChipLabel('W')).toBe('Winch')
+    expect(launchTypeChipLabel('Aerotow')).toBe('Aerotow')
+    expect(launchTypeBadgeClass('W')).toContain('emerald')
+    expect(launchTypeBadgeClass('A')).toContain('sky')
+    expect(launchTypeBadgeLabel('W')).toBe('Winch Launch')
   })
 })

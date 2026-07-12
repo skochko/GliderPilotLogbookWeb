@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import IgcMapDialog from '@/components/IgcMapDialog.vue'
+import FlightImageViewerDialog from '@/components/FlightImageViewerDialog.vue'
 import SpinnerIcon from '@/components/SpinnerIcon.vue'
 import { listFlightMedia } from '@/api/flightMedia'
 import { isApiError } from '@/api/errors'
@@ -23,6 +24,9 @@ const items = ref<FlightMediaItem[]>([])
 const igcMapOpen = ref(false)
 const igcFilename = ref<string | null>(null)
 const igcLabel = ref<string | null>(null)
+const imageViewerOpen = ref(false)
+const imageFilename = ref<string | null>(null)
+const imageLabel = ref<string | null>(null)
 
 const hasItems = computed(() => items.value.length > 0)
 
@@ -39,6 +43,21 @@ function closeIgcMap(): void {
   igcMapOpen.value = false
   igcFilename.value = null
   igcLabel.value = null
+}
+
+function openImageViewer(item: FlightMediaItem): void {
+  if (!props.flightId) {
+    return
+  }
+  imageFilename.value = item.filename
+  imageLabel.value = item.label
+  imageViewerOpen.value = true
+}
+
+function closeImageViewer(): void {
+  imageViewerOpen.value = false
+  imageFilename.value = null
+  imageLabel.value = null
 }
 
 async function loadMedia(): Promise<void> {
@@ -64,6 +83,7 @@ watch(
       void loadMedia()
     } else {
       closeIgcMap()
+      closeImageViewer()
     }
   },
 )
@@ -125,8 +145,16 @@ watch(
                 >
                   View on map
                 </button>
+                <button
+                  v-if="item.type === 'image'"
+                  type="button"
+                  class="text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
+                  @click="openImageViewer(item)"
+                >
+                  View image
+                </button>
                 <a
-                  v-if="item.drive_url"
+                  v-if="item.drive_url && item.type !== 'igc' && item.type !== 'image'"
                   :href="item.drive_url"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -134,7 +162,10 @@ watch(
                 >
                   Open in Drive
                 </a>
-                <span v-else-if="item.type !== 'igc'" class="text-xs text-slate-400">Not found on Drive</span>
+                <span
+                  v-else-if="item.type !== 'igc' && item.type !== 'image'"
+                  class="text-xs text-slate-400"
+                >Not found on Drive</span>
               </div>
             </div>
           </li>
@@ -149,5 +180,13 @@ watch(
     :filename="igcFilename"
     :label="igcLabel"
     @close="closeIgcMap"
+  />
+
+  <FlightImageViewerDialog
+    :open="imageViewerOpen"
+    :flight-id="flightId"
+    :filename="imageFilename"
+    :label="imageLabel"
+    @close="closeImageViewer"
   />
 </template>

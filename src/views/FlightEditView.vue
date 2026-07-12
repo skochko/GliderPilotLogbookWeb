@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import ActionButton from '@/components/ActionButton.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import FlightForm from '@/components/FlightForm.vue'
 import FlightMediaSection from '@/components/FlightMediaSection.vue'
@@ -12,12 +14,13 @@ import type { Flight, FlightPatchRequest } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
-const { get, update, mutating, error, flights, list } = useFlights()
+const { get, update, remove, mutating, error, flights, list } = useFlights()
 
 const flight = ref<Flight | null>(null)
 const fieldErrors = ref<Record<string, string[]>>({})
 const submitError = ref<string | null>(null)
 const pageReady = ref(false)
+const deleteOpen = ref(false)
 
 const flightId = decodeFlightId(route.params.id as string)
 
@@ -47,6 +50,18 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
     } else {
       submitError.value = 'Failed to update flight'
     }
+  }
+}
+
+async function confirmDelete(): Promise<void> {
+  if (mutating.value) {
+    return
+  }
+
+  const ok = await remove(flightId)
+  if (ok) {
+    deleteOpen.value = false
+    await router.push('/flights')
   }
 }
 </script>
@@ -82,7 +97,22 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
           :media="flight.media"
           @updated="flight = $event"
         />
+        <div class="mt-6 border-t border-slate-200 pt-4">
+          <ActionButton variant="danger" :disabled="mutating" @click="deleteOpen = true">
+            Delete flight
+          </ActionButton>
+        </div>
       </div>
     </template>
+
+    <ConfirmDialog
+      :open="deleteOpen"
+      title="Delete flight"
+      message="This will permanently remove the flight row from your spreadsheet."
+      confirm-label="Delete"
+      :busy="mutating"
+      @confirm="confirmDelete"
+      @cancel="deleteOpen = false"
+    />
   </div>
 </template>

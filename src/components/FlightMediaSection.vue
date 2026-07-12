@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import IgcMapDialog from '@/components/IgcMapDialog.vue'
+import FlightImageViewerDialog from '@/components/FlightImageViewerDialog.vue'
 import UploadProgressBar from '@/components/UploadProgressBar.vue'
 import {
   attachFlightMediaFromDrive,
@@ -35,6 +36,9 @@ const uploadProgress = ref<MediaUploadProgress | null>(null)
 const igcMapOpen = ref(false)
 const igcFilename = ref<string | null>(null)
 const igcLabel = ref<string | null>(null)
+const imageViewerOpen = ref(false)
+const imageFilename = ref<string | null>(null)
+const imageLabel = ref<string | null>(null)
 
 const mediaCount = computed(() => props.media?.length ?? 0)
 const canAddMore = computed(() => mediaCount.value < FLIGHT_MEDIA_MAX_FILES)
@@ -123,6 +127,18 @@ function closeIgcMap(): void {
   igcFilename.value = null
   igcLabel.value = null
 }
+
+function openImageViewer(item: FlightMediaItem): void {
+  imageFilename.value = item.filename
+  imageLabel.value = item.label
+  imageViewerOpen.value = true
+}
+
+function closeImageViewer(): void {
+  imageViewerOpen.value = false
+  imageFilename.value = null
+  imageLabel.value = null
+}
 </script>
 
 <template>
@@ -158,14 +174,24 @@ function closeIgcMap(): void {
           <span class="text-slate-400"> · </span>
           <span class="uppercase text-xs tracking-wide text-slate-500">{{ item.type }}</span>
         </div>
-        <button
-          v-if="item.type === 'igc'"
-          type="button"
-          class="shrink-0 text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
-          @click="openIgcMap(item)"
-        >
-          View on map
-        </button>
+        <div class="flex shrink-0 items-center gap-1">
+          <button
+            v-if="item.type === 'igc'"
+            type="button"
+            class="shrink-0 text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
+            @click="openIgcMap(item)"
+          >
+            View on map
+          </button>
+          <button
+            v-if="item.type === 'image'"
+            type="button"
+            class="shrink-0 text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
+            @click="openImageViewer(item)"
+          >
+            View image
+          </button>
+        </div>
       </li>
     </ul>
 
@@ -208,6 +234,14 @@ function closeIgcMap(): void {
       :filename="igcFilename"
       :label="igcLabel"
       @close="closeIgcMap"
+    />
+
+    <FlightImageViewerDialog
+      :open="imageViewerOpen"
+      :flight-id="flightId"
+      :filename="imageFilename"
+      :label="imageLabel"
+      @close="closeImageViewer"
     />
   </section>
 </template>

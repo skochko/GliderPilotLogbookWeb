@@ -1,26 +1,28 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
-import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
+import FlightDetailDialog from '@/components/FlightDetailDialog.vue'
+import FlightDurationCell from '@/components/FlightDurationCell.vue'
 import FlightMediaDialog from '@/components/FlightMediaDialog.vue'
+import FlightRowActions from '@/components/FlightRowActions.vue'
 import IgcMapDialog from '@/components/IgcMapDialog.vue'
+import IgcPickDialog from '@/components/IgcPickDialog.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import RemarksDialog from '@/components/RemarksDialog.vue'
 import SpinnerIcon from '@/components/SpinnerIcon.vue'
 import { useFlights } from '@/composables/useFlights'
 import { useDisplaySettings } from '@/composables/useDisplaySettings'
-import { formatDayNumber, groupByMonth } from '@/lib/dates'
-import { formatDurationDisplay } from '@/lib/duration'
-import { encodeFlightId } from '@/lib/flightId'
+import { groupByMonth, formatDayNumber } from '@/lib/dates'
 import { pilotRoleLabel, pilotRoleStyles, pilotRolesFromFlight, formatRoleCompanionDisplay, roleCompanionName } from '@/lib/pilotRoles'
 import {
-  firstIgcAttachment,
   hasIgcAttachment,
-  hasOtherMediaAttachments,
+  hasUserRemarks,
+  igcAttachments,
+  mediaListIcon,
+  userRemarksText,
 } from '@/lib/mediaTags'
-import { hasRemarks, truncateText } from '@/lib/text'
-import type { Flight } from '@/types'
+import { truncateText } from '@/lib/text'
+import type { Flight, FlightMediaItem } from '@/types'
 
 const {
   flights,
@@ -28,25 +30,26 @@ const {
   loadingMore,
   hasMore,
   listInitialized,
-  mutating,
   error,
   list,
   loadMore,
-  remove,
 } = useFlights()
 const { displaySettings, ensureLoaded } = useDisplaySettings()
 
-const deleteTargetId = ref<string | null>(null)
-const deleteOpen = ref(false)
 const remarksOpen = ref(false)
 const remarksText = ref('')
 const remarksFlightId = ref<string | null>(null)
+const detailOpen = ref(false)
+const detailFlight = ref<Flight | null>(null)
 const mediaOpen = ref(false)
 const mediaFlightId = ref<string | null>(null)
 const igcMapOpen = ref(false)
 const igcFlightId = ref<string | null>(null)
 const igcFilename = ref<string | null>(null)
 const igcLabel = ref<string | null>(null)
+const igcPickOpen = ref(false)
+const igcPickFlightId = ref<string | null>(null)
+const igcPickItems = ref<FlightMediaItem[]>([])
 const loadMoreSentinel = ref<HTMLElement | null>(null)
 
 let loadMoreObserver: IntersectionObserver | null = null
@@ -71,9 +74,9 @@ function rowClass(flight: Flight, index: number): string {
   }
   if (hasIgcAttachment(flight)) {
     classes.push('border-l-2 border-l-emerald-400')
-  } else if (hasOtherMediaAttachments(flight)) {
+  } else if (mediaListIcon(flight)) {
     classes.push('border-l-2 border-l-sky-400')
-  } else if (hasRemarks(flight.remarks)) {
+  } else if (hasUserRemarks(flight.remarks)) {
     classes.push('border-l-2 border-l-amber-400')
   }
   return classes.join(' ')
@@ -84,15 +87,43 @@ function openMedia(flight: Flight): void {
   mediaOpen.value = true
 }
 
-function openIgcMap(flight: Flight): void {
-  const igc = firstIgcAttachment(flight)
-  if (!igc) {
+function openIgcMapForItem(flightId: string, item: FlightMediaItem): void {
+  igcFlightId.value = flightId
+  igcFilename.value = item.filename
+  igcLabel.value = item.label
+  igcMapOpen.value = true
+}
+
+function openIgcPicker(flight: Flight): void {
+  const igcs = igcAttachments(flight)
+  if (igcs.length === 0) {
     return
   }
-  igcFlightId.value = flight.id
-  igcFilename.value = igc.filename
-  igcLabel.value = igc.label
-  igcMapOpen.value = true
+  if (igcs.length === 1) {
+    openIgcMapForItem(flight.id, igcs[0]!)
+    return
+  }
+  igcPickFlightId.value = flight.id
+  igcPickItems.value = igcs
+  igcPickOpen.value = true
+}
+
+function openIgcMap(flight: Flight): void {
+  openIgcPicker(flight)
+}
+
+function onIgcPicked(item: FlightMediaItem): void {
+  if (!igcPickFlightId.value) {
+    return
+  }
+  openIgcMapForItem(igcPickFlightId.value, item)
+  closeIgcPick()
+}
+
+function closeIgcPick(): void {
+  igcPickOpen.value = false
+  igcPickItems.value = []
+  igcPickFlightId.value = null
 }
 
 function closeIgcMap(): void {
@@ -102,24 +133,15 @@ function closeIgcMap(): void {
   igcLabel.value = null
 }
 
+function openDetail(flight: Flight): void {
+  detailFlight.value = flight
+  detailOpen.value = true
+}
+
 function openRemarks(flight: Flight): void {
-  remarksText.value = flight.remarks.trim()
+  remarksText.value = userRemarksText(flight.remarks)
   remarksFlightId.value = flight.id
   remarksOpen.value = true
-}
-
-function askDelete(id: string): void {
-  deleteTargetId.value = id
-  deleteOpen.value = true
-}
-
-async function confirmDelete(): Promise<void> {
-  if (!deleteTargetId.value || mutating.value) return
-  const ok = await remove(deleteTargetId.value)
-  if (ok) {
-    deleteOpen.value = false
-    deleteTargetId.value = null
-  }
 }
 
 function bindLoadMoreObserver(): void {
@@ -196,19 +218,19 @@ watch(
         <table class="min-w-full text-sm">
           <thead class="bg-[var(--sheet-header-color)] text-left text-slate-700">
             <tr>
-              <th class="w-12 px-2 py-2 text-center font-medium sm:px-4">Day</th>
-              <th class="px-3 py-2 font-medium">Role</th>
-              <th class="px-4 py-2 font-medium">Glider</th>
-              <th class="hidden px-4 py-2 font-medium sm:table-cell">Launch</th>
-              <th class="px-4 py-2 font-medium">Time</th>
-              <th class="hidden max-w-[12rem] px-4 py-2 font-medium lg:table-cell">Remarks</th>
-              <th class="w-20 px-2 py-2 text-center font-medium">Actions</th>
+              <th class="w-10 px-2 py-2 text-center font-medium">Day</th>
+              <th class="px-2 py-2 font-medium sm:px-3">Role</th>
+              <th class="px-2 py-2 font-medium sm:px-3">Glider</th>
+              <th class="hidden px-3 py-2 font-medium sm:table-cell">Launch</th>
+              <th class="px-2 py-2 text-center font-medium sm:px-3">Time</th>
+              <th class="hidden max-w-[12rem] px-3 py-2 font-medium lg:table-cell">Remarks</th>
+              <th class="px-1 py-2 text-center font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
             <template v-for="group in flightGroups" :key="group.key">
               <tr class="border-t border-slate-200 bg-slate-100">
-                <td colspan="7" class="px-4 py-1.5 text-sm font-semibold text-slate-700">
+                <td colspan="7" class="px-2 py-1 text-sm font-semibold text-slate-700 sm:px-4 sm:py-1.5">
                   {{ group.label }}
                 </td>
               </tr>
@@ -218,26 +240,13 @@ watch(
                 class="border-t border-slate-100"
                 :class="rowClass(flight, index)"
               >
-                <td class="relative w-12 px-2 py-2 text-center font-medium tabular-nums text-slate-900 sm:px-4">
-                  <button
-                    v-if="hasRemarks(flight.remarks)"
-                    type="button"
-                    class="absolute left-0 top-1/2 -translate-y-1/2 rounded p-1 text-amber-600 hover:bg-amber-50 lg:hidden"
-                    aria-label="View remarks"
-                    @click.stop="openRemarks(flight)"
-                  >
-                    <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path
-                        d="M4 4h16a1 1 0 011 1v11a1 1 0 01-1 1H8l-4 3V5a1 1 0 011-1z"
-                      />
-                    </svg>
-                  </button>
+                <td class="px-2 py-2 text-center font-medium tabular-nums text-slate-900">
                   {{ formatDayNumber(flight.date) }}
                 </td>
-                <td class="px-3 py-2">
+                <td class="max-w-[7.5rem] px-2 py-2 sm:max-w-none sm:px-3">
                   <div
                     v-if="pilotRolesFromFlight(flight).length"
-                    class="inline-flex flex-nowrap items-center gap-1"
+                    class="inline-flex max-w-full flex-nowrap items-center gap-0.5"
                   >
                     <span
                       v-for="role in pilotRolesFromFlight(flight)"
@@ -257,105 +266,36 @@ watch(
                     {{ formatRoleCompanionDisplay(pilotRolesFromFlight(flight), flight) }}
                   </p>
                 </td>
-                <td class="max-w-[8rem] px-4 py-2 sm:max-w-none">
+                <td class="max-w-[7rem] px-2 py-2 sm:max-w-none sm:px-3">
                   <p class="truncate text-slate-900">{{ flight.glider }}</p>
                   <p v-if="flight.registration?.trim()" class="mt-0.5 truncate text-xs text-slate-500">
                     {{ flight.registration.trim() }}
                   </p>
                 </td>
-                <td class="hidden px-4 py-2 sm:table-cell">{{ flight.launch_type || '—' }}</td>
-                <td class="px-4 py-2 whitespace-nowrap">{{ formatDurationDisplay(flight.flight_time) }}</td>
-                <td class="hidden max-w-[12rem] px-4 py-2 lg:table-cell">
+                <td class="hidden px-3 py-2 sm:table-cell">{{ flight.launch_type || '—' }}</td>
+                <td class="px-2 py-2 text-center tabular-nums sm:px-3">
+                  <FlightDurationCell :value="flight.flight_time" />
+                </td>
+                <td class="hidden max-w-[12rem] px-3 py-2 lg:table-cell">
                   <button
-                    v-if="hasRemarks(flight.remarks)"
+                    v-if="hasUserRemarks(flight.remarks)"
                     type="button"
                     class="block max-w-full truncate text-left text-sm text-amber-900 hover:text-amber-700 hover:underline"
-                    :title="flight.remarks.trim()"
+                    :title="userRemarksText(flight.remarks)"
                     @click="openRemarks(flight)"
                   >
-                    {{ truncateText(flight.remarks, 48) }}
+                    {{ truncateText(userRemarksText(flight.remarks), 48) }}
                   </button>
                   <span v-else class="text-slate-300">—</span>
                 </td>
-                <td class="px-2 py-2">
-                  <div class="flex items-center justify-center gap-1">
-                    <button
-                      v-if="hasIgcAttachment(flight)"
-                      type="button"
-                      class="inline-flex rounded-md p-1.5 text-emerald-600 transition hover:bg-emerald-50 hover:text-emerald-800"
-                      title="View IGC track"
-                      aria-label="View IGC track"
-                      @click.stop="openIgcMap(flight)"
-                    >
-                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      v-if="hasOtherMediaAttachments(flight)"
-                      type="button"
-                      class="inline-flex rounded-md p-1.5 text-sky-600 transition hover:bg-sky-50 hover:text-sky-800"
-                      title="View media"
-                      aria-label="View media"
-                      @click.stop="openMedia(flight)"
-                    >
-                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="m15 10 4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </button>
-                    <RouterLink
-                      :to="`/flights/${encodeFlightId(flight.id)}`"
-                      class="inline-flex rounded-md p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-sky-700"
-                      title="Edit"
-                      aria-label="Edit flight"
-                    >
-                      <svg
-                        class="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        aria-hidden="true"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-                        />
-                      </svg>
-                    </RouterLink>
-                    <button
-                      type="button"
-                      class="inline-flex rounded-md p-1.5 text-slate-500 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-                      :disabled="mutating"
-                      title="Delete"
-                      aria-label="Delete flight"
-                      @click="askDelete(flight.id)"
-                    >
-                      <svg
-                        class="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        aria-hidden="true"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-                        />
-                      </svg>
-                    </button>
-                  </div>
+                <td class="px-0.5 py-2 sm:px-1">
+                  <FlightRowActions
+                    :flight="flight"
+                    @open-view="openDetail(flight)"
+                    @open-igc="openIgcMap(flight)"
+                    @open-remarks="openRemarks(flight)"
+                    @open-media="openMedia(flight)"
+                  />
                 </td>
               </tr>
             </template>
@@ -381,14 +321,10 @@ watch(
       </div>
     </div>
 
-    <ConfirmDialog
-      :open="deleteOpen"
-      title="Delete flight"
-      message="This will permanently remove the flight row from your spreadsheet."
-      confirm-label="Delete"
-      :busy="mutating"
-      @confirm="confirmDelete"
-      @cancel="deleteOpen = false"
+    <FlightDetailDialog
+      :open="detailOpen"
+      :flight="detailFlight"
+      @close="detailOpen = false"
     />
 
     <RemarksDialog
@@ -402,6 +338,13 @@ watch(
       :open="mediaOpen"
       :flight-id="mediaFlightId"
       @close="mediaOpen = false"
+    />
+
+    <IgcPickDialog
+      :open="igcPickOpen"
+      :items="igcPickItems"
+      @close="closeIgcPick"
+      @select="onIgcPicked"
     />
 
     <IgcMapDialog

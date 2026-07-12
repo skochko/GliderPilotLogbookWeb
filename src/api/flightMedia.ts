@@ -11,6 +11,21 @@ export type MediaUploadProgress = {
   percent: number | null
 }
 
+export function encodeMediaFilename(filename: string): string {
+  return filename
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/')
+}
+
+export function flightMediaContentPath(flightId: string, filename: string): string {
+  return `/flights/${encodeFlightId(flightId)}/media/${encodeMediaFilename(filename)}`
+}
+
+export function flightMediaContentUrl(flightId: string, filename: string): string {
+  return `${API}${flightMediaContentPath(flightId, filename)}`
+}
+
 export function listFlightMedia(flightId: string): Promise<FlightMediaItem[]> {
   return apiJson<FlightMediaItem[]>(`/flights/${encodeFlightId(flightId)}/media`)
 }
@@ -118,13 +133,17 @@ export function attachFlightMediaFromDrive(
 }
 
 export async function fetchFlightIgcContent(flightId: string, filename: string): Promise<string> {
-  const encodedFilename = filename
-    .split('/')
-    .map((segment) => encodeURIComponent(segment))
-    .join('/')
-  const res = await apiFetch(`/flights/${encodeFlightId(flightId)}/media/${encodedFilename}`)
+  const res = await apiFetch(flightMediaContentPath(flightId, filename))
   if (!res.ok) {
     throw await parseApiError(res)
   }
   return res.text()
+}
+
+export async function fetchFlightMediaBlob(flightId: string, filename: string): Promise<Blob> {
+  const res = await apiFetch(flightMediaContentPath(flightId, filename))
+  if (!res.ok) {
+    throw await parseApiError(res)
+  }
+  return res.blob()
 }
