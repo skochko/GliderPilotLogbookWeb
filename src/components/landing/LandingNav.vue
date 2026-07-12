@@ -78,7 +78,8 @@ onUnmounted(() => {
           to="/login"
           class="inline-flex items-center justify-center rounded-lg bg-landing-primary px-3.5 py-2 text-sm font-medium text-white transition hover:bg-landing-primary-hover"
         >
-          Get started
+          <span class="sm:hidden">Sign in</span>
+          <span class="hidden sm:inline">Get started</span>
         </RouterLink>
         <button
           type="button"
