@@ -327,6 +327,108 @@ export function buildWeeklyChartSeries(
   return series
 }
 
+/** Build monthly buckets for every month in an inclusive ISO date range. */
+export function buildPeriodRangeMonthlySeries(
+  items: readonly MonthlyFlightStats[],
+  from: string,
+  to: string,
+): ChartPeriodStats[] {
+  const start = parseMonthKey(from.slice(0, 7))
+  const end = parseMonthKey(to.slice(0, 7))
+  if (!start || !end) {
+    return items.map((item) => ({
+      key: item.month,
+      count: item.count,
+      hours: item.hours,
+    }))
+  }
+
+  const byMonth = new Map(items.map((item) => [item.month, item]))
+  const series: ChartPeriodStats[] = []
+  let current = start
+
+  while (true) {
+    const key = toMonthKey(current)
+    const existing = byMonth.get(key)
+    series.push({
+      key,
+      count: existing?.count ?? 0,
+      hours: existing?.hours ?? 0,
+    })
+    if (current.year === end.year && current.month === end.month) {
+      break
+    }
+    current = shiftMonth(current.year, current.month, 1)
+  }
+
+  return series
+}
+
+/** Build weekly buckets for every ISO week overlapping an inclusive date range. */
+export function buildPeriodRangeWeeklySeries(
+  items: readonly WeeklyFlightStats[],
+  from: string,
+  to: string,
+): ChartPeriodStats[] {
+  const startDate = parseChartIsoDate(from)
+  const endDate = parseChartIsoDate(to)
+  if (!startDate || !endDate) {
+    return items.map((item) => ({
+      key: item.week,
+      count: item.count,
+      hours: item.hours,
+    }))
+  }
+
+  const byWeek = new Map(items.map((item) => [item.week, item]))
+  let current = isoWeekFromDate(startDate)
+  const end = isoWeekFromDate(endDate)
+  const series: ChartPeriodStats[] = []
+
+  while (true) {
+    const key = toWeekKey(current)
+    const existing = byWeek.get(key)
+    series.push({
+      key,
+      count: existing?.count ?? 0,
+      hours: existing?.hours ?? 0,
+    })
+    if (current.year === end.year && current.week === end.week) {
+      break
+    }
+    current = shiftWeek(current.year, current.week, 1)
+  }
+
+  return series
+}
+
+export function formatMonthDetailLabel(monthKey: string): string {
+  const parsed = parseMonthKey(monthKey)
+  if (!parsed) {
+    return monthKey
+  }
+  return `${formatMonthShortLabel(monthKey)} ${parsed.year}`
+}
+
+function parseChartIsoDate(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim())
+  if (!match) {
+    return null
+  }
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const parsed = new Date(year, month - 1, day)
+  if (
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) {
+    return null
+  }
+  return parsed
+}
+
 /** Build a fixed-length monthly series ending at the latest month in the data. */
 export function buildMonthlyChartSeries(
   items: readonly MonthlyFlightStats[],

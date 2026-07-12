@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildMonthlyChartSeries,
+  buildPeriodRangeMonthlySeries,
+  buildPeriodRangeWeeklySeries,
   buildWeeklyChartSeries,
   buildYearChartSeries,
   defaultChartYear,
   formatChartHours,
+  formatMonthDetailLabel,
   formatMonthShortLabel,
   formatWeekShortLabel,
   formatWeekWindowChipLabel,
@@ -17,6 +20,46 @@ describe('formatMonthShortLabel', () => {
   it('returns a three-letter month label', () => {
     expect(formatMonthShortLabel('2025-11')).toBe('Nov')
     expect(formatMonthShortLabel('2025-01')).toBe('Jan')
+  })
+})
+
+describe('buildPeriodRangeMonthlySeries', () => {
+  it('fills every month in the selected period', () => {
+    const series = buildPeriodRangeMonthlySeries(
+      [
+        { month: '2026-06', count: 2, hours: 3 },
+        { month: '2026-07', count: 1, hours: 1.5 },
+      ],
+      '2026-06-15',
+      '2026-07-12',
+    )
+
+    expect(series).toEqual([
+      { key: '2026-06', count: 2, hours: 3 },
+      { key: '2026-07', count: 1, hours: 1.5 },
+    ])
+  })
+})
+
+describe('buildPeriodRangeWeeklySeries', () => {
+  it('fills every ISO week overlapping the selected period', () => {
+    const series = buildPeriodRangeWeeklySeries(
+      [
+        { week: '2026-W27', count: 1, hours: 1 },
+        { week: '2026-W28', count: 2, hours: 2 },
+      ],
+      '2026-07-01',
+      '2026-07-12',
+    )
+
+    expect(series.map((item) => item.key)).toEqual(['2026-W27', '2026-W28'])
+    expect(series[1]).toEqual({ key: '2026-W28', count: 2, hours: 2 })
+  })
+})
+
+describe('formatMonthDetailLabel', () => {
+  it('includes the year in the detail label', () => {
+    expect(formatMonthDetailLabel('2026-07')).toBe('Jul 2026')
   })
 })
 

@@ -5,12 +5,15 @@ import {
   axisTicks,
   buildWeeklyChartSeries,
   buildYearChartSeries,
+  buildPeriodRangeMonthlySeries,
+  buildPeriodRangeWeeklySeries,
   chartPeriodLabel,
   CHART_PERIOD_OPTIONS,
   defaultChartYear,
   defaultWeekAnchorForYear,
   formatChartHours,
   formatMonthShortLabel,
+  formatMonthDetailLabel,
   formatWeekDetailLabel,
   formatWeekShortLabel,
   formatWeekWindowChipLabel,
@@ -28,6 +31,9 @@ const props = defineProps<{
   monthlyData: DeepReadonly<MonthlyFlightStats[]>
   weeklyData: DeepReadonly<WeeklyFlightStats[]>
   defaultPeriodMode?: ChartPeriodMode
+  fixedPeriod?: boolean
+  periodFrom?: string
+  periodTo?: string
 }>()
 
 const CHART_WIDTH = 560
@@ -47,7 +53,7 @@ const weekAnchorStripRef = ref<HTMLElement | null>(null)
 const availableYears = computed(() =>
   listAvailableChartYearsCombined(props.monthlyData, props.weeklyData),
 )
-const showYearRow = computed(() => availableYears.value.length > 0)
+const showYearRow = computed(() => !props.fixedPeriod && availableYears.value.length > 0)
 const isWeekMode = computed(() => periodMode.value !== 'month')
 const weekCount = computed(() => weekCountForPeriod(periodMode.value))
 
@@ -61,6 +67,15 @@ const weekAnchorOptions = computed(() =>
 )
 
 const series = computed((): ChartPeriodStats[] => {
+  if (props.fixedPeriod) {
+    const from = props.periodFrom ?? ''
+    const to = props.periodTo ?? ''
+    if (periodMode.value === 'month') {
+      return buildPeriodRangeMonthlySeries(props.monthlyData, from, to)
+    }
+    return buildPeriodRangeWeeklySeries(props.weeklyData, from, to)
+  }
+
   if (periodMode.value === 'month') {
     return buildYearChartSeries(props.monthlyData, selectedYear.value)
   }
@@ -134,7 +149,9 @@ const bars = computed(() => {
           : formatWeekShortLabel(item.key),
       detailLabel:
         periodMode.value === 'month'
-          ? `${formatMonthShortLabel(item.key)} ${selectedYear.value}`
+          ? props.fixedPeriod
+            ? formatMonthDetailLabel(item.key)
+            : `${formatMonthShortLabel(item.key)} ${selectedYear.value}`
           : formatWeekDetailLabel(item.key),
       count: item.count,
       hoursLabel: formatChartHours(item.hours),
@@ -174,6 +191,12 @@ const selectedBar = computed(() => {
 })
 
 const chartAriaLabel = computed(() => {
+  if (props.fixedPeriod) {
+    if (periodMode.value === 'month') {
+      return 'Monthly flight hours and flight count chart for the selected period'
+    }
+    return 'Weekly flight hours and flight count chart for the selected period'
+  }
   if (periodMode.value === 'month') {
     return `Monthly flight hours and flight count chart for ${selectedYear.value}`
   }
@@ -240,9 +263,19 @@ onMounted(() => {
 })
 
 watch(
+  () => [props.fixedPeriod, props.defaultPeriodMode, props.periodFrom, props.periodTo] as const,
+  () => {
+    if (props.fixedPeriod && props.defaultPeriodMode) {
+      periodMode.value = props.defaultPeriodMode
+    }
+  },
+  { immediate: true },
+)
+
+watch(
   () => props.defaultPeriodMode,
   (mode) => {
-    if (mode) {
+    if (!props.fixedPeriod && mode) {
       periodMode.value = mode
     }
   },
@@ -258,7 +291,10 @@ onUnmounted(() => {
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h2 class="flex items-center gap-1 font-semibold text-slate-900">
         <span>Activity by</span>
-        <span ref="periodMenuRef" class="relative inline-flex">
+        <span v-if="fixedPeriod" class="font-semibold text-slate-900">
+          {{ chartPeriodLabel(periodMode) }}
+        </span>
+        <span v-else ref="periodMenuRef" class="relative inline-flex">
           <button
             type="button"
             class="inline-flex items-center gap-0.5 rounded font-semibold text-slate-900 transition hover:text-slate-700"

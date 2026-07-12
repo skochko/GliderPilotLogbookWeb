@@ -21,6 +21,7 @@ export const STATISTICS_PRESET_OPTIONS: Array<{ id: StatisticsPresetId; label: s
   { id: 'last_month', label: 'Last month' },
   { id: 'last_90_days', label: 'Last 90 days' },
   { id: 'year_to_date', label: 'Year to date' },
+  { id: 'custom', label: 'Custom' },
 ]
 
 export function formatIsoDate(date: Date): string {

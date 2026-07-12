@@ -102,8 +102,11 @@ watch(
           :monthly-data="statistics.flights_by_month ?? []"
           :weekly-data="statistics.flights_by_week ?? []"
           :default-period-mode="chartMode"
+          fixed-period
+          :period-from="period.from"
+          :period-to="period.to"
         />
-        <DashboardFlyingTotals :statistics="statistics" />
+        <DashboardFlyingTotals class="hidden sm:block" :statistics="statistics" />
         <StatisticsBreakdownTables :statistics="statistics" />
       </template>
     </template>

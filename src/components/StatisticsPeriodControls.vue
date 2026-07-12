@@ -37,7 +37,10 @@ const emit = defineEmits<{
       </button>
     </div>
 
-    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+    <div
+      class="mt-4 gap-4 sm:grid-cols-2"
+      :class="preset === 'custom' ? 'grid grid-cols-1' : 'hidden sm:grid'"
+    >
       <label class="block text-sm">
         <span class="font-medium text-slate-700">From</span>
         <input
