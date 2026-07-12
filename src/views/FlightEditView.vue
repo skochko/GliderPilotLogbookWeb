@@ -11,17 +11,22 @@ import type { Flight, FlightPatchRequest } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
-const { get, update, detailLoading, detailInitialized, mutating, error, flights, list } = useFlights()
+const { get, update, mutating, error, flights, list } = useFlights()
 
 const flight = ref<Flight | null>(null)
 const fieldErrors = ref<Record<string, string[]>>({})
 const submitError = ref<string | null>(null)
+const pageReady = ref(false)
 
 const flightId = decodeFlightId(route.params.id as string)
 
-void Promise.all([get(flightId), list()]).then(([result]) => {
-  flight.value = result
-})
+void Promise.all([get(flightId), list()])
+  .then(([result]) => {
+    flight.value = result
+  })
+  .finally(() => {
+    pageReady.value = true
+  })
 
 async function onSubmit(payload: Record<string, unknown>): Promise<void> {
   if (mutating.value) return
@@ -52,9 +57,9 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
       <p class="mt-1 text-slate-600">Update flight details in your logbook.</p>
     </div>
 
-    <LoadingState v-if="!detailInitialized" />
+    <LoadingState v-if="!pageReady" label="Loading flight details…" />
     <div
-      v-else-if="detailInitialized && !flight"
+      v-else-if="!flight"
       class="rounded-lg border border-slate-200 bg-white p-6 text-slate-600"
     >
       Flight not found.
