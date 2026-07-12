@@ -5,13 +5,13 @@ import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { listOrganizations, type OrganizationListItem } from '@/api/organizations'
 import { useAutomation } from '@/composables/useAutomation'
+import { useDisplaySettings } from '@/composables/useDisplaySettings'
 import { useFlashMessage } from '@/composables/useFlashMessage'
-import { useSettings } from '@/composables/useSettings'
 import { automationStatusLabel, automationStatusStyles } from '@/lib/automationStatus'
 import { formatDateTime } from '@/lib/dates'
 
 const { requests, loading, initialized, mutating, error, fetch, create } = useAutomation()
-const { settings, fetch: fetchSettings } = useSettings()
+const { displaySettings, ensureLoaded } = useDisplaySettings()
 const { show } = useFlashMessage()
 
 const organizations = ref<OrganizationListItem[]>([])
@@ -34,9 +34,9 @@ const canCreateRequest = computed(
 )
 
 onMounted(async () => {
-  await Promise.all([fetch(), loadOrganizations(), fetchSettings()])
-  if (settings.value?.pilot_name) {
-    pilotName.value = settings.value.pilot_name
+  await Promise.all([fetch(), loadOrganizations(), ensureLoaded()])
+  if (displaySettings.value?.pilot_name) {
+    pilotName.value = displaySettings.value.pilot_name
   }
 })
 

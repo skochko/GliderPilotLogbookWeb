@@ -13,6 +13,7 @@ export interface SheetDisplaySettings {
   sort_direction: string
   zebra_color: string
   header_color: string
+  pilot_name: string
 }
 
 export type PilotPrivilege = 'pilot' | 'bi' | 'fi'

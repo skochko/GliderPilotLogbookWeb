@@ -28,6 +28,7 @@ export function applyDisplaySettingsFromSheet(settings: SheetSettings): void {
     sort_direction: settings.sort_direction,
     zebra_color: settings.zebra_color,
     header_color: settings.header_color,
+    pilot_name: settings.pilot_name ?? '',
   })
 }
 
