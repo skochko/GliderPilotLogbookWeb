@@ -15,7 +15,7 @@ async function fetchCsrfToken(): Promise<string> {
   return data.csrfToken
 }
 
-async function getCsrfToken(): Promise<string> {
+export async function getCsrfToken(): Promise<string> {
   if (!csrfTokenPromise) {
     csrfTokenPromise = fetchCsrfToken().finally(() => {
       csrfTokenPromise = null
@@ -36,7 +36,7 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
     headers.set('X-CSRFToken', await getCsrfToken())
   }
 
-  if (init.body && !headers.has('Content-Type')) {
+  if (init.body && !headers.has('Content-Type') && !(init.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json')
   }
 

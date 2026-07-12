@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import FlightForm from '@/components/FlightForm.vue'
+import FlightMediaSection from '@/components/FlightMediaSection.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { isApiError } from '@/api/errors'
 import { useFlights } from '@/composables/useFlights'
@@ -75,6 +76,11 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
           :saving="mutating"
           @submit="onSubmit"
           @cancel="router.push('/flights')"
+        />
+        <FlightMediaSection
+          :flight-id="flightId"
+          :media="flight.media"
+          @updated="flight = $event"
         />
       </div>
     </template>

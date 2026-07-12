@@ -8,9 +8,11 @@ declare global {
     google?: {
       picker: {
         Action: { PICKED: string; CANCEL: string; LOADED: string; ERROR: string }
-        ViewId: { SPREADSHEETS: string }
+        ViewId: { SPREADSHEETS: string; DOCS: string }
         DocsView: new (viewId?: string) => {
           setMimeTypes: (mime: string) => unknown
+          setIncludeFolders: (enabled: boolean) => unknown
+          setParent: (folderId: string) => unknown
         }
         PickerBuilder: new () => {
           addView: (view: unknown) => PickerBuilderInstance
@@ -166,5 +168,74 @@ export function useGooglePicker() {
     })
   }
 
-  return { pickSpreadsheet }
+  async function pickDriveFile(parentFolderId?: string): Promise<{ id: string; name: string } | null> {
+    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY as string
+    if (!apiKey) {
+      throw new Error('VITE_GOOGLE_API_KEY is not configured')
+    }
+
+    await ensureGapiLoaded()
+
+    const accessToken = await fetchGoogleAccessToken()
+    const google = window.google
+    if (!google?.picker) {
+      throw new Error('Google Picker API not available')
+    }
+
+    return new Promise((resolve, reject) => {
+      let settled = false
+
+      function finish(result: { id: string; name: string } | null): void {
+        if (settled) return
+        settled = true
+        resolve(result)
+      }
+
+      function fail(message: string): void {
+        if (settled) return
+        settled = true
+        reject(new Error(message))
+      }
+
+      const view = new google.picker.DocsView(google.picker.ViewId.DOCS)
+      view.setIncludeFolders(false)
+      if (parentFolderId) {
+        view.setParent(parentFolderId)
+      }
+
+      const picker = new google.picker.PickerBuilder()
+        .setAppId(getAppId())
+        .setOrigin(window.location.origin)
+        .addView(view)
+        .setOAuthToken(accessToken)
+        .setDeveloperKey(apiKey)
+        .setCallback((data: PickerResponse) => {
+          const action = data.action
+          if (action === google.picker.Action.LOADED || action === 'loaded') {
+            return
+          }
+          if (action === google.picker.Action.CANCEL || action === 'cancel') {
+            finish(null)
+            return
+          }
+          if (action === google.picker.Action.ERROR || action === 'error') {
+            fail('Google Picker failed to open')
+            return
+          }
+          if (action === google.picker.Action.PICKED || action === 'picked') {
+            const doc = data.docs?.[0]
+            if (doc?.id) {
+              finish({ id: doc.id, name: doc.name || 'File' })
+              return
+            }
+            fail('No file selected')
+          }
+        })
+        .build()
+
+      picker.setVisible(true)
+    })
+  }
+
+  return { pickSpreadsheet, pickDriveFile }
 }

@@ -3,6 +3,8 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
+import FlightMediaDialog from '@/components/FlightMediaDialog.vue'
+import IgcMapDialog from '@/components/IgcMapDialog.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import RemarksDialog from '@/components/RemarksDialog.vue'
 import SpinnerIcon from '@/components/SpinnerIcon.vue'
@@ -12,6 +14,11 @@ import { formatDayNumber, groupByMonth } from '@/lib/dates'
 import { formatDurationDisplay } from '@/lib/duration'
 import { encodeFlightId } from '@/lib/flightId'
 import { pilotRoleLabel, pilotRoleStyles, pilotRolesFromFlight, formatRoleCompanionDisplay, roleCompanionName } from '@/lib/pilotRoles'
+import {
+  firstIgcAttachment,
+  hasIgcAttachment,
+  hasOtherMediaAttachments,
+} from '@/lib/mediaTags'
 import { hasRemarks, truncateText } from '@/lib/text'
 import type { Flight } from '@/types'
 
@@ -34,6 +41,12 @@ const deleteOpen = ref(false)
 const remarksOpen = ref(false)
 const remarksText = ref('')
 const remarksFlightId = ref<string | null>(null)
+const mediaOpen = ref(false)
+const mediaFlightId = ref<string | null>(null)
+const igcMapOpen = ref(false)
+const igcFlightId = ref<string | null>(null)
+const igcFilename = ref<string | null>(null)
+const igcLabel = ref<string | null>(null)
 const loadMoreSentinel = ref<HTMLElement | null>(null)
 
 let loadMoreObserver: IntersectionObserver | null = null
@@ -56,10 +69,37 @@ function rowClass(flight: Flight, index: number): string {
   if (index % 2 === 1) {
     classes.push('bg-[var(--sheet-zebra-color)]')
   }
-  if (hasRemarks(flight.remarks)) {
+  if (hasIgcAttachment(flight)) {
+    classes.push('border-l-2 border-l-emerald-400')
+  } else if (hasOtherMediaAttachments(flight)) {
+    classes.push('border-l-2 border-l-sky-400')
+  } else if (hasRemarks(flight.remarks)) {
     classes.push('border-l-2 border-l-amber-400')
   }
   return classes.join(' ')
+}
+
+function openMedia(flight: Flight): void {
+  mediaFlightId.value = flight.id
+  mediaOpen.value = true
+}
+
+function openIgcMap(flight: Flight): void {
+  const igc = firstIgcAttachment(flight)
+  if (!igc) {
+    return
+  }
+  igcFlightId.value = flight.id
+  igcFilename.value = igc.filename
+  igcLabel.value = igc.label
+  igcMapOpen.value = true
+}
+
+function closeIgcMap(): void {
+  igcMapOpen.value = false
+  igcFlightId.value = null
+  igcFilename.value = null
+  igcLabel.value = null
 }
 
 function openRemarks(flight: Flight): void {
@@ -239,6 +279,38 @@ watch(
                 </td>
                 <td class="px-2 py-2">
                   <div class="flex items-center justify-center gap-1">
+                    <button
+                      v-if="hasIgcAttachment(flight)"
+                      type="button"
+                      class="inline-flex rounded-md p-1.5 text-emerald-600 transition hover:bg-emerald-50 hover:text-emerald-800"
+                      title="View IGC track"
+                      aria-label="View IGC track"
+                      @click.stop="openIgcMap(flight)"
+                    >
+                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="hasOtherMediaAttachments(flight)"
+                      type="button"
+                      class="inline-flex rounded-md p-1.5 text-sky-600 transition hover:bg-sky-50 hover:text-sky-800"
+                      title="View media"
+                      aria-label="View media"
+                      @click.stop="openMedia(flight)"
+                    >
+                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="m15 10 4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </button>
                     <RouterLink
                       :to="`/flights/${encodeFlightId(flight.id)}`"
                       class="inline-flex rounded-md p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-sky-700"
@@ -324,6 +396,20 @@ watch(
       :text="remarksText"
       :flight-id="remarksFlightId"
       @close="remarksOpen = false"
+    />
+
+    <FlightMediaDialog
+      :open="mediaOpen"
+      :flight-id="mediaFlightId"
+      @close="mediaOpen = false"
+    />
+
+    <IgcMapDialog
+      :open="igcMapOpen"
+      :flight-id="igcFlightId"
+      :filename="igcFilename"
+      :label="igcLabel"
+      @close="closeIgcMap"
     />
   </div>
 </template>

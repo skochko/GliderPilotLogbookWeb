@@ -82,7 +82,7 @@ watch(
 
 <template>
   <div class="min-h-screen">
-    <header class="border-b border-slate-200 bg-white">
+    <header class="sticky top-0 z-50 border-b border-slate-200 bg-white">
       <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <div class="flex min-w-0 items-center gap-3 sm:gap-6">
           <button
