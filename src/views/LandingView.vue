@@ -134,7 +134,11 @@ onMounted(() => {
       <!-- Product screenshot -->
       <section id="landing-preview" class="landing-section landing-animate landing-animate-delay-1">
         <div class="mx-auto max-w-landing px-4 sm:px-6">
+          <p class="mb-8 text-center text-sm text-landing-muted">
+            Below is a static screenshot of the signed-in pilot app — not part of this page.
+          </p>
           <LandingScreenshotFrame
+            browser-path="gliderlogbook.co.uk/flights"
             :image-url="screenshotFor('product')?.image_url"
             :alt-text="screenshotFor('product')?.alt_text ?? 'Glider Pilot Logbook product screenshot'"
             caption="Flights, statistics, and settings in one pilot-focused interface."
@@ -221,8 +225,10 @@ onMounted(() => {
           </div>
           <div class="mt-10">
             <LandingScreenshotFrame
+              browser-path="gliderlogbook.co.uk/dashboard"
               :image-url="screenshotFor('dashboard')?.image_url"
               :alt-text="screenshotFor('dashboard')?.alt_text ?? 'Dashboard preview'"
+              caption="Example dashboard view after you sign in and connect your logbook."
             />
           </div>
         </div>
@@ -234,9 +240,10 @@ onMounted(() => {
           <div class="grid items-center gap-10 lg:grid-cols-2">
             <div class="order-2 lg:order-1">
               <LandingScreenshotFrame
-                tall
+                variant="phone"
                 :image-url="screenshotFor('mobile')?.image_url"
                 :alt-text="screenshotFor('mobile')?.alt_text ?? 'Mobile logbook experience'"
+                caption="The same app on a phone — screenshot for illustration."
               />
             </div>
             <div class="order-1 lg:order-2">
