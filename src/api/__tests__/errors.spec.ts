@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ApiError, parseApiError } from '../errors'
+import { ApiError, isAccountIncompleteError, parseApiError } from '../errors'
 
 describe('parseApiError', () => {
   it('parses structured API error body', async () => {
@@ -26,6 +26,18 @@ describe('parseApiError', () => {
     const err = await parseApiError(res)
     expect(err.code).toBe('UNKNOWN_ERROR')
     expect(err.message).toBe('Server Error')
+  })
+})
+
+describe('isAccountIncompleteError', () => {
+  it('detects ACCOUNT_INCOMPLETE', () => {
+    const err = new ApiError(401, {
+      code: 'ACCOUNT_INCOMPLETE',
+      message: 'Please sign in again',
+      details: {},
+    })
+    expect(isAccountIncompleteError(err)).toBe(true)
+    expect(isAccountIncompleteError(new Error('other'))).toBe(false)
   })
 })
 

@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import AppShell from '@/components/AppShell.vue'
 import LoadingState from '@/components/LoadingState.vue'
+import ToastNotice from '@/components/ToastNotice.vue'
 import { useAuth } from '@/composables/useAuth'
 
 const { user, initialized, fetchMe } = useAuth()
@@ -18,6 +19,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <ToastNotice />
   <LoadingState v-if="!initialized" label="Starting app…" />
   <AppShell v-else-if="useAppShell">
     <RouterView />

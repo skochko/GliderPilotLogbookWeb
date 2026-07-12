@@ -9,6 +9,10 @@ const initialized = ref(false)
 const mutating = ref(false)
 const error = ref<string | null>(null)
 
+export function clearSession(): void {
+  user.value = null
+}
+
 export function useAuth() {
   async function fetchMe(): Promise<UserMe | null> {
     loading.value = true

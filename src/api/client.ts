@@ -1,4 +1,5 @@
 import { parseApiError } from './errors'
+import { notifyAccountIncomplete } from './sessionInvalidation'
 
 const API = import.meta.env.VITE_API_URL as string
 const DEFAULT_TIMEOUT_MS = 30_000
@@ -63,10 +64,18 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   }
 }
 
+async function rejectApiResponse(res: Response): Promise<never> {
+  const err = await parseApiError(res)
+  if (err.code === 'ACCOUNT_INCOMPLETE') {
+    await notifyAccountIncomplete(err.message)
+  }
+  throw err
+}
+
 export async function apiJson<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await apiFetch(path, init)
   if (!res.ok) {
-    throw await parseApiError(res)
+    return rejectApiResponse(res)
   }
   if (res.status === 204) {
     return undefined as T

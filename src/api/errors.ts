@@ -51,3 +51,7 @@ export async function parseApiError(res: Response): Promise<ApiError> {
 export function isApiError(err: unknown): err is ApiError {
   return err instanceof ApiError
 }
+
+export function isAccountIncompleteError(err: unknown): err is ApiError {
+  return isApiError(err) && err.code === 'ACCOUNT_INCOMPLETE'
+}
