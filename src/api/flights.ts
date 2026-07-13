@@ -3,6 +3,7 @@ import type { Flight, FlightCreateRequest, FlightListParams, FlightListResponse,
 import { encodeFlightId } from '@/lib/flightId'
 
 export const FLIGHT_LIST_PAGE_SIZE = 100
+export const RECENT_FLIGHTS_LIMIT = 10
 
 export function listFlights(params: FlightListParams = {}): Promise<FlightListResponse> {
   const search = new URLSearchParams()
