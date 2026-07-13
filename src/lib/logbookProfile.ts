@@ -2,6 +2,7 @@ import type { PilotPrivilege } from '@/types/logbookCreate'
 import type { SheetSettingsPatch } from '@/types'
 import {
   isInstructorPrivilege,
+  parseOptionalFlightCount,
   PILOT_PRIVILEGE_OPTIONS,
 } from '@/lib/logbookCreate'
 
@@ -25,7 +26,7 @@ export interface LogbookProfileFormState {
   prior_pic_time: string
   prior_p2_time: string
   prior_instructor_time: string
-  prior_flight_count: string
+  prior_flight_count: string | number
   prior_kms_flown: string
   medical_type: string
   medical_issue_date: string
@@ -78,9 +79,7 @@ export function buildSettingsPatch(form: LogbookProfileFormState): SheetSettings
     prior_pic_time: form.prior_pic_time.trim(),
     prior_p2_time: form.prior_p2_time.trim(),
     prior_instructor_time: form.prior_instructor_time.trim(),
-    prior_flight_count: form.prior_flight_count.trim()
-      ? Number.parseInt(form.prior_flight_count, 10)
-      : 0,
+    prior_flight_count: parseOptionalFlightCount(form.prior_flight_count) ?? 0,
     prior_kms_flown: form.prior_kms_flown.trim(),
     medical_type: form.medical_type.trim(),
     medical_issue_date: form.medical_issue_date || null,

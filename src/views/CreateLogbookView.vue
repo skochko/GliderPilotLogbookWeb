@@ -8,6 +8,7 @@ import { listOrganizations, type OrganizationListItem } from '@/api/organization
 import { useAuth } from '@/composables/useAuth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
 import { useLogbook } from '@/composables/useLogbook'
+import { ORGANIZATION_AUTOMATION_FORM_NOTICE } from '@/lib/organizations'
 import {
   buildLogbookCreatePayload,
   isInstructorPrivilege,
@@ -50,7 +51,7 @@ async function loadOrganizations(): Promise<void> {
   try {
     organizations.value = await listOrganizations()
   } catch {
-    organizationsError.value = 'Failed to load organizations.'
+    organizationsError.value = 'Failed to load organisations.'
   } finally {
     organizationsLoading.value = false
   }
@@ -85,7 +86,7 @@ function goNext(): void {
     return
   }
   if (step.value === 5 && !skippedClubAutomation.value && selectedOrganizationId.value == null) {
-    validationError.value = 'Select an organization or skip this step.'
+    validationError.value = 'Select an organisation or skip this step.'
     return
   }
   if (step.value < totalSteps) {
@@ -117,10 +118,7 @@ async function submit(): Promise<void> {
   if (response) {
     await fetchMe()
     if (response.club_automation_request) {
-      show(
-        `Connection request sent to ${response.club_automation_request.organization_name}.`,
-        'success',
-      )
+      show(response.club_automation_request.message, 'success')
     } else {
       show('Logbook created successfully.', 'success')
     }
@@ -284,7 +282,7 @@ async function submit(): Promise<void> {
         <template v-else>
           <h2 class="text-lg font-semibold text-slate-900">Club automatic flight import</h2>
           <p class="text-sm text-slate-600">
-            Connect automatic flight logging from your club. We will email the organization with your
+            Connect automatic flight logging from your club. We will email the organisation with your
             logbook details.
           </p>
 
@@ -297,19 +295,22 @@ async function submit(): Promise<void> {
           />
           <template v-else>
             <label class="block text-sm">
-              <span class="font-medium text-slate-700">Organization</span>
+              <span class="font-medium text-slate-700">Organisation</span>
               <select v-model="selectedOrganizationId" class="field-control">
-                <option :value="null">Select organization…</option>
+                <option :value="null">Select organisation…</option>
                 <option v-for="org in organizations" :key="org.id" :value="org.id">
                   {{ org.name }}
                 </option>
               </select>
             </label>
-            <p v-if="organizations.length === 0" class="text-sm text-slate-500">
-              No organizations are available yet. You can skip this step.
+            <p
+              v-if="selectedOrganization"
+              class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+            >
+              {{ ORGANIZATION_AUTOMATION_FORM_NOTICE }}
             </p>
-            <p v-else-if="selectedOrganization" class="text-sm text-slate-500">
-              A connection request will be sent to {{ selectedOrganization.name }}.
+            <p v-if="organizations.length === 0" class="text-sm text-slate-500">
+              No organisations are available yet. You can skip this step.
             </p>
           </template>
         </template>

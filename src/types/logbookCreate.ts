@@ -40,6 +40,7 @@ export interface ClubAutomationRequestSummary {
   id: number
   organization_name: string
   status: string
+  message: string
 }
 
 export interface LogbookCreateResponse {
@@ -73,7 +74,7 @@ export interface LogbookCreateFormState {
   prior_pic_time: string
   prior_p2_time: string
   prior_instructor_time: string
-  prior_flight_count: string
+  prior_flight_count: string | number
   prior_kms_flown: string
   medical_type: string
   medical_issue_date: string

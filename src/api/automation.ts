@@ -5,6 +5,7 @@ export interface AutomationRequest {
   organization_id: number
   organization_name: string
   status: AutomationRequestStatus
+  message: string
   pilot_name: string
   pilot_email: string
   logbook_title: string

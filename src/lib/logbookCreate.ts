@@ -14,6 +14,16 @@ export function isInstructorPrivilege(privilege: PilotPrivilege): boolean {
   return privilege === 'bi' || privilege === 'fi'
 }
 
+export function parseOptionalFlightCount(value: string | number): number | null {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? Math.trunc(value) : null
+  }
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const parsed = Number.parseInt(trimmed, 10)
+  return Number.isNaN(parsed) ? null : parsed
+}
+
 export function buildLogbookCreatePayload(
   form: LogbookCreateFormState,
   options: {
@@ -57,13 +67,13 @@ export function buildLogbookCreatePayload(
   if (options.skippedTotals) {
     payload.prior_totals = null
   } else {
-    const flightCount = form.prior_flight_count.trim()
+    const flightCount = parseOptionalFlightCount(form.prior_flight_count)
     payload.prior_totals = {
       total_time: form.prior_total_time.trim(),
       pic_time: form.prior_pic_time.trim(),
       p2_time: form.prior_p2_time.trim(),
       instructor_time: form.prior_instructor_time.trim(),
-      flight_count: flightCount ? Number.parseInt(flightCount, 10) : null,
+      flight_count: flightCount,
       kms_flown: form.prior_kms_flown.trim(),
     }
   }

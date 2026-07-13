@@ -63,4 +63,20 @@ describe('buildLogbookCreatePayload', () => {
 
     expect(payload.organization_id).toBe(42)
   })
+
+  it('accepts numeric prior_flight_count from number inputs', () => {
+    const form = defaultLogbookCreateForm()
+    form.pilot_name = 'Dave'
+    form.prior_flight_count = 12
+
+    const payload = buildLogbookCreatePayload(form, {
+      skippedLicense: true,
+      skippedTotals: false,
+      skippedMedical: true,
+      skippedClubAutomation: true,
+      organizationId: null,
+    })
+
+    expect(payload.prior_totals?.flight_count).toBe(12)
+  })
 })

@@ -7,6 +7,7 @@ import { listOrganizations, type OrganizationListItem } from '@/api/organization
 import { useAutomation } from '@/composables/useAutomation'
 import { useDisplaySettings } from '@/composables/useDisplaySettings'
 import { useFlashMessage } from '@/composables/useFlashMessage'
+import { ORGANIZATION_AUTOMATION_FORM_NOTICE } from '@/lib/organizations'
 import { automationStatusLabel, automationStatusStyles } from '@/lib/automationStatus'
 import { formatDateTime } from '@/lib/dates'
 
@@ -40,13 +41,17 @@ onMounted(async () => {
   }
 })
 
+const selectedOrganization = computed(() =>
+  organizations.value.find((org) => org.id === selectedOrganizationId.value) ?? null,
+)
+
 async function loadOrganizations(): Promise<void> {
   organizationsLoading.value = true
   organizationsError.value = null
   try {
     organizations.value = await listOrganizations()
   } catch {
-    organizationsError.value = 'Failed to load organizations.'
+    organizationsError.value = 'Failed to load organisations.'
   } finally {
     organizationsLoading.value = false
   }
@@ -63,7 +68,7 @@ async function onSubmit(): Promise<void> {
 
   if (created) {
     selectedOrganizationId.value = null
-    show(`Connection request sent to ${created.organization_name}.`, 'success')
+    show(created.message, 'success')
   } else if (error.value) {
     submitError.value = error.value
   }
@@ -95,7 +100,7 @@ async function onSubmit(): Promise<void> {
         <table class="min-w-full text-left text-sm">
           <thead class="border-b border-slate-200 text-slate-500">
             <tr>
-              <th class="px-3 py-2 font-medium">Organization</th>
+              <th class="px-3 py-2 font-medium">Organisation</th>
               <th class="px-3 py-2 font-medium">Status</th>
               <th class="px-3 py-2 font-medium">Pilot name</th>
               <th class="px-3 py-2 font-medium">Submitted</th>
@@ -134,7 +139,7 @@ async function onSubmit(): Promise<void> {
     <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <h2 class="font-semibold text-slate-900">New request</h2>
       <p class="mt-1 text-sm text-slate-600">
-        We will email the organization with your logbook details and contact email.
+        Choose an organisation and we will process your connection request.
       </p>
 
       <LoadingState v-if="organizationsLoading" class="mt-4" />
@@ -148,19 +153,26 @@ async function onSubmit(): Promise<void> {
 
       <template v-else>
         <p v-if="availableOrganizations.length === 0" class="mt-4 text-sm text-slate-600">
-          You already have connection requests for all available organizations.
+          You already have connection requests for all available organisations.
         </p>
 
         <form v-else class="mt-4 space-y-4" @submit.prevent="onSubmit">
           <label class="block text-sm">
-            <span class="font-medium text-slate-700">Organization</span>
+            <span class="font-medium text-slate-700">Organisation</span>
             <select v-model="selectedOrganizationId" class="field-control" required>
-              <option :value="null">Select organization…</option>
+              <option :value="null">Select organisation…</option>
               <option v-for="org in availableOrganizations" :key="org.id" :value="org.id">
                 {{ org.name }}
               </option>
             </select>
           </label>
+
+          <p
+            v-if="selectedOrganization"
+            class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+          >
+            {{ ORGANIZATION_AUTOMATION_FORM_NOTICE }}
+          </p>
 
           <label class="block text-sm">
             <span class="font-medium text-slate-700">Pilot name</span>
