@@ -10,27 +10,30 @@ import StatisticsSummaryCards from '@/components/StatisticsSummaryCards.vue'
 import { getProfile } from '@/api/profile'
 import { useStatistics } from '@/composables/useStatistics'
 import { useStatisticsPeriod } from '@/composables/useStatisticsPeriod'
-import { isValidStatisticsPeriod, preferredChartMode } from '@/lib/statisticsPeriod'
+import { canLoadStatistics, preferredChartMode } from '@/lib/statisticsPeriod'
 
 const { statistics, loading, initialized, error, fetch } = useStatistics()
 const {
   period,
   preset,
-  saving,
   initializeFromPreferences,
   applyPreset,
   setFrom,
   setTo,
 } = useStatisticsPeriod()
 
-const chartMode = computed(() => preferredChartMode(period.value))
+const chartMode = computed(() => preferredChartMode(period.value, preset.value))
 const hasPeriodData = computed(
   () => (statistics.value?.total_flights ?? 0) > 0 || (statistics.value?.days_flown ?? 0) > 0,
 )
 const periodReady = ref(false)
 
 async function loadStatistics(): Promise<void> {
-  if (!isValidStatisticsPeriod(period.value)) {
+  if (!canLoadStatistics(preset.value, period.value)) {
+    return
+  }
+  if (preset.value === 'all_time') {
+    await fetch()
     return
   }
   await fetch({ from: period.value.from, to: period.value.to })
@@ -48,12 +51,19 @@ onMounted(async () => {
 })
 
 watch(
-  period,
-  (next, previous) => {
-    if (!periodReady.value || (next.from === previous.from && next.to === previous.to)) {
+  [period, preset],
+  ([nextPeriod, nextPreset], [previousPeriod, previousPreset]) => {
+    if (!periodReady.value) {
       return
     }
-    if (isValidStatisticsPeriod(next)) {
+    if (
+      nextPreset === previousPreset &&
+      nextPeriod.from === previousPeriod.from &&
+      nextPeriod.to === previousPeriod.to
+    ) {
+      return
+    }
+    if (canLoadStatistics(nextPreset, nextPeriod)) {
       void loadStatistics()
     }
   },
@@ -72,7 +82,6 @@ watch(
       :from="period.from"
       :to="period.to"
       :preset="preset"
-      :saving="saving"
       @update:from="setFrom"
       @update:to="setTo"
       @preset="applyPreset"

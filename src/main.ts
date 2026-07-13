@@ -7,11 +7,7 @@ import { registerAccountIncompleteHandler } from '@/api/sessionInvalidation'
 import App from './App.vue'
 import { clearSession } from '@/composables/useAuth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
-import { useToast } from '@/composables/useToast'
 import router from './router'
-
-const SIGNED_OUT_TOAST =
-  'Your session was invalid and you were signed out. Please sign in again with Google.'
 
 if (import.meta.env.PROD) {
   registerSW({ immediate: true })
@@ -20,7 +16,6 @@ if (import.meta.env.PROD) {
 registerAccountIncompleteHandler(async (message) => {
   clearSession()
   useFlashMessage().show(message, 'error')
-  useToast().show(SIGNED_OUT_TOAST, 'error')
   try {
     await apiFetch('/auth/logout', { method: 'POST' })
   } catch {

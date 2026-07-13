@@ -1,106 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { DeepReadonly } from 'vue'
+import DashboardFlyingTotals from '@/components/DashboardFlyingTotals.vue'
 import { formatDecimalHours } from '@/lib/duration'
-import {
-  buildFlyingTotalsRows,
-  flyingBreakdownRows,
-  rowCountClass,
-  rowHoursClass,
-} from '@/lib/flyingTotalsRows'
 import type { Statistics } from '@/types'
 
-const props = defineProps<{
+defineProps<{
   statistics: DeepReadonly<Statistics>
 }>()
-
-const rows = computed(() => buildFlyingTotalsRows(props.statistics))
-const totalRow = computed(() => rows.value.find((row) => row.key === 'total'))
-const soloRow = computed(() => rows.value.find((row) => row.key === 'solo'))
-const breakdownRows = computed(() => flyingBreakdownRows(rows.value))
 </script>
 
 <template>
-  <!-- Mobile: summary + role breakdown (replaces separate Summary and Your flying blocks) -->
-  <section class="sm:hidden">
-    <article class="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-      <h2 class="text-sm font-medium text-slate-500">Summary</h2>
-
-      <div class="mt-2 space-y-2">
-        <div v-if="totalRow" class="flex items-baseline justify-between gap-4">
-          <span class="text-sm font-medium text-slate-700">Flight time</span>
-          <span class="text-right">
-            <span class="block tabular-nums text-slate-900" :class="rowHoursClass(totalRow.key)">
-              {{ formatDecimalHours(totalRow.hours) }}
-            </span>
-            <span class="block text-slate-500" :class="rowCountClass(totalRow.key)">
-              {{ totalRow.count }} {{ totalRow.countLabel }}
-            </span>
-          </span>
-        </div>
-
-        <div class="flex items-baseline justify-between gap-4">
-          <span class="text-sm font-medium text-slate-700">Launches</span>
-          <span class="text-right tabular-nums text-sm font-medium text-slate-800">
-            {{ statistics.total_launches }}
-          </span>
-        </div>
-
-        <div v-if="soloRow" class="flex items-baseline justify-between gap-4">
-          <span
-            class="inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset"
-            :class="soloRow.badgeClass"
-          >
-            {{ soloRow.label }}
-          </span>
-          <span class="text-right">
-            <span class="block tabular-nums text-slate-900" :class="rowHoursClass(soloRow.key)">
-              {{ formatDecimalHours(soloRow.hours) }}
-            </span>
-            <span class="block text-slate-500" :class="rowCountClass(soloRow.key)">
-              {{ soloRow.count }} {{ soloRow.countLabel }}
-            </span>
-          </span>
-        </div>
-      </div>
-
-      <dl v-if="breakdownRows.length" class="mt-2 border-t border-slate-100 pt-1">
-        <div
-          v-for="row in breakdownRows"
-          :key="row.key"
-          class="flex items-baseline justify-between gap-4 py-1 pl-2"
-        >
-          <dt class="flex min-w-0 items-center gap-2">
-            <span
-              v-if="row.badgeClass"
-              class="inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset"
-              :class="row.badgeClass"
-            >
-              {{ row.label }}
-            </span>
-          </dt>
-          <dd class="text-right">
-            <p class="tabular-nums text-slate-900" :class="rowHoursClass(row.key)">
-              {{ formatDecimalHours(row.hours) }}
-            </p>
-            <p v-if="row.countLabel" class="text-slate-500" :class="rowCountClass(row.key)">
-              {{ row.count }} {{ row.countLabel }}
-            </p>
-          </dd>
-        </div>
-      </dl>
-
-      <div
-        class="mt-2 flex flex-wrap gap-x-5 gap-y-1 border-t border-slate-100 pt-2 text-xs text-slate-500"
-      >
-        <span>
-          {{ statistics.days_flown }}
-          {{ statistics.days_flown === 1 ? 'day' : 'days' }} flown
-        </span>
-        <span>Avg flight {{ formatDecimalHours(statistics.avg_flight_hours) }}</span>
-      </div>
-    </article>
-  </section>
+  <DashboardFlyingTotals class="sm:hidden" :statistics="statistics" always-expanded />
 
   <!-- Desktop: separate cards -->
   <section class="hidden gap-3 sm:grid sm:grid-cols-2 xl:grid-cols-5">

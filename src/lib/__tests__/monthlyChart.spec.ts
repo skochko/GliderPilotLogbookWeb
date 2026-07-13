@@ -1,18 +1,25 @@
 import { describe, expect, it } from 'vitest'
 import {
+  aggregateMonthlySeriesToMaxBars,
   buildMonthlyChartSeries,
   buildPeriodRangeMonthlySeries,
   buildPeriodRangeWeeklySeries,
   buildWeeklyChartSeries,
   buildYearChartSeries,
+  chartPeriodBoundaryLabels,
+  chartSparseLabelIndices,
   defaultChartYear,
   formatChartHours,
+  formatMonthChartDetailLabel,
   formatMonthDetailLabel,
+  formatMonthRangeDetailLabel,
   formatMonthShortLabel,
   formatWeekShortLabel,
   formatWeekWindowChipLabel,
   listAvailableChartYears,
+  monthSpanInPeriod,
   niceAxisMax,
+  shouldHideMonthAxisLabels,
   weekAnchorsForYear,
 } from '../monthlyChart'
 
@@ -41,6 +48,38 @@ describe('buildPeriodRangeMonthlySeries', () => {
   })
 })
 
+describe('long period chart axis', () => {
+  it('hides month labels when the period spans more than twelve months', () => {
+    expect(monthSpanInPeriod('2024-01-01', '2024-12-31')).toBe(12)
+    expect(shouldHideMonthAxisLabels('2024-01-01', '2024-12-31', 12)).toBe(false)
+    expect(shouldHideMonthAxisLabels('2024-01-01', '2025-01-31', 13)).toBe(true)
+    expect(shouldHideMonthAxisLabels('', '', 18)).toBe(true)
+  })
+
+  it('picks start, middle, and end indices for sparse labels', () => {
+    expect(chartSparseLabelIndices(1)).toEqual([0])
+    expect(chartSparseLabelIndices(2)).toEqual([0, 1])
+    expect(chartSparseLabelIndices(5)).toEqual([0, 2, 4])
+    expect(chartSparseLabelIndices(18)).toEqual([0, 8, 17])
+  })
+
+  it('builds axis labels from the full period boundaries', () => {
+    expect(
+      chartPeriodBoundaryLabels([
+        '2024-03',
+        '2024-04',
+        '2024-05',
+        '2025-01',
+        '2025-02',
+      ]),
+    ).toEqual({
+      start: 'Mar 2024',
+      middle: 'May 2024',
+      end: 'Feb 2025',
+    })
+  })
+})
+
 describe('buildPeriodRangeWeeklySeries', () => {
   it('fills every ISO week overlapping the selected period', () => {
     const series = buildPeriodRangeWeeklySeries(
@@ -60,6 +99,77 @@ describe('buildPeriodRangeWeeklySeries', () => {
 describe('formatMonthDetailLabel', () => {
   it('includes the year in the detail label', () => {
     expect(formatMonthDetailLabel('2026-07')).toBe('Jul 2026')
+  })
+})
+
+describe('formatMonthRangeDetailLabel', () => {
+  it('formats a range within the same year', () => {
+    expect(formatMonthRangeDetailLabel('2024-03', '2024-05')).toBe('Mar – May 2024')
+  })
+
+  it('formats a range across years', () => {
+    expect(formatMonthRangeDetailLabel('2024-11', '2025-02')).toBe('Nov 2024 – Feb 2025')
+  })
+})
+
+describe('aggregateMonthlySeriesToMaxBars', () => {
+  it('keeps monthly buckets when there are at most twenty-four bars', () => {
+    const monthly = Array.from({ length: 18 }, (_, index) => ({
+      key: `2024-${String(index + 1).padStart(2, '0')}`,
+      count: 1,
+      hours: 1,
+    }))
+
+    expect(aggregateMonthlySeriesToMaxBars(monthly)).toEqual(
+      monthly.map((item, index) => ({
+        ...item,
+        seriesKey: `${index}|${item.key}|${item.key}`,
+      })),
+    )
+  })
+
+  it('groups consecutive months to stay within twenty-four bars on mobile', () => {
+    const monthly = Array.from({ length: 30 }, (_, index) => {
+      const month = (index % 12) + 1
+      const year = 2024 + Math.floor(index / 12)
+      return {
+        key: `${year}-${String(month).padStart(2, '0')}`,
+        count: 1,
+        hours: 2,
+      }
+    })
+
+    const grouped = aggregateMonthlySeriesToMaxBars(monthly)
+
+    expect(grouped).toHaveLength(15)
+    expect(grouped[0]).toEqual({
+      key: '2024-01',
+      count: 2,
+      hours: 4,
+      rangeEndKey: '2024-02',
+      seriesKey: '0|2024-01|2024-02',
+    })
+    expect(grouped[grouped.length - 1]).toEqual({
+      key: '2026-05',
+      count: 2,
+      hours: 4,
+      rangeEndKey: '2026-06',
+      seriesKey: '14|2026-05|2026-06',
+    })
+  })
+
+  it('assigns stable unique series keys per bucket', () => {
+    const grouped = aggregateMonthlySeriesToMaxBars([
+      { key: '2024-01', count: 1, hours: 1 },
+      { key: '2024-01', count: 2, hours: 2 },
+      { key: '2024-02', count: 3, hours: 3 },
+    ])
+
+    expect(grouped.map((item) => item.seriesKey)).toEqual([
+      '0|2024-01|2024-01',
+      '1|2024-01|2024-01',
+      '2|2024-02|2024-02',
+    ])
   })
 })
 

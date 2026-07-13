@@ -4,6 +4,9 @@ import type { DeepReadonly } from 'vue'
 import { formatDecimalHours } from '@/lib/duration'
 import {
   buildFlyingTotalsRows,
+  FLYING_TOTALS_BADGE_CLASS,
+  FLYING_TOTALS_LABEL_CLASS,
+  FLYING_TOTALS_ROW_CLASS,
   flyingBreakdownRows,
   flyingSummaryRows,
   rowCountClass,
@@ -13,6 +16,7 @@ import type { Statistics } from '@/types'
 
 const props = defineProps<{
   statistics: DeepReadonly<Statistics>
+  alwaysExpanded?: boolean
 }>()
 
 const expanded = ref(false)
@@ -20,34 +24,44 @@ const expanded = ref(false)
 const rows = computed(() => buildFlyingTotalsRows(props.statistics))
 const summaryRows = computed(() => flyingSummaryRows(rows.value))
 const breakdownRows = computed(() => flyingBreakdownRows(rows.value))
+const showBreakdown = computed(() => props.alwaysExpanded || expanded.value)
+
+function toggleExpanded(): void {
+  if (props.alwaysExpanded) {
+    return
+  }
+  expanded.value = !expanded.value
+}
 </script>
 
 <template>
   <section class="rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-4">
     <h2 class="text-sm font-medium text-slate-500">Your flying</h2>
 
-    <button
-      type="button"
-      class="mt-2 flex w-full items-center justify-between gap-4 rounded-md text-left transition hover:bg-slate-50"
-      :class="expanded ? 'pb-2' : ''"
-      :aria-expanded="expanded"
-      aria-controls="flying-breakdown"
-      @click="expanded = !expanded"
+    <div
+      :role="alwaysExpanded ? undefined : 'button'"
+      :tabindex="alwaysExpanded ? undefined : 0"
+      class="mt-2 w-full text-left"
+      :class="alwaysExpanded ? '' : 'cursor-pointer rounded-md transition hover:bg-slate-50'"
+      @click="toggleExpanded"
+      @keydown.enter.prevent="toggleExpanded"
+      @keydown.space.prevent="toggleExpanded"
     >
-      <div class="min-w-0 flex-1 space-y-2">
+      <div class="space-y-2">
         <div
           v-for="row in summaryRows"
           :key="row.key"
-          class="flex items-baseline justify-between gap-4"
+          :class="FLYING_TOTALS_ROW_CLASS"
         >
-          <span
-            v-if="row.badgeClass"
-            class="inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset"
-            :class="row.badgeClass"
-          >
-            {{ row.label }}
-          </span>
-          <span v-else class="text-sm font-medium text-slate-700">{{ row.label }}</span>
+          <div :class="FLYING_TOTALS_LABEL_CLASS">
+            <span
+              v-if="row.badgeClass"
+              :class="[FLYING_TOTALS_BADGE_CLASS, row.badgeClass]"
+            >
+              {{ row.label }}
+            </span>
+            <span v-else class="text-sm font-medium text-slate-700">{{ row.label }}</span>
+          </div>
           <span class="text-right">
             <span class="block tabular-nums text-slate-900" :class="rowHoursClass(row.key)">
               {{ formatDecimalHours(row.hours) }}
@@ -58,39 +72,22 @@ const breakdownRows = computed(() => flyingBreakdownRows(rows.value))
           </span>
         </div>
       </div>
-      <svg
-        class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
-        :class="expanded ? 'rotate-180' : ''"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        stroke-width="2"
-        aria-hidden="true"
-      >
-        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-      </svg>
-    </button>
-
-    <div class="mt-2 flex flex-wrap gap-x-5 gap-y-1 border-t border-slate-100 pt-2 text-xs text-slate-500">
-      <span>{{ statistics.days_flown }} {{ statistics.days_flown === 1 ? 'day' : 'days' }} flown</span>
-      <span>Avg flight {{ formatDecimalHours(statistics.avg_flight_hours) }}</span>
     </div>
 
     <dl
-      v-show="expanded"
+      v-show="showBreakdown"
       id="flying-breakdown"
-      class="border-t border-slate-100 pt-1"
+      class="mt-1 pt-1"
     >
       <div
         v-for="row in breakdownRows"
         :key="row.key"
-        class="flex items-baseline justify-between gap-4 py-1 pl-2"
+        :class="[FLYING_TOTALS_ROW_CLASS, 'py-1']"
       >
-        <dt class="flex min-w-0 items-center gap-2">
+        <dt :class="FLYING_TOTALS_LABEL_CLASS">
           <span
             v-if="row.badgeClass"
-            class="inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset"
-            :class="row.badgeClass"
+            :class="[FLYING_TOTALS_BADGE_CLASS, row.badgeClass]"
           >
             {{ row.label }}
           </span>
@@ -105,5 +102,31 @@ const breakdownRows = computed(() => flyingBreakdownRows(rows.value))
         </dd>
       </div>
     </dl>
+
+    <component
+      :is="alwaysExpanded ? 'div' : 'button'"
+      :type="alwaysExpanded ? undefined : 'button'"
+      class="mt-2 flex w-full items-center justify-between gap-4 border-t border-slate-100 pt-2 text-left"
+      :aria-expanded="alwaysExpanded ? undefined : expanded"
+      aria-controls="flying-breakdown"
+      @click="toggleExpanded"
+    >
+      <div class="flex min-w-0 flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500">
+        <span>{{ statistics.days_flown }} {{ statistics.days_flown === 1 ? 'day' : 'days' }} flown</span>
+        <span>Avg flight {{ formatDecimalHours(statistics.avg_flight_hours) }}</span>
+      </div>
+      <svg
+        v-if="!alwaysExpanded"
+        class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+        :class="expanded ? 'rotate-180' : ''"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+      </svg>
+    </component>
   </section>
 </template>

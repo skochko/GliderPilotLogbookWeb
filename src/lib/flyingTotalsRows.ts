@@ -89,3 +89,8 @@ export function rowHoursClass(key: string): string {
 export function rowCountClass(key: string): string {
   return key === 'total' ? 'text-xs' : 'text-[11px]'
 }
+
+export const FLYING_TOTALS_ROW_CLASS = 'flex items-center justify-between gap-4'
+export const FLYING_TOTALS_LABEL_CLASS = 'flex w-[5.75rem] shrink-0 items-center'
+export const FLYING_TOTALS_BADGE_CLASS =
+  'inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset'

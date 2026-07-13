@@ -1,4 +1,5 @@
 export type StatisticsPresetId =
+  | 'all_time'
   | 'this_month'
   | 'last_month'
   | 'last_90_days'
@@ -17,6 +18,7 @@ export interface StatisticsPreferences {
 }
 
 export const STATISTICS_PRESET_OPTIONS: Array<{ id: StatisticsPresetId; label: string }> = [
+  { id: 'all_time', label: 'All time' },
   { id: 'this_month', label: 'This month' },
   { id: 'last_month', label: 'Last month' },
   { id: 'last_90_days', label: 'Last 90 days' },
@@ -56,6 +58,14 @@ export function isValidStatisticsPeriod(period: StatisticsPeriod): boolean {
   return from !== null && to !== null && from.getTime() <= to.getTime()
 }
 
+export function isAllTimeStatisticsPreset(preset: StatisticsPresetId): boolean {
+  return preset === 'all_time'
+}
+
+export function canLoadStatistics(preset: StatisticsPresetId, period: StatisticsPeriod): boolean {
+  return isAllTimeStatisticsPreset(preset) || isValidStatisticsPeriod(period)
+}
+
 function startOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1)
 }
@@ -69,6 +79,8 @@ export function resolveStatisticsPreset(
   today: Date = new Date(),
 ): StatisticsPeriod {
   switch (preset) {
+    case 'all_time':
+      return { from: '', to: '' }
     case 'this_month':
       return {
         from: formatIsoDate(startOfMonth(today)),
@@ -110,6 +122,7 @@ export function readStatisticsPeriodFromPreferences(
 ): { period: StatisticsPeriod; preset: StatisticsPresetId } {
   const presetRaw = preferences?.statistics_preset
   const preset =
+    presetRaw === 'all_time' ||
     presetRaw === 'this_month' ||
     presetRaw === 'last_month' ||
     presetRaw === 'last_90_days' ||
@@ -117,6 +130,10 @@ export function readStatisticsPeriodFromPreferences(
     presetRaw === 'custom'
       ? presetRaw
       : 'this_month'
+
+  if (preset === 'all_time') {
+    return { period: resolveStatisticsPreset('all_time', today), preset }
+  }
 
   if (preset !== 'custom') {
     return { period: resolveStatisticsPreset(preset, today), preset }
@@ -136,6 +153,14 @@ export function buildStatisticsPreferences(
   period: StatisticsPeriod,
   preset: StatisticsPresetId,
 ): StatisticsPreferences {
+  if (isAllTimeStatisticsPreset(preset)) {
+    return {
+      statistics_from: '',
+      statistics_to: '',
+      statistics_preset: preset,
+    }
+  }
+
   return {
     statistics_from: period.from,
     statistics_to: period.to,
@@ -153,6 +178,12 @@ export function periodLengthDays(period: StatisticsPeriod): number {
   return Math.floor((to.getTime() - from.getTime()) / msPerDay) + 1
 }
 
-export function preferredChartMode(period: StatisticsPeriod): 'month' | '1week' {
+export function preferredChartMode(
+  period: StatisticsPeriod,
+  preset: StatisticsPresetId = 'custom',
+): 'month' | '1week' {
+  if (isAllTimeStatisticsPreset(preset)) {
+    return 'month'
+  }
   return periodLengthDays(period) > 92 ? 'month' : '1week'
 }

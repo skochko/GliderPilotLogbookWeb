@@ -2,6 +2,7 @@ import { readonly, ref } from 'vue'
 import { updateProfile } from '@/api/profile'
 import {
   buildStatisticsPreferences,
+  canLoadStatistics,
   defaultStatisticsPeriod,
   isValidStatisticsPeriod,
   readStatisticsPeriodFromPreferences,
@@ -13,7 +14,6 @@ import {
 const period = ref<StatisticsPeriod>(defaultStatisticsPeriod())
 const preset = ref<StatisticsPresetId>('this_month')
 const initialized = ref(false)
-const saving = ref(false)
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -25,17 +25,12 @@ function clearSaveTimer(): void {
 }
 
 async function persistPeriod(): Promise<void> {
-  if (!isValidStatisticsPeriod(period.value)) {
+  if (!canLoadStatistics(preset.value, period.value)) {
     return
   }
-  saving.value = true
-  try {
-    await updateProfile({
-      preferences: buildStatisticsPreferences(period.value, preset.value) as Record<string, unknown>,
-    })
-  } finally {
-    saving.value = false
-  }
+  await updateProfile({
+    preferences: buildStatisticsPreferences(period.value, preset.value) as Record<string, unknown>,
+  })
 }
 
 function schedulePersist(): void {
@@ -50,7 +45,6 @@ export function resetStatisticsPeriodState(): void {
   period.value = defaultStatisticsPeriod()
   preset.value = 'this_month'
   initialized.value = false
-  saving.value = false
 }
 
 export function useStatisticsPeriod() {
@@ -64,6 +58,9 @@ export function useStatisticsPeriod() {
   function applyPreset(nextPreset: StatisticsPresetId): void {
     preset.value = nextPreset
     if (nextPreset === 'custom') {
+      if (!isValidStatisticsPeriod(period.value)) {
+        period.value = defaultStatisticsPeriod()
+      }
       schedulePersist()
       return
     }
@@ -91,7 +88,6 @@ export function useStatisticsPeriod() {
     period: readonly(period),
     preset: readonly(preset),
     initialized: readonly(initialized),
-    saving: readonly(saving),
     initializeFromPreferences,
     applyPreset,
     setFrom,

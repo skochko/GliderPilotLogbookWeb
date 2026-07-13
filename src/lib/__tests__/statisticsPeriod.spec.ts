@@ -11,6 +11,13 @@ import {
 describe('statisticsPeriod', () => {
   const today = new Date(2026, 6, 12)
 
+  it('resolves all time preset with empty bounds', () => {
+    expect(resolveStatisticsPreset('all_time', today)).toEqual({
+      from: '',
+      to: '',
+    })
+  })
+
   it('resolves this month preset', () => {
     expect(resolveStatisticsPreset('this_month', today)).toEqual({
       from: '2026-07-01',
@@ -30,6 +37,20 @@ describe('statisticsPeriod', () => {
       from: '2026-04-14',
       to: '2026-07-12',
     })
+  })
+
+  it('reads saved all time preset from preferences', () => {
+    const result = readStatisticsPeriodFromPreferences(
+      {
+        statistics_preset: 'all_time',
+        statistics_from: '2026-01-01',
+        statistics_to: '2026-03-31',
+      },
+      today,
+    )
+
+    expect(result.preset).toBe('all_time')
+    expect(result.period).toEqual({ from: '', to: '' })
   })
 
   it('reads saved custom period from preferences', () => {
@@ -61,6 +82,7 @@ describe('statisticsPeriod', () => {
   })
 
   it('chooses chart mode from period length', () => {
+    expect(preferredChartMode({ from: '', to: '' }, 'all_time')).toBe('month')
     expect(
       preferredChartMode({
         from: '2026-07-01',

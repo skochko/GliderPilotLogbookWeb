@@ -3,22 +3,26 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { DeepReadonly } from 'vue'
 import {
   axisTicks,
+  aggregateMonthlySeriesToMaxBars,
   buildWeeklyChartSeries,
   buildYearChartSeries,
   buildPeriodRangeMonthlySeries,
   buildPeriodRangeWeeklySeries,
+  chartPeriodBoundaryLabels,
   chartPeriodLabel,
+  chartSparseLabelIndices,
   CHART_PERIOD_OPTIONS,
   defaultChartYear,
   defaultWeekAnchorForYear,
   formatChartHours,
+  formatMonthChartDetailLabel,
   formatMonthShortLabel,
-  formatMonthDetailLabel,
   formatWeekDetailLabel,
   formatWeekShortLabel,
   formatWeekWindowChipLabel,
   listAvailableChartYearsCombined,
   niceAxisMax,
+  shouldHideMonthAxisLabels,
   weekAnchorsForYear,
   weekCountForPeriod,
   type ChartPeriodMode,
@@ -41,14 +45,22 @@ const CHART_HEIGHT = 228
 const MARGIN = { top: 8, right: 40, bottom: 30, left: 40 }
 const INNER_WIDTH = CHART_WIDTH - MARGIN.left - MARGIN.right
 const INNER_HEIGHT = CHART_HEIGHT - MARGIN.top - MARGIN.bottom
+const MOBILE_CHART_MEDIA = '(max-width: 639px)'
 
 const periodMode = ref<ChartPeriodMode>('month')
 const periodMenuOpen = ref(false)
 const periodMenuRef = ref<HTMLElement | null>(null)
 const selectedYear = ref(new Date().getFullYear())
-const selectedKey = ref<string | null>(null)
+const selectedBarKey = ref<string | null>(null)
 const selectedWeekEnd = ref('')
 const weekAnchorStripRef = ref<HTMLElement | null>(null)
+const isMobileChart = ref(false)
+
+let mobileChartMediaQuery: MediaQueryList | null = null
+
+function syncMobileChart(): void {
+  isMobileChart.value = mobileChartMediaQuery?.matches ?? window.innerWidth < 640
+}
 
 const availableYears = computed(() =>
   listAvailableChartYearsCombined(props.monthlyData, props.weeklyData),
@@ -66,24 +78,80 @@ const weekAnchorOptions = computed(() =>
   })),
 )
 
-const series = computed((): ChartPeriodStats[] => {
+const monthlyPeriodSeries = computed((): ChartPeriodStats[] => {
+  if (!props.fixedPeriod || periodMode.value !== 'month') {
+    return []
+  }
+  return buildPeriodRangeMonthlySeries(
+    props.monthlyData,
+    props.periodFrom ?? '',
+    props.periodTo ?? '',
+  )
+})
+
+const hideMonthAxisLabels = computed(
+  () =>
+    isMobileChart.value
+    && periodMode.value === 'month'
+    && props.fixedPeriod
+    && shouldHideMonthAxisLabels(
+      props.periodFrom ?? '',
+      props.periodTo ?? '',
+      monthlyPeriodSeries.value.length,
+    ),
+)
+
+const rawMonthSeries = computed((): ChartPeriodStats[] => {
   if (props.fixedPeriod) {
-    const from = props.periodFrom ?? ''
-    const to = props.periodTo ?? ''
     if (periodMode.value === 'month') {
-      return buildPeriodRangeMonthlySeries(props.monthlyData, from, to)
+      return monthlyPeriodSeries.value
     }
-    return buildPeriodRangeWeeklySeries(props.weeklyData, from, to)
+    return []
   }
 
   if (periodMode.value === 'month') {
     return buildYearChartSeries(props.monthlyData, selectedYear.value)
   }
-  return buildWeeklyChartSeries(
-    props.weeklyData,
-    weekCount.value,
-    selectedWeekEnd.value || undefined,
-  )
+
+  return []
+})
+
+const sparsePeriodAxisLabels = computed(() => {
+  if (!hideMonthAxisLabels.value || periodMode.value !== 'month') {
+    return null
+  }
+
+  return chartPeriodBoundaryLabels(rawMonthSeries.value.map((item) => item.key))
+})
+
+const series = computed((): ChartPeriodStats[] => {
+  let result: ChartPeriodStats[]
+
+  if (props.fixedPeriod) {
+    if (periodMode.value === 'month') {
+      result = monthlyPeriodSeries.value
+    } else {
+      return buildPeriodRangeWeeklySeries(
+        props.weeklyData,
+        props.periodFrom ?? '',
+        props.periodTo ?? '',
+      )
+    }
+  } else if (periodMode.value === 'month') {
+    result = buildYearChartSeries(props.monthlyData, selectedYear.value)
+  } else {
+    return buildWeeklyChartSeries(
+      props.weeklyData,
+      weekCount.value,
+      selectedWeekEnd.value || undefined,
+    )
+  }
+
+  if (isMobileChart.value && periodMode.value === 'month') {
+    return aggregateMonthlySeriesToMaxBars(result)
+  }
+
+  return result
 })
 
 watch(
@@ -97,7 +165,11 @@ watch(
 )
 
 watch([periodMode, selectedYear], () => {
-  selectedKey.value = null
+  selectedBarKey.value = null
+})
+
+watch(series, () => {
+  selectedBarKey.value = null
 })
 
 watch(periodMode, (mode) => {
@@ -129,29 +201,69 @@ const maxCount = computed(() => niceAxisMax(Math.max(...series.value.map((item) 
 const hourTicks = computed(() => axisTicks(maxHours.value))
 const countTicks = computed(() => axisTicks(maxCount.value))
 
+const sparseMonthLabelIndices = computed(() => {
+  if (!hideMonthAxisLabels.value || periodMode.value !== 'month') {
+    return null
+  }
+
+  return new Set(chartSparseLabelIndices(series.value.length))
+})
+
 const bars = computed(() => {
   const count = series.value.length || 1
   const groupWidth = INNER_WIDTH / count
   const barWidth = Math.min(22, groupWidth * 0.42)
   const barGap = 2
+  const sparseIndices = sparseMonthLabelIndices.value
 
   return series.value.map((item, index) => {
     const centerX = MARGIN.left + groupWidth * index + groupWidth / 2
     const hoursHeight = maxHours.value ? (item.hours / maxHours.value) * INNER_HEIGHT : 0
     const countHeight = maxCount.value ? (item.count / maxCount.value) * INNER_HEIGHT : 0
     const baselineY = MARGIN.top + INNER_HEIGHT
+    const isSparseMonthLabel = sparseIndices?.has(index) ?? false
+    const sparsePosition =
+      isSparseMonthLabel && sparseIndices
+        ? index === 0
+          ? 'start'
+          : index === series.value.length - 1
+            ? 'end'
+            : 'middle'
+        : 'middle'
+
+    const labelX =
+      isSparseMonthLabel && sparsePosition === 'start'
+        ? MARGIN.left
+        : isSparseMonthLabel && sparsePosition === 'end'
+          ? MARGIN.left + INNER_WIDTH
+          : centerX
+
+    const sparseAxisLabel =
+      isSparseMonthLabel && sparsePeriodAxisLabels.value
+        ? sparsePosition === 'start'
+          ? sparsePeriodAxisLabels.value.start
+          : sparsePosition === 'end'
+            ? sparsePeriodAxisLabels.value.end
+            : sparsePeriodAxisLabels.value.middle
+        : ''
 
     return {
+      seriesKey: item.seriesKey ?? `${index}|${item.key}|${item.rangeEndKey ?? item.key}`,
       key: item.key,
       label:
-        periodMode.value === 'month'
+        periodMode.value === 'month' && !hideMonthAxisLabels.value
           ? formatMonthShortLabel(item.key)
-          : formatWeekShortLabel(item.key),
+          : periodMode.value === 'month' && isSparseMonthLabel
+            ? sparseAxisLabel
+            : periodMode.value === 'month'
+              ? ''
+              : formatWeekShortLabel(item.key),
+      labelAnchor: sparsePosition,
       detailLabel:
         periodMode.value === 'month'
           ? props.fixedPeriod
-            ? formatMonthDetailLabel(item.key)
-            : `${formatMonthShortLabel(item.key)} ${selectedYear.value}`
+            ? formatMonthChartDetailLabel(item)
+            : formatMonthChartDetailLabel(item, selectedYear.value)
           : formatWeekDetailLabel(item.key),
       count: item.count,
       hoursLabel: formatChartHours(item.hours),
@@ -173,7 +285,7 @@ const bars = computed(() => {
         width: barWidth,
         height: countHeight,
       },
-      labelX: centerX,
+      labelX,
     }
   })
 })
@@ -184,16 +296,18 @@ const hasActivity = computed(() =>
 )
 
 const selectedBar = computed(() => {
-  if (!selectedKey.value) {
+  if (!selectedBarKey.value) {
     return null
   }
-  return bars.value.find((item) => item.key === selectedKey.value) ?? null
+  return bars.value.find((item) => item.seriesKey === selectedBarKey.value) ?? null
 })
 
 const chartAriaLabel = computed(() => {
   if (props.fixedPeriod) {
     if (periodMode.value === 'month') {
-      return 'Monthly flight hours and flight count chart for the selected period'
+      return hideMonthAxisLabels.value
+        ? 'Monthly flight hours and flight count chart with sparse axis labels; select a bar for details'
+        : 'Monthly flight hours and flight count chart for the selected period'
     }
     return 'Weekly flight hours and flight count chart for the selected period'
   }
@@ -212,7 +326,7 @@ function selectYear(year: number): void {
 
 function selectWeekAnchor(weekKey: string): void {
   selectedWeekEnd.value = weekKey
-  selectedKey.value = null
+  selectedBarKey.value = null
 }
 
 async function scrollSelectedWeekAnchorIntoView(): Promise<void> {
@@ -225,8 +339,8 @@ async function scrollSelectedWeekAnchorIntoView(): Promise<void> {
   selected?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
 }
 
-function toggleKey(key: string): void {
-  selectedKey.value = selectedKey.value === key ? null : key
+function toggleBar(seriesKey: string): void {
+  selectedBarKey.value = selectedBarKey.value === seriesKey ? null : seriesKey
 }
 
 function selectPeriod(mode: ChartPeriodMode): void {
@@ -259,6 +373,9 @@ onMounted(() => {
   if (props.defaultPeriodMode) {
     periodMode.value = props.defaultPeriodMode
   }
+  mobileChartMediaQuery = window.matchMedia(MOBILE_CHART_MEDIA)
+  syncMobileChart()
+  mobileChartMediaQuery.addEventListener('change', syncMobileChart)
   document.addEventListener('click', handleDocumentClick)
 })
 
@@ -282,6 +399,7 @@ watch(
 )
 
 onUnmounted(() => {
+  mobileChartMediaQuery?.removeEventListener('change', syncMobileChart)
   document.removeEventListener('click', handleDocumentClick)
 })
 </script>
@@ -424,15 +542,15 @@ onUnmounted(() => {
 
         <g
           v-for="bar in bars"
-          :key="bar.key"
+          :key="bar.seriesKey"
           class="cursor-pointer"
           role="button"
           tabindex="0"
-          :aria-pressed="selectedKey === bar.key"
-          :aria-label="`${bar.label}: ${formatFlightCount(bar.count)}, ${bar.hoursLabel}`"
-          @click="toggleKey(bar.key)"
-          @keydown.enter.prevent="toggleKey(bar.key)"
-          @keydown.space.prevent="toggleKey(bar.key)"
+          :aria-pressed="selectedBarKey === bar.seriesKey"
+          :aria-label="`${bar.detailLabel}: ${formatFlightCount(bar.count)}, ${bar.hoursLabel}`"
+          @click="toggleBar(bar.seriesKey)"
+          @keydown.enter.prevent="toggleBar(bar.seriesKey)"
+          @keydown.space.prevent="toggleBar(bar.seriesKey)"
         >
           <rect
             :x="bar.hitArea.x"
@@ -446,7 +564,7 @@ onUnmounted(() => {
             :y="bar.hoursBar.y"
             :width="bar.hoursBar.width"
             :height="bar.hoursBar.height"
-            :class="selectedKey === bar.key ? 'fill-sky-600' : 'fill-sky-500'"
+            :class="selectedBarKey === bar.seriesKey ? 'fill-sky-600' : 'fill-sky-500'"
             rx="2"
           />
           <rect
@@ -454,16 +572,22 @@ onUnmounted(() => {
             :y="bar.countBar.y"
             :width="bar.countBar.width"
             :height="bar.countBar.height"
-            :class="selectedKey === bar.key ? 'fill-emerald-600' : 'fill-emerald-500'"
+            :class="selectedBarKey === bar.seriesKey ? 'fill-emerald-600' : 'fill-emerald-500'"
             rx="2"
           />
+        </g>
+
+        <g pointer-events="none" aria-hidden="true">
           <text
+            v-for="bar in bars"
+            v-show="bar.label"
+            :key="`label-${bar.seriesKey}`"
             :x="bar.labelX"
             :y="CHART_HEIGHT - 10"
-            text-anchor="middle"
+            :text-anchor="bar.labelAnchor"
             font-size="17"
-            :font-weight="selectedKey === bar.key ? 600 : 500"
-            :class="selectedKey === bar.key ? 'fill-slate-900' : 'fill-slate-700'"
+            :font-weight="selectedBarKey === bar.seriesKey ? 600 : 500"
+            :class="selectedBarKey === bar.seriesKey ? 'fill-slate-900' : 'fill-slate-700'"
           >
             {{ bar.label }}
           </text>

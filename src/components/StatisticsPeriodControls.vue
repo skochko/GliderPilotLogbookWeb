@@ -8,7 +8,6 @@ defineProps<{
   from: string
   to: string
   preset: StatisticsPresetId
-  saving?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -20,7 +19,9 @@ const emit = defineEmits<{
 
 <template>
   <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-    <div class="-mx-1 overflow-x-auto px-1 [scrollbar-width:thin] sm:mx-0 sm:overflow-visible sm:px-0">
+    <h2 class="text-sm font-medium text-slate-500">Period</h2>
+
+    <div class="-mx-1 mt-2 overflow-x-auto px-1 pb-2.5 sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0">
       <div class="flex w-max gap-1.5 sm:w-auto sm:flex-wrap sm:gap-2">
         <button
           v-for="option in STATISTICS_PRESET_OPTIONS"
@@ -62,7 +63,5 @@ const emit = defineEmits<{
         />
       </label>
     </div>
-
-    <p v-if="saving" class="mt-3 text-xs text-slate-500">Saving period…</p>
   </section>
 </template>

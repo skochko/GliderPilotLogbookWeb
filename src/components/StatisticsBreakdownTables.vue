@@ -6,6 +6,10 @@ import type { Statistics } from '@/types'
 defineProps<{
   statistics: DeepReadonly<Statistics>
 }>()
+
+function zebraRowClass(index: number): string {
+  return index % 2 === 1 ? 'bg-slate-50' : ''
+}
 </script>
 
 <template>
@@ -24,8 +28,12 @@ defineProps<{
               <th class="px-3 py-2 font-medium">Hours</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr v-for="row in statistics.flights_by_glider" :key="row.glider">
+          <tbody>
+            <tr
+              v-for="(row, index) in statistics.flights_by_glider"
+              :key="row.glider"
+              :class="zebraRowClass(index)"
+            >
               <td class="px-3 py-2 font-medium text-slate-900">{{ row.glider }}</td>
               <td class="px-3 py-2 tabular-nums text-slate-700">{{ row.count }}</td>
               <td class="px-3 py-2 tabular-nums text-slate-700">{{ formatDecimalHours(row.hours) }}</td>
@@ -48,8 +56,12 @@ defineProps<{
               <th class="px-3 py-2 font-medium">Flights</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr v-for="row in statistics.flights_by_launch_type" :key="row.launch_type">
+          <tbody>
+            <tr
+              v-for="(row, index) in statistics.flights_by_launch_type"
+              :key="row.launch_type"
+              :class="zebraRowClass(index)"
+            >
               <td class="px-3 py-2 font-medium text-slate-900">{{ row.launch_type }}</td>
               <td class="px-3 py-2 tabular-nums text-slate-700">{{ row.count }}</td>
             </tr>

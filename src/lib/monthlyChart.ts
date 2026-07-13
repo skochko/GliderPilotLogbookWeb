@@ -14,7 +14,13 @@ export interface ChartPeriodStats {
   key: string
   count: number
   hours: number
+  /** Last month in a grouped mobile bucket, when key is the bucket start. */
+  rangeEndKey?: string
+  /** Stable unique id for chart interaction (differs per bucket even when key repeats). */
+  seriesKey?: string
 }
+
+export const MOBILE_CHART_MAX_MONTH_BARS = 24
 
 export type ChartPeriodMode = 'month' | '3weeks' | '2weeks' | '1week'
 
@@ -71,6 +77,54 @@ export function formatMonthShortLabel(monthKey: string): string {
     return monthKey
   }
   return new Date(parsed.year, parsed.month - 1, 1).toLocaleString('en', { month: 'short' })
+}
+
+export function monthSpanInPeriod(from: string, to: string): number {
+  if (!from.trim() || !to.trim()) {
+    return 0
+  }
+  return buildPeriodRangeMonthlySeries([], from, to).length
+}
+
+export function shouldHideMonthAxisLabels(
+  from: string,
+  to: string,
+  monthlySeriesLength: number,
+): boolean {
+  if (from.trim() && to.trim()) {
+    return monthSpanInPeriod(from, to) > 12
+  }
+  return monthlySeriesLength > 12
+}
+
+export function chartSparseLabelIndices(seriesLength: number): number[] {
+  if (seriesLength <= 0) {
+    return []
+  }
+  if (seriesLength === 1) {
+    return [0]
+  }
+  if (seriesLength === 2) {
+    return [0, 1]
+  }
+
+  const middle = Math.floor((seriesLength - 1) / 2)
+  return [0, middle, seriesLength - 1]
+}
+
+export function chartPeriodBoundaryLabels(
+  monthKeys: readonly string[],
+): { start: string; middle: string; end: string } | null {
+  if (!monthKeys.length) {
+    return null
+  }
+
+  const middleIndex = monthKeys.length === 1 ? 0 : Math.floor((monthKeys.length - 1) / 2)
+  return {
+    start: formatMonthDetailLabel(monthKeys[0]!),
+    middle: formatMonthDetailLabel(monthKeys[middleIndex]!),
+    end: formatMonthDetailLabel(monthKeys[monthKeys.length - 1]!),
+  }
 }
 
 function parseWeekKey(weekKey: string): { year: number; week: number } | null {
@@ -408,6 +462,77 @@ export function formatMonthDetailLabel(monthKey: string): string {
     return monthKey
   }
   return `${formatMonthShortLabel(monthKey)} ${parsed.year}`
+}
+
+export function formatMonthRangeDetailLabel(startKey: string, endKey: string): string {
+  if (startKey === endKey) {
+    return formatMonthDetailLabel(startKey)
+  }
+
+  const start = parseMonthKey(startKey)
+  const end = parseMonthKey(endKey)
+  if (!start || !end) {
+    return `${startKey} – ${endKey}`
+  }
+
+  const startLabel = formatMonthShortLabel(startKey)
+  const endLabel = formatMonthShortLabel(endKey)
+  if (start.year === end.year) {
+    return `${startLabel} – ${endLabel} ${start.year}`
+  }
+  return `${startLabel} ${start.year} – ${endLabel} ${end.year}`
+}
+
+export function formatMonthChartDetailLabel(item: ChartPeriodStats, year?: number): string {
+  if (item.rangeEndKey) {
+    return formatMonthRangeDetailLabel(item.key, item.rangeEndKey)
+  }
+  if (year !== undefined) {
+    return `${formatMonthShortLabel(item.key)} ${year}`
+  }
+  return formatMonthDetailLabel(item.key)
+}
+
+export function chartBarSeriesKey(item: ChartPeriodStats, index: number): string {
+  if (item.seriesKey) {
+    return item.seriesKey
+  }
+
+  const endKey = item.rangeEndKey ?? item.key
+  return `${index}|${item.key}|${endKey}`
+}
+
+export function aggregateMonthlySeriesToMaxBars(
+  items: readonly ChartPeriodStats[],
+  maxBars: number = MOBILE_CHART_MAX_MONTH_BARS,
+): ChartPeriodStats[] {
+  if (items.length <= maxBars) {
+    return items.map((item, index) => ({
+      ...item,
+      seriesKey: chartBarSeriesKey(item, index),
+    }))
+  }
+
+  const bucketSize = Math.ceil(items.length / maxBars)
+  const aggregated: ChartPeriodStats[] = []
+
+  for (let index = 0; index < items.length; index += bucketSize) {
+    const bucket = items.slice(index, index + bucketSize)
+    const first = bucket[0]!
+    const last = bucket[bucket.length - 1]!
+    const rangeEndKey = last.key !== first.key ? last.key : undefined
+    const bucketIndex = aggregated.length
+
+    aggregated.push({
+      key: first.key,
+      count: bucket.reduce((sum, item) => sum + item.count, 0),
+      hours: bucket.reduce((sum, item) => sum + item.hours, 0),
+      rangeEndKey,
+      seriesKey: `${bucketIndex}|${first.key}|${rangeEndKey ?? first.key}`,
+    })
+  }
+
+  return aggregated
 }
 
 function parseChartIsoDate(value: string): Date | null {
