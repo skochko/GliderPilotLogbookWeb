@@ -1,7 +1,8 @@
 import { readonly, ref } from 'vue'
 import { getPage } from '@/api/pages'
 import type { ApiErrorBody } from '@/types'
-import type { Page, SitePageType } from '@/types'
+import type { RoutablePageType } from '@/lib/sitePages'
+import type { Page } from '@/types'
 
 const page = ref<Page | null>(null)
 const loading = ref(false)
@@ -14,7 +15,7 @@ function resetPageState(): void {
   error.value = null
 }
 
-async function fetch(pageType: SitePageType): Promise<void> {
+async function fetch(pageType: RoutablePageType): Promise<void> {
   if (loading.value) return
 
   loading.value = true

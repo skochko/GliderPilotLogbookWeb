@@ -1555,6 +1555,12 @@ components:
           type: boolean
         spreadsheet_id:
           type: string
+        spreadsheet_url:
+          type: string
+          format: uri
+        drive_folder_url:
+          type: string
+          format: uri
         preferences:
           type: object
           additionalProperties: {}

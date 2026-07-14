@@ -469,11 +469,12 @@ export interface components {
         PatchedMedicalBlockPatchRequest: {
             entries?: components["schemas"]["MedicalEntryRequest"][];
         };
-    PatchedProfilePatchRequest: {
+        PatchedProfilePatchRequest: {
             preferences?: {
                 [key: string]: unknown;
             };
             email_notifications_enabled?: boolean;
+            /** @enum {string} */
             language?: "" | "en" | "ru";
         };
         PatchedSheetSettingsPatchRequest: {
@@ -499,10 +500,15 @@ export interface components {
             google_sub: string;
             has_logbook: boolean;
             spreadsheet_id: string;
+            /** Format: uri */
+            spreadsheet_url?: string;
+            /** Format: uri */
+            drive_folder_url?: string;
             preferences: {
                 [key: string]: unknown;
             };
             email_notifications_enabled: boolean;
+            /** @enum {string} */
             language: "" | "en" | "ru";
         };
         RecentActivity: {

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { isApiError } from '@/api/errors'
+import { fetchGoogleScopes, type GoogleScopeStatus } from '@/api/auth'
 import { useProfile } from '@/composables/useProfile'
 
 const { profile, loading, initialized, mutating, error, fetch, save } = useProfile()
@@ -12,8 +14,52 @@ const preferencesJson = ref('{}')
 const emailNotificationsEnabled = ref(true)
 const language = ref<'' | 'en' | 'ru'>('')
 const submitError = ref<string | null>(null)
+const googleScopes = ref<GoogleScopeStatus | null>(null)
+const scopesLoading = ref(false)
+const scopesError = ref<string | null>(null)
 
 const hasLogbook = computed(() => profile.value?.has_logbook ?? false)
+const showRevokeFullDriveHint = computed(
+  () => hasLogbook.value && googleScopes.value?.available && googleScopes.value.full_drive,
+)
+
+const googleAccessItems = computed(() => {
+  const scopes = googleScopes.value
+  if (!scopes?.available) return []
+
+  return [
+    {
+      key: 'sign_in',
+      label: 'Google sign-in',
+      description: 'Authenticate with your Google account',
+      granted: scopes.sign_in,
+    },
+    {
+      key: 'drive_file',
+      label: 'Per-file Drive access',
+      description: 'Read and update your logbook spreadsheet only',
+      granted: scopes.drive_file,
+    },
+    {
+      key: 'full_drive',
+      label: 'Full Google Drive access',
+      description: 'Needed only to create a logbook automatically from our template',
+      granted: scopes.full_drive,
+    },
+  ]
+})
+
+async function loadGoogleScopes(): Promise<void> {
+  scopesLoading.value = true
+  scopesError.value = null
+  try {
+    googleScopes.value = await fetchGoogleScopes()
+  } catch (err) {
+    scopesError.value = isApiError(err) ? err.message : 'Could not load Google access status.'
+  } finally {
+    scopesLoading.value = false
+  }
+}
 
 onMounted(async () => {
   await fetch()
@@ -22,6 +68,7 @@ onMounted(async () => {
     emailNotificationsEnabled.value = profile.value.email_notifications_enabled
     language.value = profile.value.language ?? ''
   }
+  void loadGoogleScopes()
 })
 
 async function onSubmit(): Promise<void> {
@@ -70,11 +117,88 @@ async function onSubmit(): Promise<void> {
             <dt class="text-slate-500">Logbook connected</dt>
             <dd class="font-medium text-slate-900">{{ hasLogbook ? 'Yes' : 'No' }}</dd>
           </div>
-          <div v-if="profile.spreadsheet_id" class="sm:col-span-2">
-            <dt class="text-slate-500">Spreadsheet ID</dt>
-            <dd class="break-all font-mono text-xs text-slate-700">{{ profile.spreadsheet_id }}</dd>
+          <div v-if="hasLogbook && profile.spreadsheet_url" class="sm:col-span-2">
+            <dt class="text-slate-500">Logbook in Google</dt>
+            <dd class="mt-2 flex flex-wrap gap-3">
+              <a
+                :href="profile.spreadsheet_url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-sky-800 hover:bg-slate-100 hover:text-sky-900"
+              >
+                Open spreadsheet
+              </a>
+              <a
+                v-if="profile.drive_folder_url"
+                :href="profile.drive_folder_url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-sky-800 hover:bg-slate-100 hover:text-sky-900"
+              >
+                Open folder in Drive
+              </a>
+            </dd>
           </div>
         </dl>
+      </section>
+
+      <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 class="font-semibold text-slate-900">Google access</h2>
+        <p class="mt-1 text-sm text-slate-600">
+          Permissions this app currently has in your Google Account.
+        </p>
+
+        <LoadingState v-if="scopesLoading" class="mt-4" label="Checking Google access…" />
+        <ErrorBanner
+          v-else-if="scopesError"
+          class="mt-4"
+          :message="scopesError"
+          :retry-busy="scopesLoading"
+          @retry="loadGoogleScopes"
+        />
+        <template v-else-if="googleScopes?.available">
+          <ul class="mt-4 space-y-3 text-sm">
+            <li
+              v-for="item in googleAccessItems"
+              :key="item.key"
+              class="flex items-start gap-3"
+            >
+              <span
+                class="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                :class="
+                  item.granted
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-slate-100 text-slate-400'
+                "
+                :aria-label="item.granted ? 'Granted' : 'Not granted'"
+              >
+                {{ item.granted ? '✓' : '–' }}
+              </span>
+              <span>
+                <span class="font-medium text-slate-900">{{ item.label }}</span>
+                <span class="mt-0.5 block text-slate-600">{{ item.description }}</span>
+              </span>
+            </li>
+          </ul>
+
+          <p
+            v-if="showRevokeFullDriveHint"
+            class="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+          >
+            Your logbook is already set up. Full Google Drive access is no longer needed for daily
+            use — you can revoke it in your Google Account and keep using the app with per-file
+            access only.
+            <RouterLink
+              to="/help/google-drive-access"
+              class="font-medium text-sky-800 underline hover:text-sky-900"
+            >
+              How to manage Google Drive access
+            </RouterLink>
+          </p>
+        </template>
+        <p v-else-if="googleScopes && !googleScopes.available" class="mt-4 text-sm text-slate-600">
+          Could not verify Google permissions. Try signing out and signing in again.
+        </p>
       </section>
 
       <form class="space-y-6" @submit.prevent="onSubmit">

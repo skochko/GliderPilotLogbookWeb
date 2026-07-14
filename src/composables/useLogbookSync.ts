@@ -7,6 +7,7 @@ const POLL_INTERVAL_MS = 500
 
 const status = ref<LogbookSyncStatus | null>(null)
 const polling = ref(false)
+const syncCompleteCount = ref(0)
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 let pollGeneration = 0
 
@@ -32,8 +33,12 @@ function shouldKeepPolling(next: LogbookSyncStatus, hasLogbook: boolean): boolea
 }
 
 async function refreshSyncStatus(): Promise<LogbookSyncStatus> {
+  const previousStatus = status.value?.status ?? null
   const next = await getLogbookSyncStatus()
   status.value = next
+  if (previousStatus === 'syncing' && next.status === 'idle') {
+    syncCompleteCount.value += 1
+  }
   return next
 }
 
@@ -71,6 +76,7 @@ export function resetLogbookSyncState(): void {
   polling.value = false
   clearPollTimer()
   status.value = null
+  syncCompleteCount.value = 0
 }
 
 export function useLogbookSync() {
@@ -107,6 +113,7 @@ export function useLogbookSync() {
     showProgress,
     isSyncing,
     syncError,
+    syncCompleteCount: readonly(syncCompleteCount),
     refreshSyncStatus,
     startPolling,
     stopPolling,

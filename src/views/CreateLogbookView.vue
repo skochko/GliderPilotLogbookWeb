@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
@@ -48,6 +48,7 @@ const { show } = useFlashMessage()
 
 const createMode = ref<CreateLogbookMode | null>(null)
 const step = ref(STEP_METHOD)
+const stepsNavRef = ref<HTMLElement | null>(null)
 const driveScopeGranted = ref(false)
 const driveScopeLoading = ref(false)
 const driveScopeError = ref<string | null>(null)
@@ -81,6 +82,15 @@ const showFiDates = computed(() => form.pilot_privilege === 'fi')
 const isManual = computed(() => createMode.value === 'manual')
 const isAutomatic = computed(() => createMode.value === 'automatic')
 const logbookConnected = computed(() => Boolean(user.value?.has_logbook))
+const nextDisabled = computed(
+  () => step.value === STEP_SETUP && isManual.value && !manualConfirmed.value,
+)
+const nextBusy = computed(
+  () =>
+    mutating.value ||
+    driveScopeLoading.value ||
+    (step.value === STEP_SETUP && isManual.value && (pickerBusy.value || prefillLoading.value)),
+)
 
 const selectedOrganization = computed(() =>
   organizations.value.find((org) => org.id === selectedOrganizationId.value) ?? null,
@@ -178,13 +188,13 @@ async function prefillFormFromConnectedLogbook(): Promise<void> {
   }
 }
 
-async function openLogbookPicker(): Promise<void> {
-  if (pickerBusy.value) return
+async function openLogbookPicker(): Promise<boolean> {
+  if (pickerBusy.value) return false
   pickerError.value = null
   pickerBusy.value = true
   try {
     const picked = await pickSpreadsheet()
-    if (!picked) return
+    if (!picked) return false
     const ok = await connect({ spreadsheet_id: picked.id })
     if (ok) {
       await fetchMe()
@@ -195,9 +205,12 @@ async function openLogbookPicker(): Promise<void> {
         show('Logbook connected.', 'success')
       }
       persistWizardState()
+      return true
     }
+    return false
   } catch (err) {
     pickerError.value = err instanceof Error ? err.message : 'Picker failed'
+    return false
   } finally {
     pickerBusy.value = false
   }
@@ -224,7 +237,15 @@ watch(step, (value) => {
   if (value === STEP_SETUP && isAutomatic.value) {
     void loadDriveScopeStatus()
   }
-})
+  void nextTick(scrollActiveStepIntoView)
+}, { flush: 'post' })
+
+function scrollActiveStepIntoView(): void {
+  const nav = stepsNavRef.value
+  if (!nav) return
+  const active = nav.querySelector<HTMLElement>(`[data-step="${step.value}"]`)
+  active?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+}
 
 onMounted(async () => {
   restoreWizardState()
@@ -260,7 +281,33 @@ onMounted(async () => {
   }
 
   void loadOrganizations()
+  void nextTick(scrollActiveStepIntoView)
 })
+
+function isLicenseStepEmpty(): boolean {
+  return (
+    !form.license_type.trim() &&
+    !form.license_date &&
+    !form.license_number.trim() &&
+    !form.license_authority.trim()
+  )
+}
+
+function isTotalsStepEmpty(): boolean {
+  const flightCount = String(form.prior_flight_count ?? '').trim()
+  return (
+    !form.prior_total_time.trim() &&
+    !form.prior_pic_time.trim() &&
+    !form.prior_p2_time.trim() &&
+    !form.prior_instructor_time.trim() &&
+    !flightCount &&
+    !form.prior_kms_flown.trim()
+  )
+}
+
+function isMedicalStepEmpty(): boolean {
+  return !form.medical_type.trim() && !form.medical_issue_date && !form.medical_expire_date
+}
 
 function goBack(): void {
   if (step.value > STEP_METHOD) {
@@ -269,20 +316,7 @@ function goBack(): void {
   }
 }
 
-function skipCurrentStep(): void {
-  if (step.value === STEP_LICENSE) skippedLicense.value = true
-  if (step.value === STEP_TOTALS) skippedTotals.value = true
-  if (step.value === STEP_MEDICAL) skippedMedical.value = true
-  if (step.value === STEP_CLUB) skippedClubAutomation.value = true
-  if (step.value < totalSteps) {
-    step.value += 1
-    persistWizardState()
-    return
-  }
-  void submit()
-}
-
-function goNext(): void {
+async function goNext(): Promise<void> {
   validationError.value = null
 
   if (step.value === STEP_METHOD) {
@@ -302,8 +336,8 @@ function goNext(): void {
         return
       }
       if (!logbookConnected.value) {
-        validationError.value = 'Open your logbook spreadsheet with Google Drive Picker first.'
-        return
+        const connected = await openLogbookPicker()
+        if (!connected) return
       }
     }
     if (isAutomatic.value) {
@@ -322,9 +356,17 @@ function goNext(): void {
     return
   }
 
-  if (step.value === STEP_CLUB && !skippedClubAutomation.value && selectedOrganizationId.value == null) {
-    validationError.value = 'Select an organisation or skip this step.'
-    return
+  if (step.value === STEP_LICENSE && isLicenseStepEmpty()) {
+    skippedLicense.value = true
+  }
+  if (step.value === STEP_TOTALS && isTotalsStepEmpty()) {
+    skippedTotals.value = true
+  }
+  if (step.value === STEP_MEDICAL && isMedicalStepEmpty()) {
+    skippedMedical.value = true
+  }
+  if (step.value === STEP_CLUB && selectedOrganizationId.value == null) {
+    skippedClubAutomation.value = true
   }
 
   if (step.value < totalSteps) {
@@ -393,11 +435,16 @@ async function retrySubmit(): Promise<void> {
       </p>
     </div>
 
-    <nav aria-label="Wizard progress" class="flex flex-wrap gap-2">
+    <nav
+      ref="stepsNavRef"
+      aria-label="Wizard progress"
+      class="wizard-steps-nav -mx-4 flex flex-nowrap gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0"
+    >
       <span
         v-for="(label, index) in stepLabels"
         :key="label"
-        class="rounded-full px-3 py-1 text-sm font-medium"
+        :data-step="index + 1"
+        class="shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium"
         :class="
           step === index + 1
             ? 'bg-sky-100 text-sky-900 ring-1 ring-sky-200'
@@ -425,6 +472,35 @@ async function retrySubmit(): Promise<void> {
               type="button"
               class="rounded-lg border p-4 text-left transition"
               :class="
+                createMode === 'automatic'
+                  ? 'border-sky-400 bg-sky-50 ring-1 ring-sky-200'
+                  : 'border-slate-200 hover:border-slate-300'
+              "
+              @click="selectMode('automatic')"
+            >
+              <div class="flex flex-wrap items-center gap-2">
+                <p class="font-semibold text-slate-900">Create automatically</p>
+                <span
+                  class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200"
+                >
+                  Recommended
+                </span>
+              </div>
+              <p class="mt-1 text-sm text-slate-600">
+                We copy the official template into your Google Drive and set up the logbook for you.
+              </p>
+              <p
+                class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950"
+              >
+                Requires <strong>full access to your Google Drive</strong> to create the folder and copy
+                the template. Google keeps this permission until you revoke it in your Google Account — it
+                does not disappear after setup. Daily use only needs access to your logbook file.
+              </p>
+            </button>
+            <button
+              type="button"
+              class="rounded-lg border p-4 text-left transition"
+              :class="
                 createMode === 'manual'
                   ? 'border-sky-400 bg-sky-50 ring-1 ring-sky-200'
                   : 'border-slate-200 hover:border-slate-300'
@@ -434,21 +510,6 @@ async function retrySubmit(): Promise<void> {
               <p class="font-semibold text-slate-900">Create manually</p>
               <p class="mt-1 text-sm text-slate-600">
                 Copy the template in Google Drive yourself. Only the spreadsheet you select is shared with us.
-              </p>
-            </button>
-            <button
-              type="button"
-              class="rounded-lg border p-4 text-left transition"
-              :class="
-                createMode === 'automatic'
-                  ? 'border-sky-400 bg-sky-50 ring-1 ring-sky-200'
-                  : 'border-slate-200 hover:border-slate-300'
-              "
-              @click="selectMode('automatic')"
-            >
-              <p class="font-semibold text-slate-900">Create automatically</p>
-              <p class="mt-1 text-sm text-slate-600">
-                We copy the template into your Drive for you. Requires one-time full Google Drive access.
               </p>
             </button>
           </div>
@@ -472,37 +533,32 @@ async function retrySubmit(): Promise<void> {
             <input v-model="manualConfirmed" type="checkbox" class="mt-1" />
             <span>I created my logbook using the instructions</span>
           </label>
-
-          <div v-if="manualConfirmed" class="space-y-2">
-            <ActionButton type="button" :busy="pickerBusy || prefillLoading" @click="openLogbookPicker">
-              Open logbook
-            </ActionButton>
-            <LoadingState v-if="prefillLoading" label="Reading logbook details…" />
-            <p v-else-if="logbookConnected" class="text-sm text-emerald-700">
-              Logbook connected. Continue to enter your pilot details.
-            </p>
-          </div>
+          <p v-if="manualConfirmed && logbookConnected" class="text-sm text-emerald-700">
+            Logbook connected. Press Next to continue.
+          </p>
         </template>
 
         <template v-else-if="step === STEP_SETUP && isAutomatic">
           <h2 class="text-lg font-semibold text-slate-900">Automatic creation</h2>
           <p class="text-sm text-slate-600">
-            To copy the public template into your Google Drive, we need
-            <strong>one-time permission to access your Google Drive</strong>. After the logbook is created,
-            daily use only needs access to your logbook file — not your entire Drive.
+            To copy the public template into your Google Drive, we need permission to access your Google
+            Drive. Google keeps this grant until you remove it — it does not expire automatically after
+            the logbook is created. Daily use only needs access to your logbook file — not your entire
+            Drive.
+          </p>
+          <p class="text-sm text-slate-600">
+            You can review or remove these permissions later in your Google Account.
+            <RouterLink
+              to="/help/google-drive-access"
+              class="font-medium text-sky-700 hover:text-sky-800"
+            >
+              How to manage Google Drive access
+            </RouterLink>
           </p>
           <LoadingState v-if="driveScopeLoading" />
           <p v-else-if="driveScopeGranted" class="text-sm text-emerald-700">
             Google Drive access granted. Continue to enter your pilot details.
           </p>
-          <ActionButton
-            v-else
-            type="button"
-            class="mt-2"
-            @click="redirectForDriveAccess"
-          >
-            Continue and grant Drive access
-          </ActionButton>
         </template>
 
         <template v-else-if="step === STEP_PERSONAL">
@@ -551,7 +607,7 @@ async function retrySubmit(): Promise<void> {
 
         <template v-else-if="step === STEP_LICENSE">
           <h2 class="text-lg font-semibold text-slate-900">License</h2>
-          <p class="text-sm text-slate-600">Optional — you can skip this step.</p>
+          <p class="text-sm text-slate-600">Optional — leave blank and press Next to continue.</p>
 
           <label class="block text-sm">
             <span class="font-medium text-slate-700">License type</span>
@@ -576,7 +632,7 @@ async function retrySubmit(): Promise<void> {
 
         <template v-else-if="step === STEP_TOTALS">
           <h2 class="text-lg font-semibold text-slate-900">Totals from earlier logbooks</h2>
-          <p class="text-sm text-slate-600">Optional prior totals — you can skip this step.</p>
+          <p class="text-sm text-slate-600">Optional prior totals — leave blank and press Next to continue.</p>
 
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="block text-sm">
@@ -608,7 +664,9 @@ async function retrySubmit(): Promise<void> {
 
         <template v-else-if="step === STEP_MEDICAL">
           <h2 class="text-lg font-semibold text-slate-900">Medical</h2>
-          <p class="text-sm text-slate-600">Current medical certificate — optional, you can skip this step.</p>
+          <p class="text-sm text-slate-600">
+            Current medical certificate — optional. Leave blank and press Next to continue.
+          </p>
 
           <label class="block text-sm">
             <span class="font-medium text-slate-700">Medical type</span>
@@ -657,7 +715,7 @@ async function retrySubmit(): Promise<void> {
               {{ ORGANIZATION_AUTOMATION_FORM_NOTICE }}
             </p>
             <p v-if="organizations.length === 0" class="text-sm text-slate-500">
-              No organisations are available yet. You can skip this step.
+              No organisations are available yet. Press Next to finish without club sync.
             </p>
           </template>
         </template>
@@ -674,16 +732,11 @@ async function retrySubmit(): Promise<void> {
           </ActionButton>
 
           <ActionButton
-            v-if="step >= STEP_LICENSE && step <= STEP_CLUB"
-            type="button"
-            variant="secondary"
-            :disabled="mutating"
-            @click="skipCurrentStep"
+            type="submit"
+            class="ml-auto"
+            :busy="nextBusy"
+            :disabled="nextDisabled"
           >
-            {{ step === STEP_CLUB ? 'Skip and finish' : 'Skip' }}
-          </ActionButton>
-
-          <ActionButton type="submit" class="ml-auto" :busy="mutating || driveScopeLoading">
             {{
               step === STEP_CLUB
                 ? isManual
@@ -695,15 +748,15 @@ async function retrySubmit(): Promise<void> {
         </div>
       </form>
     </section>
-
-    <p class="text-center text-sm text-slate-600">
-      Already have a logbook?
-      <RouterLink to="/connect" class="font-medium text-sky-700 hover:text-sky-800">Connect existing</RouterLink>
-    </p>
   </div>
 </template>
 
 <style scoped>
+.wizard-steps-nav {
+  padding-bottom: 0.75rem;
+  scrollbar-width: thin;
+}
+
 :deep(.manual-instruction a) {
   color: rgb(3 105 161);
   font-weight: 500;

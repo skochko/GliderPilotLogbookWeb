@@ -8,6 +8,14 @@ export interface CreateLogbookScopeStatus {
   authorization_path: string
 }
 
+export interface GoogleScopeStatus {
+  available: boolean
+  scopes: string[]
+  sign_in: boolean
+  drive_file: boolean
+  full_drive: boolean
+}
+
 export function loginRedirect(): void {
   window.location.href = `${API}/auth/google`
 }
@@ -19,6 +27,10 @@ export function createLogbookAuthRedirect(returnTo = '/logbook/create'): void {
 
 export async function fetchCreateLogbookScopes(): Promise<CreateLogbookScopeStatus> {
   return apiJson<CreateLogbookScopeStatus>('/auth/google/create-logbook/scopes')
+}
+
+export async function fetchGoogleScopes(): Promise<GoogleScopeStatus> {
+  return apiJson<GoogleScopeStatus>('/auth/google/scopes')
 }
 
 export async function fetchMe(): Promise<UserMe | null> {

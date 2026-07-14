@@ -2,9 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { hasActiveCreateLogbookWizard } from '@/lib/createLogbookWizardStorage'
 import { useFlashMessage } from '@/composables/useFlashMessage'
-import { SITE_PAGES } from '@/lib/sitePages'
+import { SITE_PAGE_ROUTES } from '@/lib/sitePages'
 
-const sitePageRoutes = SITE_PAGES.map((page) => ({
+const sitePageRoutes = SITE_PAGE_ROUTES.map((page) => ({
   path: page.path,
   name: `page-${page.type}`,
   component: () => import('@/views/SitePageView.vue'),

@@ -21,7 +21,7 @@ const {
   loadMore,
 } = useFlights()
 const { displaySettings, ensureLoaded } = useDisplaySettings()
-const { status, showProgress, isSyncing, syncError, startPolling, stopPolling } = useLogbookSync()
+const { status, showProgress, syncError, syncCompleteCount, startPolling, stopPolling } = useLogbookSync()
 
 const loadMoreSentinel = ref<HTMLElement | null>(null)
 
@@ -91,8 +91,8 @@ watch(
   },
 )
 
-watch(isSyncing, (syncing, wasSyncing) => {
-  if (wasSyncing && !syncing) {
+watch(syncCompleteCount, (count, previous) => {
+  if (count > 0 && count !== previous) {
     void reloadFlights()
   }
 })
@@ -127,7 +127,7 @@ watch(isSyncing, (syncing, wasSyncing) => {
     <ErrorBanner v-else-if="error && !flights.length && !showProgress" :message="error" :retry-busy="loading" @retry="reloadFlights" />
 
     <div
-      v-else-if="listInitialized && !flights.length && !isSyncing && !showProgress"
+      v-else-if="listInitialized && !flights.length && !showProgress"
       class="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center text-slate-500"
     >
       No flights yet. Add your first flight to get started.

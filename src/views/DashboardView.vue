@@ -28,7 +28,7 @@ const {
 } = useDashboardStatus()
 const { displaySettings, ensureLoaded } = useDisplaySettings()
 const { clear: clearFlashMessage, kind: flashKind } = useFlashMessage()
-const { status: syncStatus, showProgress, isSyncing, syncError, startPolling } = useLogbookSync()
+const { status: syncStatus, showProgress, syncError, syncCompleteCount, startPolling } = useLogbookSync()
 
 const recentFlights = ref<Flight[]>([])
 const recentFlightsLoading = ref(false)
@@ -58,10 +58,14 @@ async function loadRecentFlights(): Promise<void> {
   }
 }
 
+async function refreshDashboardData(): Promise<void> {
+  await ensureLoaded({ force: true })
+  await Promise.all([fetchStatistics(), fetchDashboardStatus(), loadRecentFlights()])
+}
+
 async function fetchDashboard(): Promise<void> {
   void startPolling()
-  await ensureLoaded()
-  await Promise.all([fetchStatistics(), fetchDashboardStatus(), loadRecentFlights()])
+  await refreshDashboardData()
 }
 
 void fetchDashboard()
@@ -76,9 +80,9 @@ watch(
   },
 )
 
-watch(isSyncing, (syncing, wasSyncing) => {
-  if (wasSyncing && !syncing) {
-    void Promise.all([fetchStatistics(), fetchDashboardStatus(), loadRecentFlights()])
+watch(syncCompleteCount, (count, previous) => {
+  if (count > 0 && count !== previous) {
+    void refreshDashboardData()
   }
 })
 
@@ -109,7 +113,7 @@ watch(initialized, (ready) => {
       v-else-if="error"
       :message="error"
       :retry-busy="loading"
-      @retry="fetchDashboard"
+      @retry="refreshDashboardData"
     />
 
     <template v-else-if="statistics">
