@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import FlightsTable from '@/components/FlightsTable.vue'
@@ -46,6 +46,9 @@ function bindLoadMoreObserver(): void {
 
   loadMoreObserver = new IntersectionObserver(
     (entries) => {
+      if (loading.value || loadingMore.value || !listInitialized.value) {
+        return
+      }
       if (entries.some((entry) => entry.isIntersecting)) {
         void handleLoadMore()
       }
@@ -56,9 +59,12 @@ function bindLoadMoreObserver(): void {
 }
 
 onMounted(async () => {
+  window.scrollTo({ top: 0, left: 0 })
   void startPolling()
   await ensureLoaded()
   await reloadFlights()
+  await nextTick()
+  window.scrollTo({ top: 0, left: 0 })
   bindLoadMoreObserver()
 })
 

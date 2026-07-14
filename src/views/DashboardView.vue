@@ -131,9 +131,10 @@ watch(initialized, (ready) => {
           <h2 class="font-semibold text-slate-900">Recent activity</h2>
           <RouterLink
             to="/flights"
-            class="text-sm font-medium text-sky-700 hover:text-sky-800 hover:underline"
+            class="inline-flex items-center gap-1 text-sm font-medium text-sky-700 hover:text-sky-800 hover:underline"
           >
-            View all
+            All flights
+            <span aria-hidden="true">→</span>
           </RouterLink>
         </div>
         <div v-if="recentFlightsError" class="px-5 py-4">

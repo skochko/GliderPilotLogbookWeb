@@ -32,6 +32,7 @@ export function resetFlightsState(): void {
 export function useFlights() {
   async function list(sortDirection?: string): Promise<Flight[]> {
     loading.value = true
+    listInitialized.value = false
     error.value = null
     listSortDirection.value = sortDirection
     try {
