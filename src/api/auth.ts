@@ -33,6 +33,15 @@ export async function fetchGoogleScopes(): Promise<GoogleScopeStatus> {
   return apiJson<GoogleScopeStatus>('/auth/google/scopes')
 }
 
+export async function revokeGoogleAccess(): Promise<void> {
+  await apiJson<void>('/auth/google/revoke', { method: 'POST' })
+}
+
+export function googleReconnectRedirect(returnTo = '/profile'): void {
+  const params = new URLSearchParams({ return_to: `${window.location.origin}${returnTo}` })
+  window.location.href = `${API}/auth/google/reconnect?${params.toString()}`
+}
+
 export async function fetchMe(): Promise<UserMe | null> {
   const res = await apiFetch('/auth/me')
   if (res.status === 401 || res.status === 403) {

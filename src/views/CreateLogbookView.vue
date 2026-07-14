@@ -493,8 +493,17 @@ async function retrySubmit(): Promise<void> {
                 class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950"
               >
                 Requires <strong>full access to your Google Drive</strong> to create the folder and copy
-                the template. Google keeps this permission until you revoke it in your Google Account — it
-                does not disappear after setup. Daily use only needs access to your logbook file.
+                the template. Google keeps this permission until you remove it — it does not disappear after
+                setup. After your logbook is created, remove full Drive access from
+                <strong>Profile → Google access</strong> (one more Google sign-in; per-file access only).
+              </p>
+              <p
+                class="mt-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700"
+              >
+                <strong class="font-medium text-slate-900">Account &amp; storage:</strong> choose a
+                Google account with enough Drive space for the logbook and flight media over time. A
+                separate account is optional but can keep flying records apart from personal or work
+                files.
               </p>
             </button>
             <button
@@ -542,17 +551,21 @@ async function retrySubmit(): Promise<void> {
           <h2 class="text-lg font-semibold text-slate-900">Automatic creation</h2>
           <p class="text-sm text-slate-600">
             To copy the public template into your Google Drive, we need permission to access your Google
-            Drive. Google keeps this grant until you remove it — it does not expire automatically after
-            the logbook is created. Daily use only needs access to your logbook file — not your entire
-            Drive.
+            Drive for this setup step. Google keeps this grant until you remove it — it does not expire
+            automatically after the logbook is created.
           </p>
           <p class="text-sm text-slate-600">
-            You can review or remove these permissions later in your Google Account.
+            Once your logbook is created, you can remove full Drive access from
+            <RouterLink to="/profile" class="font-medium text-sky-700 hover:text-sky-800">
+              Profile → Google access
+            </RouterLink>
+            . You will need to sign in with Google again afterwards (per-file access to your logbook
+            only — not your entire Drive).
             <RouterLink
               to="/help/google-drive-access"
               class="font-medium text-sky-700 hover:text-sky-800"
             >
-              How to manage Google Drive access
+              Learn more
             </RouterLink>
           </p>
           <LoadingState v-if="driveScopeLoading" />

@@ -1,13 +1,22 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { isApiError } from '@/api/errors'
-import { fetchGoogleScopes, type GoogleScopeStatus } from '@/api/auth'
+import {
+  fetchGoogleScopes,
+  googleReconnectRedirect,
+  revokeGoogleAccess,
+  type GoogleScopeStatus,
+} from '@/api/auth'
+import { useFlashMessage } from '@/composables/useFlashMessage'
 import { useProfile } from '@/composables/useProfile'
 
+const route = useRoute()
+const router = useRouter()
+const { show } = useFlashMessage()
 const { profile, loading, initialized, mutating, error, fetch, save } = useProfile()
 
 const preferencesJson = ref('{}')
@@ -17,10 +26,15 @@ const submitError = ref<string | null>(null)
 const googleScopes = ref<GoogleScopeStatus | null>(null)
 const scopesLoading = ref(false)
 const scopesError = ref<string | null>(null)
+const revokeBusy = ref(false)
+const revokeError = ref<string | null>(null)
 
 const hasLogbook = computed(() => profile.value?.has_logbook ?? false)
-const showRevokeFullDriveHint = computed(
+const showRevokeFullDriveFlow = computed(
   () => hasLogbook.value && googleScopes.value?.available && googleScopes.value.full_drive,
+)
+const needsGoogleReconnect = computed(
+  () => hasLogbook.value && googleScopes.value !== null && !googleScopes.value.available,
 )
 
 const googleAccessItems = computed(() => {
@@ -61,6 +75,45 @@ async function loadGoogleScopes(): Promise<void> {
   }
 }
 
+async function handleRevokeFullDriveAccess(): Promise<void> {
+  if (revokeBusy.value) return
+
+  revokeError.value = null
+  revokeBusy.value = true
+  try {
+    await revokeGoogleAccess()
+    await loadGoogleScopes()
+    show(
+      'Google access removed. Reconnect with Google to continue using your logbook.',
+      'info',
+    )
+  } catch (err) {
+    revokeError.value = isApiError(err) ? err.message : 'Could not remove Google access.'
+  } finally {
+    revokeBusy.value = false
+  }
+}
+
+async function handleReconnectQuery(): Promise<void> {
+  const reconnect = route.query.google_reconnect
+  if (reconnect !== 'success' && reconnect !== 'error' && reconnect !== 'account_mismatch') {
+    return
+  }
+
+  await router.replace({ path: route.path })
+  if (reconnect === 'success') {
+    await loadGoogleScopes()
+    show('Google access restored with per-file Drive access only.', 'success')
+    return
+  }
+  if (reconnect === 'account_mismatch') {
+    revokeError.value =
+      'You signed in with a different Google account. Use the same account as your logbook and try again.'
+    return
+  }
+  revokeError.value = 'Could not restore Google access. Please try again.'
+}
+
 onMounted(async () => {
   await fetch()
   if (profile.value) {
@@ -68,7 +121,8 @@ onMounted(async () => {
     emailNotificationsEnabled.value = profile.value.email_notifications_enabled
     language.value = profile.value.language ?? ''
   }
-  void loadGoogleScopes()
+  await loadGoogleScopes()
+  await handleReconnectQuery()
 })
 
 async function onSubmit(): Promise<void> {
@@ -156,6 +210,7 @@ async function onSubmit(): Promise<void> {
           :retry-busy="scopesLoading"
           @retry="loadGoogleScopes"
         />
+        <ErrorBanner v-if="revokeError" class="mt-4" :message="revokeError" />
         <template v-else-if="googleScopes?.available">
           <ul class="mt-4 space-y-3 text-sm">
             <li
@@ -181,24 +236,46 @@ async function onSubmit(): Promise<void> {
             </li>
           </ul>
 
-          <p
-            v-if="showRevokeFullDriveHint"
-            class="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+          <div
+            v-if="showRevokeFullDriveFlow"
+            class="mt-4 space-y-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950"
           >
-            Your logbook is already set up. Full Google Drive access is no longer needed for daily
-            use — you can revoke it in your Google Account and keep using the app with per-file
-            access only.
-            <RouterLink
-              to="/help/google-drive-access"
-              class="font-medium text-sky-800 underline hover:text-sky-900"
-            >
-              How to manage Google Drive access
-            </RouterLink>
-          </p>
+            <p>
+              Your logbook is already set up. Full Google Drive access is no longer needed for daily
+              use. You can remove it here and keep only per-file access to your logbook spreadsheet.
+            </p>
+            <p>
+              <strong>Important:</strong> removing access revokes <em>all</em> Google permissions for
+              this app — not only full Drive. You will need to
+              <strong>sign in with Google again</strong> afterwards (per-file access only, not your
+              entire Drive). You stay signed in to this website; only the Google link is reset.
+            </p>
+            <div class="flex flex-wrap items-center gap-3">
+              <ActionButton type="button" :busy="revokeBusy" @click="handleRevokeFullDriveAccess">
+                Remove Google access
+              </ActionButton>
+              <RouterLink
+                to="/help/google-drive-access"
+                class="font-medium text-sky-800 underline hover:text-sky-900"
+              >
+                Manual steps in Google Account
+              </RouterLink>
+            </div>
+          </div>
         </template>
-        <p v-else-if="googleScopes && !googleScopes.available" class="mt-4 text-sm text-slate-600">
-          Could not verify Google permissions. Try signing out and signing in again.
-        </p>
+
+        <div
+          v-else-if="needsGoogleReconnect"
+          class="mt-4 space-y-3 rounded-md border border-sky-200 bg-sky-50 px-3 py-3 text-sm text-sky-950"
+        >
+          <p>
+            Google access is not connected. Sign in with Google again to use your logbook — you only
+            need per-file access to your spreadsheet, not full Drive.
+          </p>
+          <ActionButton type="button" @click="googleReconnectRedirect('/profile')">
+            Reconnect Google
+          </ActionButton>
+        </div>
       </section>
 
       <form class="space-y-6" @submit.prevent="onSubmit">
