@@ -36,5 +36,5 @@ alwaysApply: false
 ## Empty states
 
 - Not logged in → login
-- No logbook → connect flow (URL or spreadsheet ID)
+- No logbook → connect flow (Google Drive Picker)
 - No flights → empty list, not an error

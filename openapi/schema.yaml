@@ -1364,8 +1364,8 @@ components:
       properties:
         spreadsheet_id:
           type: string
-        url:
-          type: string
+      required:
+      - spreadsheet_id
     LogbookStatus:
       type: object
       properties:

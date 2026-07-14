@@ -12,8 +12,8 @@ const { user } = useAuth()
     <div class="mx-auto flex min-h-screen max-w-3xl flex-col px-4 py-8 sm:px-6">
       <header class="mb-8 flex items-center justify-between gap-4">
         <RouterLink to="/" class="flex items-center gap-2 text-lg font-semibold text-sky-800 hover:text-sky-900">
-          <GliderLogo size-class="h-7 w-7 shrink-0" label="GliderLogbook.co.uk" />
-          <span>GliderLogbook.co.uk</span>
+          <GliderLogo size-class="h-8 w-8 shrink-0" label="Glider Pilot Logbook" />
+          <span>Glider Pilot Logbook</span>
         </RouterLink>
         <RouterLink
           v-if="user"

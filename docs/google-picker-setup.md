@@ -10,7 +10,7 @@ In [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Servic
 
 - **Google Picker API**
 - **Google Drive API**
-- **Google Sheets API** (already needed for backend)
+- **Google Sheets API** (backend reads/writes the connected logbook via per-file `drive.file` access)
 
 Billing must be enabled on the project (free tier is enough).
 

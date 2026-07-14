@@ -7,11 +7,13 @@ import DashboardMonthlyChart from '@/components/DashboardMonthlyChart.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import FlightsTable from '@/components/FlightsTable.vue'
 import LoadingState from '@/components/LoadingState.vue'
+import LogbookSyncProgress from '@/components/LogbookSyncProgress.vue'
 import { RECENT_FLIGHTS_LIMIT, listFlights } from '@/api/flights'
 import { isApiError } from '@/api/errors'
 import { useDashboardStatus } from '@/composables/useDashboardStatus'
 import { useDisplaySettings } from '@/composables/useDisplaySettings'
 import { useFlashMessage } from '@/composables/useFlashMessage'
+import { useLogbookSync } from '@/composables/useLogbookSync'
 import { useStatistics } from '@/composables/useStatistics'
 import type { Flight } from '@/types'
 
@@ -26,6 +28,7 @@ const {
 } = useDashboardStatus()
 const { displaySettings, ensureLoaded } = useDisplaySettings()
 const { clear: clearFlashMessage, kind: flashKind } = useFlashMessage()
+const { status: syncStatus, showProgress, isSyncing, syncError, startPolling } = useLogbookSync()
 
 const recentFlights = ref<Flight[]>([])
 const recentFlightsLoading = ref(false)
@@ -34,7 +37,7 @@ const recentFlightsInitialized = ref(false)
 
 const loading = computed(() => statsLoading.value || statusLoading.value || recentFlightsLoading.value)
 const initialized = computed(() => statsInitialized.value && statusInitialized.value && recentFlightsInitialized.value)
-const error = computed(() => statsError.value || statusError.value)
+const error = computed(() => statsError.value || statusError.value || syncError.value)
 
 async function loadRecentFlights(): Promise<void> {
   recentFlightsLoading.value = true
@@ -56,11 +59,28 @@ async function loadRecentFlights(): Promise<void> {
 }
 
 async function fetchDashboard(): Promise<void> {
+  void startPolling()
   await ensureLoaded()
   await Promise.all([fetchStatistics(), fetchDashboardStatus(), loadRecentFlights()])
 }
 
 void fetchDashboard()
+
+watch(
+  () => syncStatus.value?.flights_loaded,
+  (count, previous) => {
+    if (!showProgress.value || count === previous) {
+      return
+    }
+    void loadRecentFlights()
+  },
+)
+
+watch(isSyncing, (syncing, wasSyncing) => {
+  if (wasSyncing && !syncing) {
+    void Promise.all([fetchStatistics(), fetchDashboardStatus(), loadRecentFlights()])
+  }
+})
 
 watch(initialized, (ready) => {
   if (ready && flashKind.value === 'success') {
@@ -76,7 +96,15 @@ watch(initialized, (ready) => {
       <p class="mt-0.5 text-sm text-slate-500">Overview of your flying activity.</p>
     </div>
 
-    <LoadingState v-if="!initialized" />
+    <LogbookSyncProgress
+      v-if="showProgress && syncStatus"
+      :loaded="syncStatus.loaded"
+      :total="syncStatus.total"
+      :percent="syncStatus.percent"
+      :flights-loaded="syncStatus.flights_loaded"
+    />
+
+    <LoadingState v-if="!initialized && !showProgress" />
     <ErrorBanner
       v-else-if="error"
       :message="error"

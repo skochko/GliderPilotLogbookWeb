@@ -18,6 +18,6 @@ import { SITE_PAGES } from '@/lib/sitePages'
         {{ item.label }}
       </RouterLink>
     </nav>
-    <p class="mt-4">© GliderLogbook.co.uk</p>
+    <p class="mt-4">© GliderPilotLogbook.co.uk</p>
   </footer>
 </template>

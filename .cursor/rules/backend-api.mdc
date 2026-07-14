@@ -54,7 +54,7 @@ Parse `error.message` for user-facing text; use `details` for field errors.
 
 ## Logbook gate
 
-Many endpoints return 400 if no logbook: connect via `POST /logbook/connect` first (`spreadsheet_id` or `url`).
+Many endpoints return 400 if no logbook: connect via `POST /logbook/connect` first (`spreadsheet_id` from Google Drive Picker).
 
 ## Flight ID in URLs
 

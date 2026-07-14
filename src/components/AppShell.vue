@@ -104,7 +104,7 @@ watch(
             </svg>
           </button>
           <RouterLink to="/dashboard" class="flex min-w-0 items-center gap-2 truncate text-lg font-semibold text-sky-800">
-            <GliderLogo size-class="h-7 w-7 shrink-0" />
+            <GliderLogo size-class="h-8 w-8 shrink-0" />
             <span class="truncate">Glider Pilot Logbook</span>
           </RouterLink>
           <nav v-if="user?.has_logbook" class="hidden items-center gap-1 sm:flex">

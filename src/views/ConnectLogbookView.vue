@@ -14,36 +14,11 @@ const { connect, mutating, error } = useLogbook()
 const { pickSpreadsheet } = useGooglePicker()
 const { show } = useFlashMessage()
 
-const urlInput = ref('')
 const pickerError = ref<string | null>(null)
 const pickerBusy = ref(false)
-const urlBusy = ref(false)
-
-async function connectByUrl(): Promise<void> {
-  if (urlBusy.value || pickerBusy.value) return
-
-  const value = urlInput.value.trim()
-  if (!value) return
-
-  const payload = value.includes('docs.google.com') || value.includes('spreadsheets')
-    ? { url: value }
-    : { spreadsheet_id: value }
-
-  urlBusy.value = true
-  try {
-    const ok = await connect(payload)
-    if (ok) {
-      await fetchMe()
-      show('Logbook connected successfully.', 'success')
-      await router.push('/dashboard')
-    }
-  } finally {
-    urlBusy.value = false
-  }
-}
 
 async function connectByPicker(): Promise<void> {
-  if (urlBusy.value || pickerBusy.value) return
+  if (pickerBusy.value) return
 
   pickerError.value = null
   pickerBusy.value = true
@@ -69,11 +44,16 @@ async function connectByPicker(): Promise<void> {
     <div>
       <h1 class="text-2xl font-bold text-slate-900">Connect your logbook</h1>
       <p class="mt-2 text-slate-600">
-        Select your logbook spreadsheet (our template) or paste its URL to get started.
+        Select your existing logbook spreadsheet in Google Drive to get started.
       </p>
     </div>
 
-    <ErrorBanner v-if="error" :message="error" :retry-busy="urlBusy || mutating" @retry="connectByUrl" />
+    <ErrorBanner
+      v-if="error"
+      :message="error"
+      :retry-busy="pickerBusy || mutating"
+      @retry="connectByPicker"
+    />
     <ErrorBanner
       v-if="pickerError"
       :message="pickerError"
@@ -98,39 +78,17 @@ async function connectByPicker(): Promise<void> {
 
     <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <h2 class="font-semibold text-slate-900">Google Drive Picker</h2>
-      <p class="mt-1 text-sm text-slate-600">Recommended — browse and select your spreadsheet.</p>
+      <p class="mt-1 text-sm text-slate-600">
+        Browse your Drive and select the logbook spreadsheet you want to connect.
+      </p>
       <ActionButton
         class="mt-4"
         :busy="pickerBusy"
-        :disabled="urlBusy || mutating"
+        :disabled="mutating"
         @click="connectByPicker"
       >
         Choose spreadsheet
       </ActionButton>
-    </section>
-
-    <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 class="font-semibold text-slate-900">Paste URL or spreadsheet ID</h2>
-      <p class="mt-1 text-sm text-slate-600">
-        Alternative if the picker is unavailable.
-      </p>
-      <form class="mt-4 space-y-3" @submit.prevent="connectByUrl">
-        <input
-          v-model="urlInput"
-          type="text"
-          placeholder="https://docs.google.com/spreadsheets/d/… or spreadsheet ID"
-          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          :disabled="urlBusy || pickerBusy || mutating"
-        />
-        <ActionButton
-          type="submit"
-          variant="secondary"
-          :busy="urlBusy || mutating"
-          :disabled="pickerBusy || !urlInput.trim()"
-        >
-          Connect
-        </ActionButton>
-      </form>
     </section>
   </div>
 </template>

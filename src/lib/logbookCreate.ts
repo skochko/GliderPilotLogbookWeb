@@ -1,8 +1,10 @@
+import type { SheetSettings } from '@/types'
 import type {
   LogbookCreateFormState,
   LogbookCreateRequest,
   PilotPrivilege,
 } from '@/types/logbookCreate'
+import { applySheetSettingsToLogbookProfileForm, emptyLogbookProfileForm } from '@/lib/logbookProfile'
 
 export const PILOT_PRIVILEGE_OPTIONS: { value: PilotPrivilege; label: string }[] = [
   { value: 'pilot', label: 'Pilot' },
@@ -12,6 +14,48 @@ export const PILOT_PRIVILEGE_OPTIONS: { value: PilotPrivilege; label: string }[]
 
 export function isInstructorPrivilege(privilege: PilotPrivilege): boolean {
   return privilege === 'bi' || privilege === 'fi'
+}
+
+const CREATE_FORM_FIELDS = [
+  'pilot_name',
+  'pilot_address',
+  'pilot_privilege',
+  'instructor_from_date',
+  'bi_ref_date',
+  'fi_3year_date',
+  'fi_ref_date',
+  'license_type',
+  'license_date',
+  'license_number',
+  'license_authority',
+  'prior_total_time',
+  'prior_pic_time',
+  'prior_p2_time',
+  'prior_instructor_time',
+  'prior_flight_count',
+  'prior_kms_flown',
+  'medical_type',
+  'medical_issue_date',
+  'medical_expire_date',
+] as const satisfies readonly (keyof LogbookCreateFormState)[]
+
+export function applySheetSettingsToCreateForm(
+  form: LogbookCreateFormState,
+  settings: SheetSettings,
+): void {
+  const profileForm = emptyLogbookProfileForm()
+  applySheetSettingsToLogbookProfileForm(profileForm, settings)
+  for (const field of CREATE_FORM_FIELDS) {
+    form[field] = profileForm[field]
+  }
+}
+
+export function createFormHasProfileData(form: LogbookCreateFormState): boolean {
+  return CREATE_FORM_FIELDS.some((field) => {
+    const value = form[field]
+    if (typeof value === 'number') return Number.isFinite(value)
+    return String(value).trim() !== ''
+  })
 }
 
 export function parseOptionalFlightCount(value: string | number): number | null {

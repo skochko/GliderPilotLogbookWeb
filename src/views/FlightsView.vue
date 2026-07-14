@@ -4,9 +4,11 @@ import { RouterLink } from 'vue-router'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import FlightsTable from '@/components/FlightsTable.vue'
 import LoadingState from '@/components/LoadingState.vue'
+import LogbookSyncProgress from '@/components/LogbookSyncProgress.vue'
 import SpinnerIcon from '@/components/SpinnerIcon.vue'
 import { useFlights } from '@/composables/useFlights'
 import { useDisplaySettings } from '@/composables/useDisplaySettings'
+import { useLogbookSync } from '@/composables/useLogbookSync'
 
 const {
   flights,
@@ -19,6 +21,7 @@ const {
   loadMore,
 } = useFlights()
 const { displaySettings, ensureLoaded } = useDisplaySettings()
+const { status, showProgress, isSyncing, syncError, startPolling, stopPolling } = useLogbookSync()
 
 const loadMoreSentinel = ref<HTMLElement | null>(null)
 
@@ -53,6 +56,7 @@ function bindLoadMoreObserver(): void {
 }
 
 onMounted(async () => {
+  void startPolling()
   await ensureLoaded()
   await reloadFlights()
   bindLoadMoreObserver()
@@ -60,6 +64,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   loadMoreObserver?.disconnect()
+  stopPolling()
 })
 
 watch(loadMoreSentinel, () => {
@@ -75,6 +80,22 @@ watch(
     void reloadFlights()
   },
 )
+
+watch(
+  () => status.value?.flights_loaded,
+  (count, previous) => {
+    if (!showProgress.value || count === previous) {
+      return
+    }
+    void reloadFlights()
+  },
+)
+
+watch(isSyncing, (syncing, wasSyncing) => {
+  if (wasSyncing && !syncing) {
+    void reloadFlights()
+  }
+})
 </script>
 
 <template>
@@ -92,24 +113,37 @@ watch(
       </RouterLink>
     </div>
 
-    <LoadingState v-if="!listInitialized" />
-    <ErrorBanner v-else-if="error && !flights.length" :message="error" :retry-busy="loading" @retry="reloadFlights" />
+    <LogbookSyncProgress
+      v-if="showProgress && status"
+      :loaded="status.loaded"
+      :total="status.total"
+      :percent="status.percent"
+      :flights-loaded="status.flights_loaded"
+    />
+
+    <ErrorBanner v-if="syncError" :message="syncError" />
+
+    <LoadingState v-if="!listInitialized && !showProgress" />
+    <ErrorBanner v-else-if="error && !flights.length && !showProgress" :message="error" :retry-busy="loading" @retry="reloadFlights" />
 
     <div
-      v-else-if="listInitialized && !flights.length"
+      v-else-if="listInitialized && !flights.length && !isSyncing && !showProgress"
       class="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center text-slate-500"
     >
       No flights yet. Add your first flight to get started.
     </div>
 
-    <div v-else-if="listInitialized" class="space-y-3">
+    <div v-else-if="listInitialized && (flights.length || showProgress)" class="space-y-3">
       <ErrorBanner v-if="error && flights.length" :message="error" :retry-busy="loadingMore" @retry="handleLoadMore" />
 
-      <FlightsTable :flights="flights" />
+      <FlightsTable v-if="flights.length" :flights="flights" />
 
-      <div ref="loadMoreSentinel" class="h-px" aria-hidden="true" />
+      <div v-if="flights.length" ref="loadMoreSentinel" class="h-px" aria-hidden="true" />
 
-      <div v-if="hasMore || loadingMore" class="rounded-lg border border-slate-200 bg-white px-4 py-4 text-center shadow-sm">
+      <div
+        v-if="flights.length && (hasMore || loadingMore)"
+        class="rounded-lg border border-slate-200 bg-white px-4 py-4 text-center shadow-sm"
+      >
         <button
           v-if="hasMore && !loadingMore"
           type="button"

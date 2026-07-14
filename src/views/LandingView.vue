@@ -75,7 +75,7 @@ const faqItems = [
 ]
 
 onMounted(() => {
-  document.title = 'GliderLogbook.co.uk — Modern digital logbook for glider pilots'
+  document.title = 'GliderPilotLogbook.co.uk — Modern digital logbook for glider pilots'
   void fetchLanding()
 })
 </script>
@@ -182,7 +182,7 @@ onMounted(() => {
                 Your data stays in your Google account.
               </h2>
               <p class="mt-4 text-base leading-relaxed text-landing-secondary sm:text-lg">
-                GliderLogbook.co.uk connects to a spreadsheet in your Google Drive. You keep full
+                GliderPilotLogbook.co.uk connects to a spreadsheet in your Google Drive. You keep full
                 ownership of your records, can export or share through Google at any time, and avoid
                 vendor lock-in.
               </p>

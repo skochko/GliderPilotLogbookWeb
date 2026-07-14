@@ -35,7 +35,7 @@ export function useLogbook() {
     }
   }
 
-  async function connect(payload: { url?: string; spreadsheet_id?: string }): Promise<boolean> {
+  async function connect(payload: { spreadsheet_id: string }): Promise<boolean> {
     mutating.value = true
     error.value = null
     try {
@@ -58,6 +58,21 @@ export function useLogbook() {
       return response
     } catch (err) {
       error.value = isApiError(err) ? err.message : 'Failed to create logbook'
+      return null
+    } finally {
+      mutating.value = false
+    }
+  }
+
+  async function applyWizard(payload: LogbookCreateRequest): Promise<LogbookCreateResponse | null> {
+    mutating.value = true
+    error.value = null
+    try {
+      const response = await logbookApi.applyLogbookWizard(payload)
+      status.value = response
+      return response
+    } catch (err) {
+      error.value = isApiError(err) ? err.message : 'Failed to save logbook details'
       return null
     } finally {
       mutating.value = false
@@ -88,6 +103,7 @@ export function useLogbook() {
     fetchStatus,
     connect,
     create,
+    applyWizard,
     disconnect,
   }
 }

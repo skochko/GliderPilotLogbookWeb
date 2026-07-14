@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { hasActiveCreateLogbookWizard } from '@/lib/createLogbookWizardStorage'
 import { useFlashMessage } from '@/composables/useFlashMessage'
 import { SITE_PAGES } from '@/lib/sitePages'
 
@@ -36,6 +37,12 @@ const router = createRouter({
       path: '/connect',
       name: 'connect',
       component: () => import('@/views/ConnectLogbookView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/logbook/create/manual-guide',
+      name: 'logbook-create-manual-guide',
+      component: () => import('@/views/CreateLogbookManualGuideView.vue'),
       meta: { requiresAuth: true },
     },
     {
@@ -146,6 +153,9 @@ router.beforeEach(async (to) => {
   }
 
   if (to.name === 'logbook-create' && user.value?.has_logbook) {
+    if (hasActiveCreateLogbookWizard()) {
+      return true
+    }
     return { name: 'dashboard' }
   }
 

@@ -48,7 +48,7 @@ npm run generate:types
 ## Architecture
 
 - **Auth:** full-page redirect to `GET /api/auth/google`; callback via `?auth=success|error`
-- **Logbook connect:** Google Drive Picker (primary) or URL/spreadsheet ID (fallback)
+- **Logbook connect:** Google Drive Picker only (grants per-file `drive.file` access)
 - **Data:** composables + typed API modules; no local long-term flight storage
 
 See [`.cursor/rules/`](.cursor/rules/) for full project conventions.

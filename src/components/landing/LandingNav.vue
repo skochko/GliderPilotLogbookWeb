@@ -44,8 +44,8 @@ onUnmounted(() => {
   >
     <div class="mx-auto flex max-w-landing items-center justify-between gap-4 px-4 py-4 sm:px-6">
       <RouterLink to="/" class="flex items-center gap-2 text-base font-semibold text-landing-text sm:text-lg">
-        <GliderLogo size-class="h-7 w-7 shrink-0" label="GliderLogbook.co.uk" />
-        <span>GliderLogbook.co.uk</span>
+        <GliderLogo size-class="h-8 w-8 shrink-0" label="Glider Pilot Logbook" />
+        <span>Glider Pilot Logbook</span>
       </RouterLink>
 
       <nav class="hidden items-center gap-6 md:flex" aria-label="Primary">

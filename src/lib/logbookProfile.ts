@@ -1,5 +1,5 @@
 import type { PilotPrivilege } from '@/types/logbookCreate'
-import type { SheetSettingsPatch } from '@/types'
+import type { SheetSettings, SheetSettingsPatch } from '@/types'
 import {
   isInstructorPrivilege,
   parseOptionalFlightCount,
@@ -32,6 +32,36 @@ export interface LogbookProfileFormState {
   medical_issue_date: string
   medical_expire_date: string
   start_date: string
+}
+
+export function applySheetSettingsToLogbookProfileForm(
+  form: LogbookProfileFormState,
+  data: SheetSettings,
+): void {
+  form.date_format = data.date_format
+  form.sort_direction = data.sort_direction
+  form.pilot_name = data.pilot_name ?? ''
+  form.pilot_address = data.pilot_address ?? ''
+  form.pilot_privilege = data.pilot_privilege ?? 'pilot'
+  form.instructor_from_date = data.instructor_from_date ?? ''
+  form.bi_ref_date = data.bi_ref_date ?? ''
+  form.fi_3year_date = data.fi_3year_date ?? ''
+  form.fi_ref_date = data.fi_ref_date ?? ''
+  form.license_type = data.license_type ?? ''
+  form.license_date = data.license_date ?? ''
+  form.license_number = data.license_number ?? ''
+  form.license_authority = data.license_authority ?? ''
+  form.prior_total_time = data.prior_total_time ?? ''
+  form.prior_pic_time = data.prior_pic_time ?? ''
+  form.prior_p2_time = data.prior_p2_time ?? ''
+  form.prior_instructor_time = data.prior_instructor_time ?? ''
+  form.prior_flight_count =
+    data.prior_flight_count != null ? String(data.prior_flight_count) : ''
+  form.prior_kms_flown = data.prior_kms_flown ?? ''
+  form.medical_type = data.medical_type ?? ''
+  form.medical_issue_date = data.medical_issue_date ?? ''
+  form.medical_expire_date = data.medical_expire_date ?? ''
+  form.start_date = data.start_date ?? ''
 }
 
 export function emptyLogbookProfileForm(): LogbookProfileFormState {
