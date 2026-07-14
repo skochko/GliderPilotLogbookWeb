@@ -1502,6 +1502,11 @@ components:
         preferences:
           type: object
           additionalProperties: {}
+        email_notifications_enabled:
+          type: boolean
+        language:
+          type: string
+          enum: ['', 'en', 'ru']
     PatchedSheetSettingsPatchRequest:
       type: object
       properties:
@@ -1553,11 +1558,18 @@ components:
         preferences:
           type: object
           additionalProperties: {}
+        email_notifications_enabled:
+          type: boolean
+        language:
+          type: string
+          enum: ['', 'en', 'ru']
       required:
       - email
       - google_sub
       - has_logbook
       - preferences
+      - email_notifications_enabled
+      - language
       - spreadsheet_id
     RecentActivity:
       type: object

@@ -469,10 +469,12 @@ export interface components {
         PatchedMedicalBlockPatchRequest: {
             entries?: components["schemas"]["MedicalEntryRequest"][];
         };
-        PatchedProfilePatchRequest: {
+    PatchedProfilePatchRequest: {
             preferences?: {
                 [key: string]: unknown;
             };
+            email_notifications_enabled?: boolean;
+            language?: "" | "en" | "ru";
         };
         PatchedSheetSettingsPatchRequest: {
             date_format?: string;
@@ -500,6 +502,8 @@ export interface components {
             preferences: {
                 [key: string]: unknown;
             };
+            email_notifications_enabled: boolean;
+            language: "" | "en" | "ru";
         };
         RecentActivity: {
             id: string;

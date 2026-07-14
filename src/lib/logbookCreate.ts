@@ -46,8 +46,16 @@ export function applySheetSettingsToCreateForm(
   const profileForm = emptyLogbookProfileForm()
   applySheetSettingsToLogbookProfileForm(profileForm, settings)
   for (const field of CREATE_FORM_FIELDS) {
-    form[field] = profileForm[field]
+    copyCreateFormField(form, profileForm, field)
   }
+}
+
+function copyCreateFormField<K extends (typeof CREATE_FORM_FIELDS)[number]>(
+  form: LogbookCreateFormState,
+  profileForm: ReturnType<typeof emptyLogbookProfileForm>,
+  field: K,
+): void {
+  form[field] = profileForm[field]
 }
 
 export function createFormHasProfileData(form: LogbookCreateFormState): boolean {
