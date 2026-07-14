@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
@@ -124,6 +124,13 @@ onMounted(async () => {
   await loadGoogleScopes()
   await handleReconnectQuery()
 })
+
+watch(
+  () => route.query.google_reconnect,
+  () => {
+    void handleReconnectQuery()
+  },
+)
 
 async function onSubmit(): Promise<void> {
   if (mutating.value) return
