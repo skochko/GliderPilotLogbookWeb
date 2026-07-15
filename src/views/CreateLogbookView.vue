@@ -25,9 +25,9 @@ import {
   applySheetSettingsToCreateForm,
   buildLogbookCreatePayload,
   createFormHasProfileData,
-  isInstructorPrivilege,
-  PILOT_PRIVILEGE_OPTIONS,
 } from '@/lib/logbookCreate'
+import { isBiPrivilege, isFiPrivilege, usePilotPrivileges } from '@/composables/usePilotPrivileges'
+import { useLicenseOptions, withLegacyLookupOption } from '@/composables/useLicenseOptions'
 import { defaultLogbookCreateForm } from '@/types/logbookCreate'
 import type { Page } from '@/types'
 
@@ -45,6 +45,20 @@ const { user, fetchMe } = useAuth()
 const { connect, create, applyWizard, mutating, error } = useLogbook()
 const { pickSpreadsheet } = useGooglePicker()
 const { show } = useFlashMessage()
+const {
+  options: pilotPrivilegeOptions,
+  loading: pilotPrivilegesLoading,
+  error: pilotPrivilegesError,
+  load: loadPilotPrivileges,
+  isInstructorPrivilege,
+} = usePilotPrivileges()
+const {
+  licenseTypes,
+  licenseAuthorities,
+  loading: licenseOptionsLoading,
+  error: licenseOptionsError,
+  load: loadLicenseOptions,
+} = useLicenseOptions()
 
 const createMode = ref<CreateLogbookMode | null>(null)
 const step = ref(STEP_METHOD)
@@ -77,8 +91,12 @@ const stepLabels = ['Method', 'Setup', 'Personal', 'License', 'Totals', 'Medical
 const totalSteps = stepLabels.length
 
 const showInstructorFields = computed(() => isInstructorPrivilege(form.pilot_privilege))
-const showBiRefDate = computed(() => form.pilot_privilege === 'bi')
-const showFiDates = computed(() => form.pilot_privilege === 'fi')
+const showBiRefDate = computed(() => isBiPrivilege(form.pilot_privilege))
+const showFiDates = computed(() => isFiPrivilege(form.pilot_privilege))
+const licenseTypeOptions = computed(() => withLegacyLookupOption(licenseTypes.value, form.license_type))
+const licenseAuthorityOptions = computed(() =>
+  withLegacyLookupOption(licenseAuthorities.value, form.license_authority),
+)
 const isManual = computed(() => createMode.value === 'manual')
 const isAutomatic = computed(() => createMode.value === 'automatic')
 const logbookConnected = computed(() => Boolean(user.value?.has_logbook))
@@ -249,6 +267,7 @@ function scrollActiveStepIntoView(): void {
 
 onMounted(async () => {
   restoreWizardState()
+  await Promise.all([loadPilotPrivileges(), loadLicenseOptions()])
   const pendingSubmit = consumeCreateLogbookPendingSubmit()
   const driveAuth = route.query.drive_auth as string | undefined
 
@@ -459,6 +478,18 @@ async function retrySubmit(): Promise<void> {
 
     <ErrorBanner v-if="error" :message="error" :retry-busy="mutating" @retry="retrySubmit" />
     <ErrorBanner v-if="validationError" :message="validationError" />
+    <ErrorBanner
+      v-if="pilotPrivilegesError"
+      :message="pilotPrivilegesError"
+      :retry-busy="pilotPrivilegesLoading"
+      @retry="loadPilotPrivileges"
+    />
+    <ErrorBanner
+      v-if="licenseOptionsError"
+      :message="licenseOptionsError"
+      :retry-busy="licenseOptionsLoading"
+      @retry="loadLicenseOptions"
+    />
     <ErrorBanner v-if="driveScopeError" :message="driveScopeError" />
     <ErrorBanner v-if="pickerError" :message="pickerError" />
     <ErrorBanner v-if="prefillError" :message="prefillError" @retry="prefillFormFromConnectedLogbook()" />
@@ -589,9 +620,9 @@ async function retrySubmit(): Promise<void> {
 
           <label class="block text-sm">
             <span class="font-medium text-slate-700">Pilot privilege</span>
-            <select v-model="form.pilot_privilege" class="field-control">
-              <option v-for="option in PILOT_PRIVILEGE_OPTIONS" :key="option.value" :value="option.value">
-                {{ option.label }}
+            <select v-model="form.pilot_privilege" class="field-control" :disabled="pilotPrivilegesLoading">
+              <option v-for="option in pilotPrivilegeOptions" :key="option.code" :value="option.code">
+                {{ option.name }}
               </option>
             </select>
           </label>
@@ -624,7 +655,12 @@ async function retrySubmit(): Promise<void> {
 
           <label class="block text-sm">
             <span class="font-medium text-slate-700">License type</span>
-            <input v-model="form.license_type" type="text" class="field-control" />
+            <select v-model="form.license_type" class="field-control" :disabled="licenseOptionsLoading">
+              <option value="">—</option>
+              <option v-for="option in licenseTypeOptions" :key="option.code" :value="option.code">
+                {{ option.name }}
+              </option>
+            </select>
           </label>
 
           <label class="block text-sm">
@@ -639,7 +675,12 @@ async function retrySubmit(): Promise<void> {
 
           <label class="block text-sm">
             <span class="font-medium text-slate-700">License authority</span>
-            <input v-model="form.license_authority" type="text" class="field-control" />
+            <select v-model="form.license_authority" class="field-control" :disabled="licenseOptionsLoading">
+              <option value="">—</option>
+              <option v-for="option in licenseAuthorityOptions" :key="option.code" :value="option.code">
+                {{ option.name }}
+              </option>
+            </select>
           </label>
         </template>
 

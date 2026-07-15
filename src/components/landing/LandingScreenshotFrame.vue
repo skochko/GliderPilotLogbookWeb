@@ -10,7 +10,7 @@ withDefaults(
   }>(),
   {
     variant: 'browser',
-    browserPath: 'gliderlogbook.co.uk/dashboard',
+    browserPath: 'gliderpilotlogbook.co.uk/dashboard',
   },
 )
 </script>

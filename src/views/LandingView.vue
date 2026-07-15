@@ -138,7 +138,7 @@ onMounted(() => {
             Below is a static screenshot of the signed-in pilot app — not part of this page.
           </p>
           <LandingScreenshotFrame
-            browser-path="gliderlogbook.co.uk/flights"
+            browser-path="gliderpilotlogbook.co.uk/flights"
             :image-url="screenshotFor('product')?.image_url"
             :alt-text="screenshotFor('product')?.alt_text ?? 'Glider Pilot Logbook product screenshot'"
             caption="Flights, statistics, and settings in one pilot-focused interface."
@@ -225,7 +225,7 @@ onMounted(() => {
           </div>
           <div class="mt-10">
             <LandingScreenshotFrame
-              browser-path="gliderlogbook.co.uk/dashboard"
+              browser-path="gliderpilotlogbook.co.uk/dashboard"
               :image-url="screenshotFor('dashboard')?.image_url"
               :alt-text="screenshotFor('dashboard')?.alt_text ?? 'Dashboard preview'"
               caption="Example dashboard view after you sign in and connect your logbook."

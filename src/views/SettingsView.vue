@@ -11,29 +11,47 @@ import {
   applySheetSettingsToLogbookProfileForm,
   buildSettingsPatch,
   emptyLogbookProfileForm,
-  isInstructorPrivilege,
-  PILOT_PRIVILEGE_OPTIONS,
 } from '@/lib/logbookProfile'
 import type { LogbookProfileFormState } from '@/lib/logbookProfile'
+import { isBiPrivilege, isFiPrivilege, usePilotPrivileges } from '@/composables/usePilotPrivileges'
+import { useLicenseOptions, withLegacyLookupOption } from '@/composables/useLicenseOptions'
 import type { SheetSettings } from '@/types'
 
 const { settings, loading, initialized, mutating, error, fetch, save } = useSettings()
 const { show } = useFlashMessage()
+const {
+  options: pilotPrivilegeOptions,
+  loading: pilotPrivilegesLoading,
+  error: pilotPrivilegesError,
+  load: loadPilotPrivileges,
+  isInstructorPrivilege,
+} = usePilotPrivileges()
+const {
+  licenseTypes,
+  licenseAuthorities,
+  loading: licenseOptionsLoading,
+  error: licenseOptionsError,
+  load: loadLicenseOptions,
+} = useLicenseOptions()
 
 const form = reactive<LogbookProfileFormState>(emptyLogbookProfileForm())
 const submitError = ref<string | null>(null)
 
 const dateFormatOptions = computed(() => settings.value?.date_format_options ?? [])
+const licenseTypeOptions = computed(() => withLegacyLookupOption(licenseTypes.value, form.license_type))
+const licenseAuthorityOptions = computed(() =>
+  withLegacyLookupOption(licenseAuthorities.value, form.license_authority),
+)
 const showInstructorFields = computed(() => isInstructorPrivilege(form.pilot_privilege))
-const showBiRefDate = computed(() => form.pilot_privilege === 'bi')
-const showFiDates = computed(() => form.pilot_privilege === 'fi')
+const showBiRefDate = computed(() => isBiPrivilege(form.pilot_privilege))
+const showFiDates = computed(() => isFiPrivilege(form.pilot_privilege))
 
 function applySettingsToForm(data: SheetSettings): void {
   applySheetSettingsToLogbookProfileForm(form, data)
 }
 
 onMounted(async () => {
-  await fetch()
+  await Promise.all([fetch(), loadPilotPrivileges(), loadLicenseOptions()])
   if (settings.value) {
     applySettingsToForm(settings.value as SheetSettings)
   }
@@ -70,6 +88,18 @@ async function onSubmit(): Promise<void> {
     <LoadingState v-if="!initialized" />
     <ErrorBanner v-else-if="error" :message="error" :retry-busy="loading" @retry="fetch" />
     <ErrorBanner v-if="submitError" :message="submitError" />
+    <ErrorBanner
+      v-if="pilotPrivilegesError"
+      :message="pilotPrivilegesError"
+      :retry-busy="pilotPrivilegesLoading"
+      @retry="loadPilotPrivileges"
+    />
+    <ErrorBanner
+      v-if="licenseOptionsError"
+      :message="licenseOptionsError"
+      :retry-busy="licenseOptionsLoading"
+      @retry="loadLicenseOptions"
+    />
 
     <PwaInstallSection />
 
@@ -135,9 +165,9 @@ async function onSubmit(): Promise<void> {
 
           <label class="block text-sm">
             <span class="font-medium text-slate-700">Pilot privilege</span>
-            <select v-model="form.pilot_privilege" class="field-control">
-              <option v-for="option in PILOT_PRIVILEGE_OPTIONS" :key="option.value" :value="option.value">
-                {{ option.label }}
+            <select v-model="form.pilot_privilege" class="field-control" :disabled="pilotPrivilegesLoading">
+              <option v-for="option in pilotPrivilegeOptions" :key="option.code" :value="option.code">
+                {{ option.name }}
               </option>
             </select>
           </label>
@@ -170,7 +200,12 @@ async function onSubmit(): Promise<void> {
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="block text-sm">
             <span class="font-medium text-slate-700">License type</span>
-            <input v-model="form.license_type" type="text" class="field-control" />
+            <select v-model="form.license_type" class="field-control" :disabled="licenseOptionsLoading">
+              <option value="">—</option>
+              <option v-for="option in licenseTypeOptions" :key="option.code" :value="option.code">
+                {{ option.name }}
+              </option>
+            </select>
           </label>
           <label class="block text-sm">
             <span class="font-medium text-slate-700">License date</span>
@@ -182,7 +217,12 @@ async function onSubmit(): Promise<void> {
           </label>
           <label class="block text-sm">
             <span class="font-medium text-slate-700">License authority</span>
-            <input v-model="form.license_authority" type="text" class="field-control" />
+            <select v-model="form.license_authority" class="field-control" :disabled="licenseOptionsLoading">
+              <option value="">—</option>
+              <option v-for="option in licenseAuthorityOptions" :key="option.code" :value="option.code">
+                {{ option.name }}
+              </option>
+            </select>
           </label>
         </div>
       </section>

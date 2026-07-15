@@ -2,19 +2,8 @@ import type { SheetSettings } from '@/types'
 import type {
   LogbookCreateFormState,
   LogbookCreateRequest,
-  PilotPrivilege,
 } from '@/types/logbookCreate'
 import { applySheetSettingsToLogbookProfileForm, emptyLogbookProfileForm } from '@/lib/logbookProfile'
-
-export const PILOT_PRIVILEGE_OPTIONS: { value: PilotPrivilege; label: string }[] = [
-  { value: 'pilot', label: 'Pilot' },
-  { value: 'bi', label: 'Basic instructor (BI)' },
-  { value: 'fi', label: 'Flight instructor (FI)' },
-]
-
-export function isInstructorPrivilege(privilege: PilotPrivilege): boolean {
-  return privilege === 'bi' || privilege === 'fi'
-}
 
 const CREATE_FORM_FIELDS = [
   'pilot_name',
@@ -97,10 +86,10 @@ export function buildLogbookCreatePayload(
   if (form.instructor_from_date) {
     payload.instructor_from_date = form.instructor_from_date
   }
-  if (form.pilot_privilege === 'bi' && form.bi_ref_date) {
+  if (form.pilot_privilege === 'BI' && form.bi_ref_date) {
     payload.bi_ref_date = form.bi_ref_date
   }
-  if (form.pilot_privilege === 'fi') {
+  if (form.pilot_privilege === 'FI') {
     if (form.fi_3year_date) payload.fi_3year_date = form.fi_3year_date
     if (form.fi_ref_date) payload.fi_ref_date = form.fi_ref_date
   }

@@ -16,7 +16,7 @@ export interface SheetDisplaySettings {
   pilot_name: string
 }
 
-export type PilotPrivilege = 'pilot' | 'bi' | 'fi'
+export type PilotPrivilege = string
 
 export interface SheetSettingsProfileFields {
   pilot_address?: string

@@ -1,4 +1,4 @@
-# https://gliderlogbook.co.uk — public marketing & legal pages only.
+# https://gliderpilotlogbook.co.uk — public marketing & legal pages only.
 # App routes (dashboard, flights, etc.) require sign-in and are excluded from crawling.
 
 User-agent: *
@@ -21,4 +21,4 @@ Disallow: /logbook/
 Disallow: /profile
 Disallow: /unsubscribe
 
-Sitemap: https://gliderlogbook.co.uk/sitemap.xml
+Sitemap: https://gliderpilotlogbook.co.uk/sitemap.xml

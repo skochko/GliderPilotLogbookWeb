@@ -1,12 +1,6 @@
 import type { PilotPrivilege } from '@/types/logbookCreate'
 import type { SheetSettings, SheetSettingsPatch } from '@/types'
-import {
-  isInstructorPrivilege,
-  parseOptionalFlightCount,
-  PILOT_PRIVILEGE_OPTIONS,
-} from '@/lib/logbookCreate'
-
-export { PILOT_PRIVILEGE_OPTIONS, isInstructorPrivilege }
+import { parseOptionalFlightCount } from '@/lib/logbookCreate'
 
 export interface LogbookProfileFormState {
   date_format: string
@@ -42,7 +36,7 @@ export function applySheetSettingsToLogbookProfileForm(
   form.sort_direction = data.sort_direction
   form.pilot_name = data.pilot_name ?? ''
   form.pilot_address = data.pilot_address ?? ''
-  form.pilot_privilege = data.pilot_privilege ?? 'pilot'
+  form.pilot_privilege = data.pilot_privilege ?? 'SPL Pilot'
   form.instructor_from_date = data.instructor_from_date ?? ''
   form.bi_ref_date = data.bi_ref_date ?? ''
   form.fi_3year_date = data.fi_3year_date ?? ''
@@ -70,7 +64,7 @@ export function emptyLogbookProfileForm(): LogbookProfileFormState {
     sort_direction: 'newest_first',
     pilot_name: '',
     pilot_address: '',
-    pilot_privilege: 'pilot',
+    pilot_privilege: 'SPL Pilot',
     instructor_from_date: '',
     bi_ref_date: '',
     fi_3year_date: '',
@@ -119,10 +113,10 @@ export function buildSettingsPatch(form: LogbookProfileFormState): SheetSettings
     fi_ref_date: null,
   }
 
-  if (form.pilot_privilege === 'bi') {
+  if (form.pilot_privilege === 'BI') {
     patch.bi_ref_date = form.bi_ref_date || null
   }
-  if (form.pilot_privilege === 'fi') {
+  if (form.pilot_privilege === 'FI') {
     patch.fi_3year_date = form.fi_3year_date || null
     patch.fi_ref_date = form.fi_ref_date || null
   }

@@ -1,4 +1,4 @@
-export type PilotPrivilege = 'pilot' | 'bi' | 'fi'
+export type PilotPrivilege = string
 
 export interface LogbookCreateLicense {
   type?: string
@@ -84,7 +84,7 @@ export interface LogbookCreateFormState {
 export const defaultLogbookCreateForm = (): LogbookCreateFormState => ({
   pilot_name: '',
   pilot_address: '',
-  pilot_privilege: 'pilot',
+  pilot_privilege: 'SPL Pilot',
   instructor_from_date: '',
   bi_ref_date: '',
   fi_3year_date: '',

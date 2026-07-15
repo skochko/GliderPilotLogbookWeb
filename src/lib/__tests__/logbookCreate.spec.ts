@@ -15,11 +15,11 @@ describe('applySheetSettingsToCreateForm', () => {
       sort_direction: 'newest_first',
       pilot_name: 'Alice',
       pilot_address: 'Berlin',
-      pilot_privilege: 'fi',
+      pilot_privilege: 'FI',
       instructor_from_date: '2020-01-01',
       fi_3year_date: '2024-06-01',
       fi_ref_date: '2024-07-01',
-      license_type: 'SPL',
+      license_type: 'spl',
       license_date: '2019-05-01',
       license_number: 'DE-1',
       license_authority: 'LBA',
@@ -40,7 +40,7 @@ describe('applySheetSettingsToCreateForm', () => {
     applySheetSettingsToCreateForm(form, settings)
 
     expect(form.pilot_name).toBe('Alice')
-    expect(form.pilot_privilege).toBe('fi')
+    expect(form.pilot_privilege).toBe('FI')
     expect(form.license_number).toBe('DE-1')
     expect(form.prior_flight_count).toBe('42')
     expect(form.medical_type).toBe('Class 2')
@@ -52,7 +52,7 @@ describe('buildLogbookCreatePayload', () => {
   it('builds personal fields and nulls skipped sections', () => {
     const form = defaultLogbookCreateForm()
     form.pilot_name = 'Alice'
-    form.pilot_privilege = 'fi'
+    form.pilot_privilege = 'FI'
     form.fi_3year_date = '2024-06-01'
 
     const payload = buildLogbookCreatePayload(form, {
@@ -65,7 +65,7 @@ describe('buildLogbookCreatePayload', () => {
 
     expect(payload).toEqual({
       pilot_name: 'Alice',
-      pilot_privilege: 'fi',
+      pilot_privilege: 'FI',
       fi_3year_date: '2024-06-01',
       license: null,
       prior_totals: null,
