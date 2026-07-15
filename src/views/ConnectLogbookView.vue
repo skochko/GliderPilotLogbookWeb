@@ -159,7 +159,7 @@ async function connectByPicker(): Promise<void> {
         :disabled="mutating"
         @click="connectByPicker"
       >
-        Connect template logbook
+        Connect existing logbook
       </ActionButton>
       <p class="mt-3 text-xs text-slate-500">
         Need the template first?
