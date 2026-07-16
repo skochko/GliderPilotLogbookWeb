@@ -1,11 +1,23 @@
-import { onMounted, readonly, ref } from 'vue'
+import { onMounted, onUnmounted, readonly, ref } from 'vue'
+import { deferAfterLoad } from '@/lib/deferAfterLoad'
 import { hasSeenEssentialCookiesNotice, markEssentialCookiesNoticeSeen } from '@/lib/cookieNotice'
 
 const visible = ref(false)
 
 export function useCookieNotice() {
+  let cancelled = false
+
   onMounted(() => {
-    visible.value = !hasSeenEssentialCookiesNotice()
+    deferAfterLoad(() => {
+      if (cancelled) {
+        return
+      }
+      visible.value = !hasSeenEssentialCookiesNotice()
+    })
+  })
+
+  onUnmounted(() => {
+    cancelled = true
   })
 
   function dismiss(): void {

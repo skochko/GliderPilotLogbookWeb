@@ -1,5 +1,7 @@
 <script setup lang="ts">
-withDefaults(
+import { ref, watch } from 'vue'
+
+const props = withDefaults(
   defineProps<{
     imageUrl?: string
     altText: string
@@ -13,6 +15,24 @@ withDefaults(
     browserPath: 'gliderpilotlogbook.co.uk/dashboard',
   },
 )
+
+const BROWSER_IMAGE_WIDTH = 1600
+const BROWSER_IMAGE_HEIGHT = 1000
+const PHONE_IMAGE_WIDTH = 1080
+const PHONE_IMAGE_HEIGHT = 1920
+
+const imageReady = ref(false)
+
+watch(
+  () => props.imageUrl,
+  () => {
+    imageReady.value = false
+  },
+)
+
+function onImageLoad(): void {
+  imageReady.value = true
+}
 </script>
 
 <template>
@@ -59,22 +79,29 @@ withDefaults(
         </div>
       </div>
 
-      <div class="aspect-[16/10] bg-slate-100">
+      <div class="relative aspect-[16/10] overflow-hidden bg-slate-100">
+        <div
+          v-if="!imageUrl || !imageReady"
+          class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-50 px-6 text-center"
+          aria-hidden="true"
+        >
+          <p class="text-sm font-medium text-slate-500">
+            {{ imageUrl ? 'Loading preview…' : 'Screenshot not uploaded yet' }}
+          </p>
+          <p v-if="!imageUrl" class="text-xs text-slate-400">This area shows a preview of the pilot app</p>
+        </div>
         <img
           v-if="imageUrl"
           :src="imageUrl"
           :alt="altText"
-          class="h-full w-full object-contain object-top"
+          :width="BROWSER_IMAGE_WIDTH"
+          :height="BROWSER_IMAGE_HEIGHT"
+          class="absolute inset-0 h-full w-full object-contain object-top"
+          :class="imageReady ? 'opacity-100' : 'opacity-0'"
           loading="lazy"
           decoding="async"
+          @load="onImageLoad"
         />
-        <div
-          v-else
-          class="flex h-full flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-300 bg-slate-50 px-6 text-center"
-        >
-          <p class="text-sm font-medium text-slate-500">Screenshot not uploaded yet</p>
-          <p class="text-xs text-slate-400">This area shows a preview of the pilot app</p>
-        </div>
       </div>
     </div>
 
@@ -87,22 +114,29 @@ withDefaults(
           <span class="h-1.5 w-16 rounded-full bg-slate-700" />
         </div>
 
-        <div class="aspect-[9/16] bg-slate-100">
+        <div class="relative aspect-[9/16] overflow-hidden bg-slate-100">
+          <div
+            v-if="!imageUrl || !imageReady"
+            class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-50 px-4 text-center"
+            aria-hidden="true"
+          >
+            <p class="text-sm font-medium text-slate-500">
+              {{ imageUrl ? 'Loading preview…' : 'Screenshot not uploaded yet' }}
+            </p>
+            <p v-if="!imageUrl" class="text-xs text-slate-400">Mobile app preview</p>
+          </div>
           <img
             v-if="imageUrl"
             :src="imageUrl"
             :alt="altText"
-            class="h-full w-full object-contain object-top"
+            :width="PHONE_IMAGE_WIDTH"
+            :height="PHONE_IMAGE_HEIGHT"
+            class="absolute inset-0 h-full w-full object-contain object-top"
+            :class="imageReady ? 'opacity-100' : 'opacity-0'"
             loading="lazy"
             decoding="async"
+            @load="onImageLoad"
           />
-          <div
-            v-else
-            class="flex h-full flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-300 bg-slate-50 px-4 text-center"
-          >
-            <p class="text-sm font-medium text-slate-500">Screenshot not uploaded yet</p>
-            <p class="text-xs text-slate-400">Mobile app preview</p>
-          </div>
         </div>
 
         <div class="flex justify-center bg-slate-900 py-2" aria-hidden="true">
