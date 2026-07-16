@@ -75,7 +75,6 @@ const faqItems = [
 ]
 
 onMounted(() => {
-  document.documentElement.classList.add('gpl-vue-active')
   document.title = 'Glider Pilot Logbook'
   void fetchLanding()
 })
@@ -87,7 +86,7 @@ onMounted(() => {
 
     <main>
       <!-- Hero -->
-      <section class="landing-section landing-animate">
+      <section class="landing-section">
         <div class="mx-auto max-w-landing px-4 sm:px-6">
           <div class="mx-auto max-w-3xl text-center">
             <h1 class="text-[2.125rem] font-semibold tracking-tight text-landing-text sm:text-[2.625rem]">
@@ -170,7 +169,7 @@ onMounted(() => {
       </section>
 
       <!-- Product screenshot -->
-      <section id="landing-preview" class="landing-section landing-animate landing-animate-delay-1">
+      <section id="landing-preview" class="landing-section">
         <div class="mx-auto max-w-landing px-4 sm:px-6">
           <p class="mb-8 text-center text-sm text-landing-muted">
             Below is a static screenshot of the signed-in pilot app — not part of this page.
@@ -185,7 +184,7 @@ onMounted(() => {
       </section>
 
       <!-- Features -->
-      <section id="features" class="landing-section landing-animate landing-animate-delay-2">
+      <section id="features" class="landing-section">
         <div class="mx-auto max-w-landing px-4 sm:px-6">
           <div class="mx-auto max-w-2xl text-center">
             <h2 class="text-[1.75rem] font-semibold text-landing-text sm:text-[2rem]">

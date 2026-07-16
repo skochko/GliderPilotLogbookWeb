@@ -47,20 +47,18 @@ body {
   }
 }
 
-@keyframes landing-fade-in-up {
+@keyframes landing-fade-in {
   from {
     opacity: 0;
-    transform: translateY(12px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 .landing-animate {
-  animation: landing-fade-in-up 0.6s ease-out both;
+  animation: landing-fade-in 0.35s ease-out both;
 }
 
 .landing-animate-delay-1 {
