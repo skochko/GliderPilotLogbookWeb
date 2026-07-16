@@ -31,66 +31,8 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <style>
-      #gpl-home-verification {
-        max-width: 42rem;
-        margin: 0 auto;
-        padding: 2.5rem 1.25rem 3rem;
-        font-family: Inter, system-ui, -apple-system, sans-serif;
-        color: #1e293b;
-        line-height: 1.65;
-      }
-      #gpl-home-verification h1 {
-        margin: 0 0 1rem;
-        font-size: 1.75rem;
-        font-weight: 700;
-      }
-      #gpl-home-verification h2 {
-        margin: 1.5rem 0 0.75rem;
-        font-size: 1.125rem;
-        font-weight: 600;
-      }
-      #gpl-home-verification p,
-      #gpl-home-verification ul {
-        margin: 0 0 1rem;
-        font-size: 1rem;
-        color: #475569;
-      }
-      #gpl-home-verification ul {
-        padding-left: 1.25rem;
-      }
-      #gpl-home-verification a {
-        color: #0b5e97;
-      }
-    </style>
   </head>
   <body>
-    <div id="gpl-home-verification">
-      <h1>Glider Pilot Logbook</h1>
-      <p>
-        <strong>Glider Pilot Logbook</strong> is a web application for glider pilots in the United
-        Kingdom. It helps you view, add, and edit flight records in
-        <strong>your own Google Spreadsheet</strong> on Google Drive. The spreadsheet stays your
-        official logbook; this website is the interface and automation layer on top of it.
-      </p>
-      <h2>Purpose of this application</h2>
-      <ul>
-        <li>Manage a gliding flight logbook through a web and mobile-friendly interface</li>
-        <li>Read and write flight rows in your connected Google Sheets logbook via Google APIs</li>
-        <li>Show dashboard totals, medical dates, legality, and flying statistics</li>
-        <li>
-          Optionally allow a participating gliding club to import missing flights into your
-          spreadsheet, only with your consent
-        </li>
-      </ul>
-      <p>
-        You sign in with <strong>Google</strong> so Glider Pilot Logbook can access the Google
-        account and spreadsheet files needed to provide these features. See the
-        <a href="/privacy">Privacy Policy</a> and
-        <a href="/help/google-drive-access">Google Drive access</a> pages for details.
-      </p>
-      <p><a href="/login">Sign in with Google</a></p>
-    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
