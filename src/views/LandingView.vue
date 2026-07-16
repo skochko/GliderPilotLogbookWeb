@@ -75,6 +75,7 @@ const faqItems = [
 ]
 
 onMounted(() => {
+  document.documentElement.classList.add('gpl-vue-active')
   document.title = 'Glider Pilot Logbook'
   void fetchLanding()
 })

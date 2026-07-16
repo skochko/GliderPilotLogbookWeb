@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
-import { hasActiveCreateLogbookWizard } from '@/lib/createLogbookWizardStorage'
 import { useFlashMessage } from '@/composables/useFlashMessage'
+import { authGuardRedirect, isPublicFastPath } from '@/lib/routeAccess'
 import { SITE_PAGE_ROUTES } from '@/lib/sitePages'
 
 const sitePageRoutes = SITE_PAGE_ROUTES.map((page) => ({
@@ -115,10 +115,7 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const { user, initialized, fetchMe } = useAuth()
   const { show, clear } = useFlashMessage()
-
-  if (!initialized.value) {
-    await fetchMe()
-  }
+  const fast = isPublicFastPath(to.meta)
 
   const authParam = to.query.auth
   if (authParam === 'success') {
@@ -133,38 +130,23 @@ router.beforeEach(async (to) => {
     return { path: '/login', query: {}, replace: true }
   }
 
-  const isGuestRoute = Boolean(to.meta.guest)
-  const isGuestLanding = Boolean(to.meta.guestLanding)
-  const requiresAuth = Boolean(to.meta.requiresAuth)
-  const requiresLogbook = Boolean(to.meta.requiresLogbook)
-
-  if (isGuestLanding && user.value) {
-    return user.value.has_logbook ? { name: 'dashboard' } : { name: 'connect' }
-  }
-
-  if (requiresAuth && !user.value) {
-    return { name: 'login', query: { redirect: to.fullPath } }
-  }
-
-  if (isGuestRoute && user.value) {
-    return user.value.has_logbook ? { name: 'dashboard' } : { name: 'connect' }
-  }
-
-  if (requiresLogbook && user.value && !user.value.has_logbook) {
-    return { name: 'connect' }
-  }
-
-  if (to.name === 'connect' && user.value?.has_logbook) {
-    return { name: 'dashboard' }
-  }
-
-  if (to.name === 'logbook-create' && user.value?.has_logbook) {
-    if (hasActiveCreateLogbookWizard()) {
+  if (!initialized.value) {
+    if (fast) {
+      void fetchMe().then(() => {
+        const redirect = authGuardRedirect(router.currentRoute.value, user.value)
+        if (redirect !== true) {
+          void router.replace(redirect)
+        }
+      })
       return true
     }
-    return { name: 'dashboard' }
+    await fetchMe()
   }
 
+  const redirect = authGuardRedirect(to, user.value)
+  if (redirect !== true) {
+    return redirect
+  }
   return true
 })
 

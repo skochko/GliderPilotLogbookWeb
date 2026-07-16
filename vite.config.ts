@@ -6,11 +6,13 @@ import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
+const enableVueDevTools = process.env.NODE_ENV !== 'production' && !process.env.VITEST
+
 export default defineConfig({
   plugins: [
     tailwindcss(),
     vue(),
-    vueDevTools(),
+    ...(enableVueDevTools ? [vueDevTools()] : []),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [

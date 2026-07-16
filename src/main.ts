@@ -33,4 +33,3 @@ const app = createApp(App)
 app.use(router)
 
 app.mount('#app')
-document.documentElement.classList.add('gpl-vue-active')
