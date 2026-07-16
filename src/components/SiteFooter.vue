@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import { SITE_PAGES } from '@/lib/sitePages'
+
+const copyrightYear = new Date().getFullYear()
 </script>
 
 <template>
@@ -18,6 +20,6 @@ import { SITE_PAGES } from '@/lib/sitePages'
         {{ item.label }}
       </RouterLink>
     </nav>
-    <p class="mt-4">© Glider Pilot Logbook · gliderpilotlogbook.co.uk</p>
+    <p class="mt-4">© {{ copyrightYear }} Glider Pilot Logbook. All rights reserved.</p>
   </footer>
 </template>

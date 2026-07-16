@@ -109,7 +109,7 @@ onMounted(() => {
             >
               <h2 class="text-lg font-semibold text-landing-text">Purpose of this application</h2>
               <p class="mt-3 text-sm leading-relaxed text-landing-secondary sm:text-base">
-                Glider Pilot Logbook lets glider pilots in the United Kingdom:
+                Glider Pilot Logbook lets glider pilots:
               </p>
               <ul class="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-landing-secondary sm:text-base">
                 <li>View, add, and edit flight entries through a fast web and mobile interface</li>
