@@ -75,7 +75,7 @@ const faqItems = [
 ]
 
 onMounted(() => {
-  document.title = 'Glider Pilot Logbook — digital logbook for glider pilots'
+  document.title = 'Glider Pilot Logbook'
   void fetchLanding()
 })
 </script>
@@ -89,12 +89,12 @@ onMounted(() => {
       <section class="landing-section landing-animate">
         <div class="mx-auto max-w-landing px-4 sm:px-6">
           <div class="mx-auto max-w-3xl text-center">
-            <p class="text-sm font-semibold uppercase tracking-wide text-landing-primary">
+            <h1 class="text-[2.125rem] font-semibold tracking-tight text-landing-text sm:text-[2.625rem]">
               Glider Pilot Logbook
-            </p>
-            <h1 class="mt-2 text-[2.125rem] font-semibold tracking-tight text-landing-text sm:text-[2.625rem]">
-              Digital logbook for glider pilots
             </h1>
+            <p class="mt-3 text-lg text-landing-secondary sm:text-xl">
+              Digital logbook for glider pilots
+            </p>
             <p class="mt-5 text-base leading-relaxed text-landing-secondary sm:text-lg">
               <strong class="font-semibold text-landing-text">Glider Pilot Logbook</strong> is a web
               application that helps you maintain a gliding flight logbook stored in
