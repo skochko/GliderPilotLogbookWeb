@@ -8,7 +8,7 @@ import { useLanding } from '@/composables/useLanding'
 
 const { fetchLanding, screenshotFor } = useLanding()
 
-const badges = ['Google Sheets sync', 'Mobile friendly', 'Your data stays yours']
+const badges = ['Google Sheets sync', 'Mobile friendly', 'Your data are secure']
 
 const features = [
   {
