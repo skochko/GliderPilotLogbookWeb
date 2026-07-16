@@ -43,8 +43,8 @@ async function loadCurrentPage(): Promise<void> {
 
 function updateDocumentTitle(): void {
   document.title = page.value?.title
-    ? `${page.value.title} — GliderPilotLogbook.co.uk`
-    : `${fallbackTitle.value} — GliderPilotLogbook.co.uk`
+    ? `${page.value.title} — Glider Pilot Logbook`
+    : `${fallbackTitle.value} — Glider Pilot Logbook`
 }
 
 onMounted(() => {

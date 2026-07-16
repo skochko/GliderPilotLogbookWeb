@@ -219,7 +219,7 @@ onMounted(() => {
                 Your data stays in your Google account.
               </h2>
               <p class="mt-4 text-base leading-relaxed text-landing-secondary sm:text-lg">
-                GliderPilotLogbook.co.uk connects to a spreadsheet in your Google Drive. You keep full
+                Glider Pilot Logbook connects to a spreadsheet in your Google Drive. You keep full
                 ownership of your records, can export or share through Google at any time, and avoid
                 vendor lock-in.
               </p>
