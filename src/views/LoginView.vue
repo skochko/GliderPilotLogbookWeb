@@ -39,15 +39,6 @@ const { message, kind, clear } = useFlashMessage()
         <p class="mt-3 text-slate-600">
           Sign in with Google to access your flight logbook stored in Google Sheets.
         </p>
-        <p
-          class="mt-4 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs text-slate-600"
-        >
-          <strong class="font-medium text-slate-800">Tip:</strong> use a Google account with enough
-          Drive space for your logbook and flight attachments (photos, IGC files). A dedicated
-          account is optional — helpful if you use
-          <strong class="font-medium text-slate-700">automatic logbook setup</strong> (which briefly
-          needs broader Drive access) or you want flying records separate from other files.
-        </p>
         <button
           type="button"
           class="mt-8 rounded-md bg-sky-700 px-6 py-3 text-sm font-medium text-white hover:bg-sky-800"

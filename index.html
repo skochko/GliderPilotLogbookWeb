@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GliderPilotLogbook.co.uk</title>
+    <title>Glider Pilot Logbook</title>
     <meta
       name="description"
-      content="Modern digital logbook for glider pilots. Track flights, monitor legality, manage medical certificates, and keep your data in your own Google Sheets."
+      content="Glider Pilot Logbook is a web application for glider pilots to view and edit flight records in their own Google Sheets logbook, check currency and statistics, and optionally sync club flight data with consent."
     />
     <meta name="theme-color" content="#0B5E97" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -17,7 +17,7 @@
     />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Logbook" />
+    <meta name="apple-mobile-web-app-title" content="Glider Pilot Logbook" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
@@ -26,6 +26,20 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
   </head>
   <body>
+    <noscript>
+      <h1>Glider Pilot Logbook</h1>
+      <p>
+        Glider Pilot Logbook is a web application for glider pilots in the United Kingdom. It helps
+        you view, add, and edit flight records in your own Google Spreadsheet logbook, check
+        dashboard totals and legality, and optionally sync missing flights from a participating
+        club with your consent. Sign in with Google to connect the app to your spreadsheet; your
+        Google Sheet remains the official record in your Google Drive.
+      </p>
+      <p>
+        <a href="/privacy">Privacy Policy</a> ·
+        <a href="/help/google-drive-access">Google Drive access</a>
+      </p>
+    </noscript>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
