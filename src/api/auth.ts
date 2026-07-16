@@ -54,7 +54,11 @@ export async function fetchMe(): Promise<UserMe | null> {
   if (!res.ok) {
     throw await parseApiError(res)
   }
-  return (await res.json()) as UserMe
+  const data: unknown = await res.json()
+  if (data === null) {
+    return null
+  }
+  return data as UserMe
 }
 
 export async function logout(): Promise<void> {

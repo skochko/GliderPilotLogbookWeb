@@ -31,7 +31,7 @@ src/
 
 ## Auth
 
-- App init: `GET /auth/me` — 403 → logged out
+- App init: `GET /auth/me` — `null` body or 401/403 → logged out
 - Login: full-page redirect to `/auth/google` on the API host
 - OAuth return: backend redirects to `FRONTEND_URL?auth=success|error` — read query in router guard or `App.vue`, then refetch user
 
