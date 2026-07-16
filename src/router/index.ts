@@ -3,6 +3,7 @@ import { useAuth } from '@/composables/useAuth'
 import { hasActiveCreateLogbookWizard } from '@/lib/createLogbookWizardStorage'
 import { useFlashMessage } from '@/composables/useFlashMessage'
 import { SITE_PAGE_ROUTES } from '@/lib/sitePages'
+import LandingView from '@/views/LandingView.vue'
 
 const sitePageRoutes = SITE_PAGE_ROUTES.map((page) => ({
   path: page.path,
@@ -23,7 +24,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'landing',
-      component: () => import('@/views/LandingView.vue'),
+      component: LandingView,
       meta: { guestLanding: true },
     },
     ...sitePageRoutes,

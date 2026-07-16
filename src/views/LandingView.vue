@@ -89,11 +89,14 @@ onMounted(() => {
       <section class="landing-section landing-animate">
         <div class="mx-auto max-w-landing px-4 sm:px-6">
           <div class="mx-auto max-w-3xl text-center">
-            <h1 class="text-[2.125rem] font-semibold tracking-tight text-landing-text sm:text-[2.625rem]">
-              Glider Pilot Logbook
-            </h1>
-            <p class="mt-3 text-lg text-landing-secondary sm:text-xl">
+            <p
+              class="text-[2.125rem] font-semibold tracking-tight text-landing-text sm:text-[2.625rem]"
+              role="doc-subtitle"
+            >
               Digital logbook for glider pilots
+            </p>
+            <p class="mt-3 text-lg text-landing-secondary sm:text-xl">
+              Connect your Google Sheets logbook and fly with confidence.
             </p>
             <p class="mt-5 text-base leading-relaxed text-landing-secondary sm:text-lg">
               <strong class="font-semibold text-landing-text">Glider Pilot Logbook</strong> is a web
@@ -102,38 +105,6 @@ onMounted(() => {
               sign in with Google to connect the app to that spreadsheet — we do not replace your
               logbook file.
             </p>
-
-            <div
-              id="about-app"
-              class="mt-8 rounded-2xl border border-landing-border bg-landing-card px-5 py-6 text-left shadow-sm sm:px-7"
-            >
-              <h2 class="text-lg font-semibold text-landing-text">Purpose of this application</h2>
-              <p class="mt-3 text-sm leading-relaxed text-landing-secondary sm:text-base">
-                Glider Pilot Logbook lets glider pilots in the United Kingdom:
-              </p>
-              <ul class="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-landing-secondary sm:text-base">
-                <li>View, add, and edit flight entries through a fast web and mobile interface</li>
-                <li>Keep the official record in Google Sheets on Google Drive (you remain the owner)</li>
-                <li>See dashboard totals, medical dates, and legality / currency information</li>
-                <li>
-                  Optionally allow a participating gliding club to import missing flights into your
-                  spreadsheet, only with your consent
-                </li>
-              </ul>
-              <p class="mt-4 text-sm leading-relaxed text-landing-secondary sm:text-base">
-                When you choose <strong class="font-semibold text-landing-text">Sign in with Google</strong>,
-                you authorise Glider Pilot Logbook to access only the Google account and spreadsheet
-                files needed to provide these features. See our
-                <RouterLink to="/privacy" class="font-medium text-landing-primary hover:underline"
-                  >Privacy Policy</RouterLink
-                >
-                and
-                <RouterLink to="/help/google-drive-access" class="font-medium text-landing-primary hover:underline"
-                  >Google Drive access</RouterLink
-                >
-                pages for details.
-              </p>
-            </div>
 
             <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <RouterLink
