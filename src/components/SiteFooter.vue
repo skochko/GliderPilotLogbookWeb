@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import ClubSiteNav from '@/components/ClubSiteNav.vue'
 import { SITE_PAGES } from '@/lib/sitePages'
 
 const copyrightYear = new Date().getFullYear()
@@ -10,6 +11,7 @@ const copyrightYear = new Date().getFullYear()
     <div v-if="$slots.default" class="mb-4">
       <slot />
     </div>
+    <ClubSiteNav class="mb-4" variant="footer" />
     <nav class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
       <RouterLink
         v-for="item in SITE_PAGES"

@@ -2,6 +2,7 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import GliderLogo from '@/components/GliderLogo.vue'
+import ClubSiteNav from '@/components/ClubSiteNav.vue'
 import { useAuth } from '@/composables/useAuth'
 
 const { user } = useAuth()
@@ -57,6 +58,7 @@ onUnmounted(() => {
         >
           {{ link.label }}
         </a>
+        <ClubSiteNav variant="landing" />
       </nav>
 
       <div class="flex items-center gap-2 sm:gap-3">
@@ -124,6 +126,9 @@ onUnmounted(() => {
           >
             {{ link.label }}
           </a>
+        </li>
+        <li class="border-t border-landing-border pt-3">
+          <ClubSiteNav variant="landing" />
         </li>
         <li>
           <RouterLink

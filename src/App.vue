@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
-import AppShell from '@/components/AppShell.vue'
-import EssentialCookiesNotice from '@/components/EssentialCookiesNotice.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import ToastNotice from '@/components/ToastNotice.vue'
 import { useAuth } from '@/composables/useAuth'
 import { isPublicFastPath } from '@/lib/routeAccess'
+
+const AppShell = defineAsyncComponent(() => import('@/components/AppShell.vue'))
+const EssentialCookiesNotice = defineAsyncComponent(
+  () => import('@/components/EssentialCookiesNotice.vue'),
+)
 
 const { user, initialized } = useAuth()
 const route = useRoute()

@@ -7,10 +7,13 @@ import { registerAccountIncompleteHandler } from '@/api/sessionInvalidation'
 import App from './App.vue'
 import { clearSession } from '@/composables/useAuth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
+import { deferAfterLoad } from '@/lib/deferAfterLoad'
 import router from './router'
 
 if (import.meta.env.PROD) {
-  registerSW({ immediate: true })
+  deferAfterLoad(() => {
+    registerSW({ immediate: true })
+  })
 }
 
 registerAccountIncompleteHandler(async (message) => {

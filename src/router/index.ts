@@ -28,6 +28,10 @@ const router = createRouter({
     },
     ...sitePageRoutes,
     {
+      path: '/help/club-automation-download',
+      redirect: '/club/downloads',
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
