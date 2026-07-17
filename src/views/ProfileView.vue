@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { isApiError } from '@/api/errors'
@@ -12,12 +13,16 @@ import {
   type GoogleScopeStatus,
 } from '@/api/auth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
+import { useLogbookDisconnect } from '@/composables/useLogbookDisconnect'
 import { useProfile } from '@/composables/useProfile'
 
 const route = useRoute()
 const router = useRouter()
 const { show } = useFlashMessage()
 const { profile, loading, initialized, mutating, error, fetch, save } = useProfile()
+const { disconnectLogbook, disconnecting } = useLogbookDisconnect()
+
+const disconnectOpen = ref(false)
 
 const preferencesJson = ref('{}')
 const emailNotificationsEnabled = ref(true)
@@ -153,6 +158,13 @@ async function onSubmit(): Promise<void> {
     }
   }
 }
+
+async function confirmDisconnect(): Promise<void> {
+  const ok = await disconnectLogbook()
+  if (ok) {
+    disconnectOpen.value = false
+  }
+}
 </script>
 
 <template>
@@ -201,6 +213,25 @@ async function onSubmit(): Promise<void> {
             </dd>
           </div>
         </dl>
+        <div
+          v-if="hasLogbook"
+          class="mt-6 border-t border-slate-200 pt-6"
+        >
+          <h3 class="text-sm font-semibold text-slate-900">Disconnect logbook</h3>
+          <p class="mt-1 text-sm text-slate-600">
+            Remove the link between this app and your spreadsheet. Your data in Google Sheets is not
+            deleted.
+          </p>
+          <ActionButton
+            type="button"
+            variant="secondary"
+            class="mt-4"
+            :busy="disconnecting"
+            @click="disconnectOpen = true"
+          >
+            Disconnect logbook
+          </ActionButton>
+        </div>
       </section>
 
       <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -326,5 +357,15 @@ async function onSubmit(): Promise<void> {
         <ActionButton type="submit" :busy="mutating">Save profile</ActionButton>
       </form>
     </div>
+
+    <ConfirmDialog
+      :open="disconnectOpen"
+      title="Disconnect logbook"
+      message="You will no longer see flights from this spreadsheet in the app. Your data in Google Sheets is not deleted."
+      confirm-label="Disconnect"
+      :busy="disconnecting"
+      @confirm="confirmDisconnect"
+      @cancel="disconnectOpen = false"
+    />
   </div>
 </template>

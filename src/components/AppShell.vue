@@ -1,24 +1,20 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
-import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import GliderLogo from '@/components/GliderLogo.vue'
 import SiteFooter from '@/components/SiteFooter.vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useDisplaySettings } from '@/composables/useDisplaySettings'
 import { useFlashMessage } from '@/composables/useFlashMessage'
-import { useLogbookDisconnect } from '@/composables/useLogbookDisconnect'
 import { resetLogbookState } from '@/composables/resetLogbookState'
 
 const { user, mutating, logout } = useAuth()
 const { ensureLoaded: ensureDisplaySettingsLoaded } = useDisplaySettings()
-const { disconnectLogbook, disconnecting } = useLogbookDisconnect()
 const { message, kind, clear } = useFlashMessage()
 const route = useRoute()
 const router = useRouter()
 const menuOpen = ref(false)
-const disconnectOpen = ref(false)
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
@@ -51,18 +47,6 @@ watch(
   },
   { immediate: true },
 )
-
-function openDisconnectDialog(): void {
-  closeMenu()
-  disconnectOpen.value = true
-}
-
-async function confirmDisconnect(): Promise<void> {
-  const ok = await disconnectLogbook()
-  if (ok) {
-    disconnectOpen.value = false
-  }
-}
 
 async function onLogout(): Promise<void> {
   await logout()
@@ -124,15 +108,6 @@ watch(
           </nav>
         </div>
         <div v-if="user" class="flex shrink-0 items-center gap-2 text-sm sm:gap-3">
-          <button
-            v-if="user.has_logbook"
-            type="button"
-            class="hidden rounded-md px-2 py-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 sm:inline-block sm:px-3"
-            :disabled="disconnecting || mutating"
-            @click="openDisconnectDialog"
-          >
-            Disconnect logbook
-          </button>
           <span class="hidden text-slate-600 md:inline">{{ user.name }}</span>
           <ActionButton variant="secondary" class="!px-2 !py-1.5 sm:!px-3" :busy="mutating" @click="onLogout">
             Log out
@@ -158,14 +133,6 @@ watch(
         >
           {{ item.label }}
         </RouterLink>
-        <button
-          type="button"
-          class="mt-1 block w-full rounded-md px-3 py-3 text-left text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
-          :disabled="disconnecting || mutating"
-          @click="openDisconnectDialog"
-        >
-          Disconnect logbook
-        </button>
       </nav>
     </header>
 
@@ -191,15 +158,5 @@ watch(
     <div class="border-t border-slate-200 bg-white px-4 py-6">
       <SiteFooter />
     </div>
-
-    <ConfirmDialog
-      :open="disconnectOpen"
-      title="Disconnect logbook"
-      message="You will no longer see flights from this spreadsheet in the app. Your data in Google Sheets is not deleted."
-      confirm-label="Disconnect"
-      :busy="disconnecting"
-      @confirm="confirmDisconnect"
-      @cancel="disconnectOpen = false"
-    />
   </div>
 </template>
