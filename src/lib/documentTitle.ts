@@ -90,7 +90,10 @@ export function getPublicPageTitle(path: string): string | undefined {
   return PUBLIC_PAGE_TITLES[path]
 }
 
-export function getDocumentTitle(route: { path: string; name?: string | null }): string {
+export function getDocumentTitle(route: {
+  path: string
+  name?: string | symbol | null
+}): string {
   const byPath = PUBLIC_PAGE_TITLES[route.path]
   if (byPath) {
     return byPath

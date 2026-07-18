@@ -2,6 +2,8 @@ import {
   getDocumentTitle,
   getPublicPageDescription,
   PUBLIC_PAGE_DESCRIPTIONS,
+  SITE_NAME,
+  SITE_TAGLINE,
 } from '@/lib/documentTitle'
 
 function setMetaContent(selector: string, attribute: string, value: string): void {
@@ -14,10 +16,16 @@ function setMetaContent(selector: string, attribute: string, value: string): voi
   element.content = value
 }
 
-export function applyRouteSeo(route: { path: string; name?: string | null }): void {
+export function applyRouteSeo(route: {
+  path: string
+  name?: string | symbol | null
+}): void {
   document.title = getDocumentTitle(route)
 
-  const description = getPublicPageDescription(route.path) ?? PUBLIC_PAGE_DESCRIPTIONS['/']
+  const description =
+    getPublicPageDescription(route.path) ??
+    PUBLIC_PAGE_DESCRIPTIONS['/'] ??
+    `${SITE_NAME} – ${SITE_TAGLINE}`
   setMetaContent('description', 'name', description)
   setMetaContent('og:description', 'property', description)
   setMetaContent('twitter:description', 'name', description)
