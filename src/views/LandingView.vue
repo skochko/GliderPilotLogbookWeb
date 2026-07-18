@@ -12,12 +12,18 @@ const badges = ['Google Sheets sync', 'Mobile friendly', 'Your data are secure']
 
 const features = [
   {
+    title: 'Club Flight Import',
+    description:
+      'Participating clubs can add missing flights from their accounting system into your spreadsheet — only with your consent.',
+  },
+  {
     title: 'Digital Logbook',
-    description: 'View, add, and edit flights in a clean interface built for glider pilots.',
+    description:
+      'View, add, and edit flights in a clean interface built for glider pilots. Manual entries always stay available.',
   },
   {
     title: 'Google Sheets Sync',
-    description: 'Every change is written to your spreadsheet — the logbook you already own.',
+    description: 'Every change is written to your spreadsheet — the logbook you own in Google Drive.',
   },
   {
     title: 'Medical Tracking',
@@ -39,7 +45,7 @@ const features = [
 
 const steps = [
   {
-    title: 'Sign in with Google',
+    title: 'Continue with Google',
     description: 'Use your existing Google account — no separate password to manage.',
   },
   {
@@ -48,7 +54,8 @@ const steps = [
   },
   {
     title: 'Fly and review',
-    description: 'Log flights, check legality, and optionally enable club automation where offered.',
+    description:
+      'Log flights, check legality and currency, and optionally request club import where your club is onboarded.',
   },
 ]
 
@@ -92,14 +99,21 @@ onMounted(() => {
               Glider Pilot Logbook
             </h1>
             <p class="mt-3 text-lg text-landing-secondary sm:text-xl">
-              Digital logbook for glider pilots
+              The digital ecosystem connecting glider pilots and clubs
+            </p>
+            <p class="mt-5 text-base font-medium leading-relaxed text-landing-text sm:text-lg">
+              Automate flight records. Bridge club systems and personal logbooks. Keep your flying
+              history up to date.
             </p>
             <p class="mt-5 text-base leading-relaxed text-landing-secondary sm:text-lg">
-              <strong class="font-semibold text-landing-text">Glider Pilot Logbook</strong> is a web
-              application that helps you maintain a gliding flight logbook stored in
-              <strong class="font-semibold text-landing-text">your own Google Spreadsheet</strong>. You
-              sign in with Google to connect the app to that spreadsheet — we do not replace your
-              logbook file.
+              Glider Pilot Logbook is more than a digital logbook. It connects pilots, participating
+              clubs and flight data — reducing manual copying while your
+              <strong class="font-semibold text-landing-text">Google Spreadsheet</strong> remains the
+              official record.
+            </p>
+            <p class="mt-4 text-sm leading-relaxed text-landing-muted sm:text-base">
+              Where clubs are onboarded, flights can import into your logbook with your consent. You
+              stay the owner of your data and can add or edit entries at any time.
             </p>
 
             <div
@@ -167,6 +181,28 @@ onMounted(() => {
         </div>
       </section>
 
+      <!-- Club to logbook -->
+      <section class="landing-section pt-0">
+        <div class="mx-auto max-w-landing px-4 sm:px-6">
+          <div class="mx-auto max-w-3xl text-center">
+            <h2 class="text-[1.75rem] font-semibold text-landing-text sm:text-[2rem]">
+              From club records to personal logbook — automatically
+            </h2>
+            <p class="mt-5 text-base leading-relaxed text-landing-secondary sm:text-lg">
+              For most club flying, the flight is recorded in the club's system first. Traditionally,
+              pilots and administrators spend hours copying that data between systems, spreadsheets and
+              personal logbooks.
+            </p>
+            <p class="mt-4 text-base font-medium leading-relaxed text-landing-text sm:text-lg">
+              Glider Pilot Logbook automates this handoff.
+            </p>
+            <p class="mt-3 text-sm leading-relaxed text-landing-muted sm:text-base">
+              Participating clubs import missing flights into your spreadsheet — only with your approval.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <!-- Product screenshot -->
       <section id="landing-preview" class="landing-section">
         <div class="mx-auto max-w-landing px-4 sm:px-6">
@@ -187,10 +223,11 @@ onMounted(() => {
         <div class="mx-auto max-w-landing px-4 sm:px-6">
           <div class="mx-auto max-w-2xl text-center">
             <h2 class="text-[1.75rem] font-semibold text-landing-text sm:text-[2rem]">
-              Everything you need for day-to-day logbook work
+              Built for pilots — with club automation when you need it
             </h2>
             <p class="mt-4 text-base text-landing-secondary sm:text-lg">
-              A calm, professional interface that mirrors the app experience — not a generic marketing site.
+              Log flights yourself or let participating clubs fill the gaps. Your Google Spreadsheet
+              stays the official record.
             </p>
           </div>
 
@@ -304,7 +341,8 @@ onMounted(() => {
           <div class="mx-auto max-w-2xl text-center">
             <h2 class="text-[1.75rem] font-semibold text-landing-text sm:text-[2rem]">How it works</h2>
             <p class="mt-4 text-base text-landing-secondary sm:text-lg">
-              Connect once, then use the app like an extension of your spreadsheet.
+              Connect your spreadsheet once, then use the app every day — with optional club import
+              when your club is onboarded.
             </p>
           </div>
 
@@ -368,8 +406,9 @@ onMounted(() => {
           >
             <h2 class="text-[1.75rem] font-semibold sm:text-[2rem]">Ready to connect your logbook?</h2>
             <p class="mx-auto mt-4 max-w-2xl text-base text-white/85 sm:text-lg">
-              Sign in with Google, connect your spreadsheet, and start using a modern interface built
-              around the logbook you already own.
+              Get started with Google and connect your spreadsheet — a modern pilot interface on top of the
+              logbook you own. When your club joins the programme, flight records can flow in with your
+              approval.
             </p>
             <RouterLink
               to="/login"
