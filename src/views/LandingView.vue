@@ -75,7 +75,6 @@ const faqItems = [
 ]
 
 onMounted(() => {
-  document.title = 'Glider Pilot Logbook'
   void fetchLanding()
 })
 </script>

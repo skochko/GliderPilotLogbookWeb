@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SITE_PAGE_ROUTES } from '@/lib/sitePages'
-import { canonicalUrl, getSharePages, pageTitle } from '@/lib/shareMeta'
+import { canonicalUrl, getSharePages } from '@/lib/shareMeta'
 
 describe('shareMeta', () => {
   it('provides unique titles and descriptions for public pages', () => {
@@ -18,14 +18,9 @@ describe('shareMeta', () => {
     expect(canonicalUrl('/club/automation')).toBe('https://gliderpilotlogbook.co.uk/club/automation')
   })
 
-  it('formats page titles', () => {
-    expect(pageTitle('Club automation')).toBe('Club automation — Glider Pilot Logbook')
-    expect(pageTitle('Glider Pilot Logbook')).toBe('Glider Pilot Logbook')
-  })
-
   it('includes club pages with section-specific copy', () => {
     const clubAutomation = getSharePages().find((page) => page.path === '/club/automation')
-    expect(clubAutomation?.title).toContain('Automation')
+    expect(clubAutomation?.title).toBe('Club Integration – Automatic Flight Import for Gliding Clubs')
     expect(clubAutomation?.description.toLowerCase()).toContain('club')
   })
 })

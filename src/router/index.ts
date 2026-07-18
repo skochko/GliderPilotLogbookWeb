@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
+import { applyRouteSeo } from '@/lib/seoTags'
 import { authGuardRedirect, isPublicFastPath } from '@/lib/routeAccess'
 import { SITE_PAGE_ROUTES } from '@/lib/sitePages'
 
@@ -114,6 +115,10 @@ const router = createRouter({
       redirect: '/',
     },
   ],
+})
+
+router.afterEach((to) => {
+  applyRouteSeo(to)
 })
 
 router.beforeEach(async (to) => {

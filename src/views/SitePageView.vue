@@ -6,7 +6,7 @@ import LoadingState from '@/components/LoadingState.vue'
 import MarkdownContent from '@/components/MarkdownContent.vue'
 import PublicPageShell from '@/components/PublicPageShell.vue'
 import { usePage } from '@/composables/usePage'
-import { getSitePageByPath, getSitePageLabel } from '@/lib/sitePages'
+import { getSitePageByPath } from '@/lib/sitePages'
 
 const route = useRoute()
 const router = useRouter()
@@ -15,11 +15,6 @@ const { page, loading, initialized, error, fetch, resetPageState } = usePage()
 const pageType = computed(() => {
   const match = getSitePageByPath(route.path)
   return match?.type ?? null
-})
-
-const fallbackTitle = computed(() => {
-  if (!pageType.value) return 'Page'
-  return getSitePageLabel(pageType.value)
 })
 
 const updatedLabel = computed(() => {
@@ -41,12 +36,6 @@ async function loadCurrentPage(): Promise<void> {
   await fetch(pageType.value)
 }
 
-function updateDocumentTitle(): void {
-  document.title = page.value?.title
-    ? `${page.value.title} — Glider Pilot Logbook`
-    : `${fallbackTitle.value} — Glider Pilot Logbook`
-}
-
 onMounted(() => {
   void loadCurrentPage()
 })
@@ -57,8 +46,6 @@ watch(
     void loadCurrentPage()
   },
 )
-
-watch(page, updateDocumentTitle, { immediate: true })
 </script>
 
 <template>
