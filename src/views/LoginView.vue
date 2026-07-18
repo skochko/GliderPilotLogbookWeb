@@ -35,7 +35,7 @@ const { message, kind, clear } = useFlashMessage()
       </header>
 
       <section class="rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
-        <h1 class="text-2xl font-bold text-slate-900 sm:text-3xl">Get started with Glider Pilot Logbook</h1>
+        <h1 class="text-2xl font-bold text-slate-900 sm:text-3xl">Start with Glider Pilot Logbook</h1>
         <p class="mt-3 text-slate-600">
           Use your Google account to create or connect your logbook — no separate password.
         </p>

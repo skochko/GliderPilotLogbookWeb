@@ -106,7 +106,7 @@ onUnmounted(() => {
           to="/login"
           class="inline-flex items-center justify-center rounded-lg bg-landing-primary px-3.5 py-2 text-sm font-medium text-white transition hover:bg-landing-primary-hover"
         >
-          Get started
+          Start
         </RouterLink>
         <button
           type="button"
@@ -179,7 +179,7 @@ onUnmounted(() => {
             class="block text-sm font-medium text-landing-primary"
             @click="closeNav"
           >
-            Get started
+            Start
           </RouterLink>
         </li>
       </ul>

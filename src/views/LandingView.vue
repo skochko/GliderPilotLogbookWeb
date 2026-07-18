@@ -153,7 +153,7 @@ onMounted(() => {
                 to="/login"
                 class="inline-flex w-full items-center justify-center rounded-lg bg-landing-primary px-5 py-3 text-sm font-medium text-white transition hover:bg-landing-primary-hover sm:w-auto"
               >
-                Get started
+                Start
               </RouterLink>
               <a
                 href="#landing-preview"
@@ -406,7 +406,7 @@ onMounted(() => {
           >
             <h2 class="text-[1.75rem] font-semibold sm:text-[2rem]">Ready to connect your logbook?</h2>
             <p class="mx-auto mt-4 max-w-2xl text-base text-white/85 sm:text-lg">
-              Get started with Google and connect your spreadsheet — a modern pilot interface on top of the
+              Start with Google and connect your spreadsheet — a modern pilot interface on top of the
               logbook you own. When your club joins the programme, flight records can flow in with your
               approval.
             </p>
@@ -414,7 +414,7 @@ onMounted(() => {
               to="/login"
               class="mt-8 inline-flex items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-medium text-landing-primary transition hover:bg-white/95"
             >
-              Get started
+              Start
             </RouterLink>
           </div>
         </div>
