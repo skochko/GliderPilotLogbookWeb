@@ -1,20 +1,44 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 import GliderLogo from '@/components/GliderLogo.vue'
 import ClubSiteNav from '@/components/ClubSiteNav.vue'
 import { useAuth } from '@/composables/useAuth'
 
 const { user } = useAuth()
+const route = useRoute()
 const navOpen = ref(false)
 const elevated = ref(false)
 
-const links = [
-  { href: '#features', label: 'Features' },
-  { href: '#google-sheets', label: 'Your data' },
-  { href: '#how-it-works', label: 'How it works' },
-  { href: '#faq', label: 'FAQ' },
-]
+const onLanding = computed(() => route.name === 'landing')
+
+const landingSectionLinks = [
+  { id: 'features', label: 'Features' },
+  { id: 'google-sheets', label: 'Your data' },
+  { id: 'how-it-works', label: 'How it works' },
+  { id: 'faq', label: 'FAQ' },
+] as const
+
+const siteLinks = [
+  { path: '/about', label: 'About' },
+  { path: '/faq', label: 'FAQ' },
+  { path: '/contact', label: 'Contact' },
+] as const
+
+const navLinks = computed(() => {
+  if (onLanding.value) {
+    return landingSectionLinks.map((link) => ({
+      key: link.id,
+      label: link.label,
+      href: `#${link.id}`,
+    }))
+  }
+  return siteLinks.map((link) => ({
+    key: link.path,
+    label: link.label,
+    href: link.path,
+  }))
+})
 
 function onScroll(): void {
   elevated.value = window.scrollY > 8
@@ -50,14 +74,22 @@ onUnmounted(() => {
       </RouterLink>
 
       <nav class="hidden items-center gap-6 md:flex" aria-label="Primary">
-        <a
-          v-for="link in links"
-          :key="link.href"
-          :href="link.href"
-          class="text-sm font-medium text-landing-secondary transition hover:text-landing-primary"
-        >
-          {{ link.label }}
-        </a>
+        <template v-for="link in navLinks" :key="link.key">
+          <RouterLink
+            v-if="link.href.startsWith('/')"
+            :to="link.href"
+            class="text-sm font-medium text-landing-secondary transition hover:text-landing-primary"
+          >
+            {{ link.label }}
+          </RouterLink>
+          <a
+            v-else
+            :href="link.href"
+            class="text-sm font-medium text-landing-secondary transition hover:text-landing-primary"
+          >
+            {{ link.label }}
+          </a>
+        </template>
         <ClubSiteNav variant="landing" />
       </nav>
 
@@ -118,8 +150,17 @@ onUnmounted(() => {
       aria-label="Mobile"
     >
       <ul class="space-y-3">
-        <li v-for="link in links" :key="link.href">
+        <li v-for="link in navLinks" :key="link.key">
+          <RouterLink
+            v-if="link.href.startsWith('/')"
+            :to="link.href"
+            class="block text-sm font-medium text-landing-secondary"
+            @click="closeNav"
+          >
+            {{ link.label }}
+          </RouterLink>
           <a
+            v-else
             :href="link.href"
             class="block text-sm font-medium text-landing-secondary"
             @click="closeNav"

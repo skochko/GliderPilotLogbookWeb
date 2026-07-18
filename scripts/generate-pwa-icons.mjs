@@ -144,6 +144,28 @@ await writeSized('apple-touch-icon.png', 180, publicDir)
 await writeSized('favicon-32x32.png', 32, publicDir)
 await writeSized('favicon-16x16.png', 16, publicDir)
 
+const ogWidth = 1200
+const ogHeight = 630
+const ogLogoSize = 360
+const ogImage = await sharp({
+  create: {
+    width: ogWidth,
+    height: ogHeight,
+    channels: 4,
+    background: '#002147',
+  },
+})
+  .composite([
+    {
+      input: await sharp(squared).resize(ogLogoSize, ogLogoSize, { fit: 'contain' }).png().toBuffer(),
+      gravity: 'center',
+    },
+  ])
+  .png()
+  .toBuffer()
+writeFileSync(join(publicDir, 'og-image.png'), ogImage)
+console.log(`wrote ${join(publicDir, 'og-image.png')} (${ogWidth}x${ogHeight})`)
+
 writeFileSync(join(designDir, 'icon-transparent.png'), squared)
 console.log(`wrote ${join(designDir, 'icon-transparent.png')}`)
 
