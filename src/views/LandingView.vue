@@ -8,7 +8,10 @@ import { useLanding } from '@/composables/useLanding'
 
 const { fetchLanding, screenshotFor } = useLanding()
 
-const badges = ['Google Sheets sync', 'Mobile friendly', 'Your data are secure']
+const badges = ['Google Sheets sync', 'Mobile friendly']
+
+const ownershipLine =
+  'Your logbook and the data it contains remain your property, and under your control.'
 
 const features = [
   {
@@ -166,7 +169,7 @@ onMounted(() => {
             <ul class="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-landing-secondary">
               <li v-for="badge in badges" :key="badge" class="inline-flex items-center gap-2">
                 <svg
-                  class="h-4 w-4 text-landing-success"
+                  class="h-4 w-4 shrink-0 text-landing-success"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -177,6 +180,9 @@ onMounted(() => {
                 {{ badge }}
               </li>
             </ul>
+            <p class="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-landing-secondary">
+              {{ ownershipLine }}
+            </p>
           </div>
         </div>
       </section>

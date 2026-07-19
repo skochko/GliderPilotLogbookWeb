@@ -6,6 +6,7 @@ withDefaults(
     busy?: boolean
     disabled?: boolean
     type?: 'button' | 'submit'
+    form?: string
     variant?: 'primary' | 'secondary' | 'danger'
   }>(),
   {
@@ -26,6 +27,7 @@ const variantClass = {
 <template>
   <button
     :type="type"
+    :form="form"
     class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
     :class="variantClass[variant]"
     :disabled="disabled || busy"

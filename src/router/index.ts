@@ -84,13 +84,13 @@ const router = createRouter({
       path: '/flights/new',
       name: 'flight-create',
       component: () => import('@/views/FlightCreateView.vue'),
-      meta: { requiresAuth: true, requiresLogbook: true },
+      meta: { requiresAuth: true, requiresLogbook: true, mobileFullscreenSheet: true },
     },
     {
       path: '/flights/:id',
       name: 'flight-edit',
       component: () => import('@/views/FlightEditView.vue'),
-      meta: { requiresAuth: true, requiresLogbook: true },
+      meta: { requiresAuth: true, requiresLogbook: true, mobileFullscreenSheet: true },
     },
     {
       path: '/settings',

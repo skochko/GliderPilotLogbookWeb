@@ -1,22 +1,34 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import ErrorBanner from '@/components/ErrorBanner.vue'
+import FlightListFiltersDialog from '@/components/FlightListFiltersDialog.vue'
 import FlightsTable from '@/components/FlightsTable.vue'
+import FilterIcon from '@/components/icons/FilterIcon.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import LogbookSyncProgress from '@/components/LogbookSyncProgress.vue'
 import SpinnerIcon from '@/components/SpinnerIcon.vue'
 import { useFlights } from '@/composables/useFlights'
 import { useDisplaySettings } from '@/composables/useDisplaySettings'
 import { useLogbookSync } from '@/composables/useLogbookSync'
+import {
+  emptyFlightListFilters,
+  hasActiveFlightListFilters,
+  sortPresetFromQuery,
+  type FlightListSortPreset,
+} from '@/lib/flightListQuery'
+import type { FlightListFilters } from '@/types'
 
 const {
   flights,
+  total,
   loading,
   loadingMore,
   hasMore,
   listInitialized,
   error,
+  listFilters,
+  filterOptions,
   list,
   loadMore,
 } = useFlights()
@@ -24,11 +36,24 @@ const { displaySettings, ensureLoaded } = useDisplaySettings()
 const { status, showProgress, syncError, syncCompleteCount, startPolling, stopPolling } = useLogbookSync()
 
 const loadMoreSentinel = ref<HTMLElement | null>(null)
+const sortPreset = ref<FlightListSortPreset>('date_newest_first')
+const draftFilters = ref<FlightListFilters>(emptyFlightListFilters())
+const filtersOpen = ref(false)
 
 let loadMoreObserver: IntersectionObserver | null = null
 
+const hasActiveFilters = computed(() => hasActiveFlightListFilters(draftFilters.value))
+
+function initialSortPreset(): FlightListSortPreset {
+  const direction = displaySettings.value?.sort_direction ?? 'newest_first'
+  return sortPresetFromQuery('date', direction)
+}
+
 async function reloadFlights(): Promise<void> {
-  await list(displaySettings.value?.sort_direction)
+  await list({
+    sortPreset: sortPreset.value,
+    filters: draftFilters.value,
+  })
 }
 
 async function handleLoadMore(): Promise<void> {
@@ -58,10 +83,19 @@ function bindLoadMoreObserver(): void {
   loadMoreObserver.observe(loadMoreSentinel.value)
 }
 
+function onFiltersApply(payload: { sortPreset: FlightListSortPreset; filters: FlightListFilters }): void {
+  sortPreset.value = payload.sortPreset
+  draftFilters.value = payload.filters
+  filtersOpen.value = false
+  void reloadFlights()
+}
+
 onMounted(async () => {
   window.scrollTo({ top: 0, left: 0 })
   void startPolling()
   await ensureLoaded()
+  sortPreset.value = initialSortPreset()
+  draftFilters.value = { ...listFilters.value }
   await reloadFlights()
   await nextTick()
   window.scrollTo({ top: 0, left: 0 })
@@ -77,15 +111,11 @@ watch(loadMoreSentinel, () => {
   bindLoadMoreObserver()
 })
 
-watch(
-  () => displaySettings.value?.sort_direction,
-  (direction, previous) => {
-    if (!previous || !direction || direction === previous || !listInitialized.value) {
-      return
-    }
+watch(syncCompleteCount, (count, previous) => {
+  if (count > 0 && count !== previous) {
     void reloadFlights()
-  },
-)
+  }
+})
 
 watch(
   () => status.value?.flights_loaded,
@@ -96,28 +126,53 @@ watch(
     void reloadFlights()
   },
 )
-
-watch(syncCompleteCount, (count, previous) => {
-  if (count > 0 && count !== previous) {
-    void reloadFlights()
-  }
-})
 </script>
 
 <template>
   <div class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-slate-900">Flights</h1>
-        <p class="mt-1 text-slate-600">Your flight log entries from Google Sheets.</p>
+    <div>
+      <h1 class="text-2xl font-bold text-slate-900">Flights</h1>
+      <p class="mt-1 text-slate-600">Your flight log entries from Google Sheets.</p>
+      <div class="mt-3 flex items-center justify-between gap-4">
+        <RouterLink
+          to="/flights/new"
+          class="inline-flex items-center rounded-md bg-sky-700 px-4 py-2 text-sm font-medium text-white hover:bg-sky-800"
+        >
+          Add flight
+        </RouterLink>
+        <button
+          v-if="listInitialized || showProgress"
+          type="button"
+          class="relative inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition"
+          :class="
+            hasActiveFilters
+              ? 'border-sky-300 bg-sky-50 text-sky-800 hover:bg-sky-100'
+              : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+          "
+          aria-label="Sort and filter flights"
+          @click="filtersOpen = true"
+        >
+          <FilterIcon size="sm" />
+          Filter
+          <span
+            v-if="hasActiveFilters"
+            class="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-sky-600 ring-2 ring-white"
+            aria-hidden="true"
+          />
+        </button>
       </div>
-      <RouterLink
-        to="/flights/new"
-        class="rounded-md bg-sky-700 px-4 py-2 text-sm font-medium text-white hover:bg-sky-800"
-      >
-        Add flight
-      </RouterLink>
     </div>
+
+    <FlightListFiltersDialog
+      :open="filtersOpen"
+      :sort-preset="sortPreset"
+      :filters="draftFilters"
+      :filter-options="filterOptions"
+      :total="total"
+      :loading="loading"
+      @close="filtersOpen = false"
+      @apply="onFiltersApply"
+    />
 
     <LogbookSyncProgress
       v-if="showProgress && status"
@@ -136,11 +191,24 @@ watch(syncCompleteCount, (count, previous) => {
       v-else-if="listInitialized && !flights.length && !showProgress"
       class="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center text-slate-500"
     >
-      No flights yet. Add your first flight to get started.
+      <template v-if="hasActiveFilters">
+        No flights match your filters.
+      </template>
+      <template v-else>
+        No flights yet. Add your first flight to get started.
+      </template>
     </div>
 
     <div v-else-if="listInitialized && (flights.length || showProgress)" class="space-y-3">
       <ErrorBanner v-if="error && flights.length" :message="error" :retry-busy="loadingMore" @retry="handleLoadMore" />
+
+      <p
+        v-if="hasActiveFilters && listInitialized"
+        class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+      >
+        <span class="font-medium">{{ total }} flight{{ total === 1 ? '' : 's' }}</span>
+        <span class="text-amber-800"> · Filtered</span>
+      </p>
 
       <FlightsTable v-if="flights.length" :flights="flights" />
 

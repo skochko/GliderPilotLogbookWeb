@@ -6,12 +6,20 @@ import { collectFlightFieldSuggestions } from '@/lib/flightSuggestions'
 import { launchTypeSelectOptions, normalizeLaunchTypeCode } from '@/lib/launchTypes'
 import type { Flight } from '@/types'
 
-const props = defineProps<{
-  flight?: Flight | null
-  flights?: readonly Flight[]
-  fieldErrors?: Record<string, string[]>
-  saving?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    flight?: Flight | null
+    flights?: readonly Flight[]
+    fieldErrors?: Record<string, string[]>
+    saving?: boolean
+    formId?: string
+    showActions?: boolean
+  }>(),
+  {
+    formId: 'flight-form',
+    showActions: true,
+  },
+)
 
 const emit = defineEmits<{
   submit: [Record<string, unknown>]
@@ -86,7 +94,7 @@ function onSubmit(): void {
 </script>
 
 <template>
-  <form class="space-y-6" @submit.prevent="onSubmit">
+  <form :id="formId" class="space-y-6" @submit.prevent="onSubmit">
     <div class="grid gap-4 sm:grid-cols-2">
       <label class="block text-sm">
         <span class="font-medium text-slate-700">Date</span>
@@ -255,7 +263,7 @@ function onSubmit(): void {
       <div><span class="text-slate-500">Row:</span> {{ flight.row_number }}</div>
     </div>
 
-    <div class="flex flex-wrap gap-3">
+    <div v-if="showActions" class="flex flex-wrap gap-3">
       <ActionButton type="submit" :busy="saving">
         {{ flight ? 'Save changes' : 'Create flight' }}
       </ActionButton>

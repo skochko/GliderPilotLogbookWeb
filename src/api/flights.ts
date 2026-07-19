@@ -12,6 +12,27 @@ export function listFlights(params: FlightListParams = {}): Promise<FlightListRe
   if (params.sort_direction) {
     search.set('sort_direction', params.sort_direction)
   }
+  if (params.sort_by) {
+    search.set('sort_by', params.sort_by)
+  }
+  if (params.glider) {
+    search.set('glider', params.glider)
+  }
+  if (params.registration) {
+    search.set('registration', params.registration)
+  }
+  if (params.launch_type) {
+    search.set('launch_type', params.launch_type)
+  }
+  if (params.role) {
+    search.set('role', params.role)
+  }
+  if (params.from) {
+    search.set('from', params.from)
+  }
+  if (params.to) {
+    search.set('to', params.to)
+  }
   return apiJson<FlightListResponse>(`/flights?${search.toString()}`)
 }
 

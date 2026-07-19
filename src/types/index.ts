@@ -19,7 +19,7 @@ export type Flight = components['schemas']['Flight'] & {
   media?: readonly import('./flightMedia').FlightMediaItem[]
 }
 export type { FlightMediaItem, FlightMediaFolder, FlightMediaUploadResponse } from './flightMedia'
-export type { FlightListParams, FlightListResponse } from './flights'
+export type { FlightDatePresetId, FlightFilterOptions, FlightListFilters, FlightListParams, FlightListResponse, FlightPilotRoleFilter, FlightSortBy } from './flights'
 export type FlightCreateRequest = components['schemas']['FlightCreateRequest']
 export type FlightPatchRequest = components['schemas']['PatchedFlightPatchRequest']
 export type LogbookStatus = components['schemas']['LogbookStatus']

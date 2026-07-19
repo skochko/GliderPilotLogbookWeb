@@ -1,7 +1,21 @@
 import { readonly, ref } from 'vue'
 import * as flightsApi from '@/api/flights'
 import { isApiError } from '@/api/errors'
-import type { Flight, FlightCreateRequest, FlightPatchRequest } from '@/types'
+import {
+  emptyFlightListFilters,
+  flightListFiltersToParams,
+  queryFromSortPreset,
+  sortPresetFromQuery,
+  type FlightListSortPreset,
+} from '@/lib/flightListQuery'
+import type {
+  Flight,
+  FlightCreateRequest,
+  FlightFilterOptions,
+  FlightListFilters,
+  FlightPatchRequest,
+  FlightSortBy,
+} from '@/types'
 
 const flights = ref<Flight[]>([])
 const total = ref(0)
@@ -13,7 +27,12 @@ const detailLoading = ref(false)
 const detailInitialized = ref(false)
 const mutating = ref(false)
 const error = ref<string | null>(null)
+const listSortBy = ref<FlightSortBy>('date')
 const listSortDirection = ref<string | undefined>()
+const listFilters = ref<FlightListFilters>(emptyFlightListFilters())
+const filterOptions = ref<FlightFilterOptions>({ gliders: [], registrations: [], launch_types: [] })
+
+let listRequestId = 0
 
 export function resetFlightsState(): void {
   flights.value = []
@@ -26,25 +45,61 @@ export function resetFlightsState(): void {
   detailInitialized.value = false
   mutating.value = false
   error.value = null
+  listSortBy.value = 'date'
   listSortDirection.value = undefined
+  listFilters.value = emptyFlightListFilters()
+  filterOptions.value = { gliders: [], registrations: [], launch_types: [] }
+  listRequestId = 0
+}
+
+function buildListParams(offset: number) {
+  return {
+    limit: flightsApi.FLIGHT_LIST_PAGE_SIZE,
+    offset,
+    sort_by: listSortBy.value,
+    sort_direction: listSortDirection.value,
+    ...flightListFiltersToParams(listFilters.value),
+  }
+}
+
+function applyListPage(page: Awaited<ReturnType<typeof flightsApi.listFlights>>, append: boolean): void {
+  flights.value = append ? [...flights.value, ...page.results] : page.results
+  total.value = page.total
+  hasMore.value = page.has_more
+  listSortBy.value = page.sort_by
+  listSortDirection.value = page.sort_direction
+  filterOptions.value = page.filter_options
 }
 
 export function useFlights() {
-  async function list(sortDirection?: string): Promise<Flight[]> {
+  async function list(options?: {
+    sortPreset?: FlightListSortPreset
+    sortDirection?: string
+    filters?: FlightListFilters
+  }): Promise<Flight[]> {
+    const requestId = ++listRequestId
     loading.value = true
     listInitialized.value = false
     error.value = null
-    listSortDirection.value = sortDirection
+
+    if (options?.sortPreset) {
+      const query = queryFromSortPreset(options.sortPreset)
+      listSortBy.value = query.sort_by
+      listSortDirection.value = query.sort_direction
+    } else if (options?.sortDirection) {
+      listSortDirection.value = options.sortDirection
+    }
+
+    if (options?.filters) {
+      listFilters.value = { ...options.filters }
+    }
+
     try {
-      const page = await flightsApi.listFlights({
-        limit: flightsApi.FLIGHT_LIST_PAGE_SIZE,
-        offset: 0,
-        sort_direction: sortDirection,
-      })
-      flights.value = page.results
-      total.value = page.total
-      hasMore.value = page.has_more
-      listSortDirection.value = page.sort_direction
+      const page = await flightsApi.listFlights(buildListParams(0))
+      if (requestId !== listRequestId) {
+        return flights.value
+      }
+      applyListPage(page, false)
       return flights.value
     } catch (err) {
       error.value = isApiError(err) ? err.message : 'Failed to load flights'
@@ -53,32 +108,33 @@ export function useFlights() {
       hasMore.value = false
       return []
     } finally {
-      loading.value = false
-      listInitialized.value = true
+      if (requestId === listRequestId) {
+        loading.value = false
+        listInitialized.value = true
+      }
     }
   }
 
   async function loadMore(): Promise<void> {
-    if (loadingMore.value || !hasMore.value) {
+    if (loadingMore.value || loading.value || !hasMore.value) {
       return
     }
 
+    const requestId = listRequestId
     loadingMore.value = true
     error.value = null
     try {
-      const page = await flightsApi.listFlights({
-        limit: flightsApi.FLIGHT_LIST_PAGE_SIZE,
-        offset: flights.value.length,
-        sort_direction: listSortDirection.value,
-      })
-      flights.value = [...flights.value, ...page.results]
-      total.value = page.total
-      hasMore.value = page.has_more
-      listSortDirection.value = page.sort_direction
+      const page = await flightsApi.listFlights(buildListParams(flights.value.length))
+      if (requestId !== listRequestId) {
+        return
+      }
+      applyListPage(page, true)
     } catch (err) {
       error.value = isApiError(err) ? err.message : 'Failed to load more flights'
     } finally {
-      loadingMore.value = false
+      if (requestId === listRequestId) {
+        loadingMore.value = false
+      }
     }
   }
 
@@ -147,17 +203,8 @@ export function useFlights() {
     }
   }
 
-  function sortFlights(items: Flight[], direction: string): Flight[] {
-    const sorted = [...items]
-    sorted.sort((a, b) => {
-      const dateCmp = a.date.localeCompare(b.date)
-      if (dateCmp !== 0) {
-        return direction === 'newest_first' ? -dateCmp : dateCmp
-      }
-      const timeCmp = (a.launch_time || '').localeCompare(b.launch_time || '')
-      return direction === 'newest_first' ? -timeCmp : timeCmp
-    })
-    return sorted
+  function currentSortPreset(): FlightListSortPreset {
+    return sortPresetFromQuery(listSortBy.value, listSortDirection.value ?? 'newest_first')
   }
 
   return {
@@ -171,12 +218,14 @@ export function useFlights() {
     detailInitialized: readonly(detailInitialized),
     mutating: readonly(mutating),
     error: readonly(error),
+    listFilters: readonly(listFilters),
+    filterOptions: readonly(filterOptions),
+    currentSortPreset,
     list,
     loadMore,
     get,
     create,
     update,
     remove,
-    sortFlights,
   }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import GliderLogo from '@/components/GliderLogo.vue'
 import SiteFooter from '@/components/SiteFooter.vue'
@@ -15,6 +15,30 @@ const { message, kind, clear } = useFlashMessage()
 const route = useRoute()
 const router = useRouter()
 const menuOpen = ref(false)
+
+const DESKTOP_MEDIA_QUERY = '(min-width: 640px)'
+const isDesktop = ref(
+  typeof window !== 'undefined' ? window.matchMedia(DESKTOP_MEDIA_QUERY).matches : false,
+)
+let desktopMediaQuery: MediaQueryList | null = null
+
+function syncDesktop(): void {
+  isDesktop.value = desktopMediaQuery?.matches ?? false
+}
+
+const hideMobileChrome = computed(
+  () => Boolean(route.meta.mobileFullscreenSheet) && !isDesktop.value,
+)
+
+onMounted(() => {
+  desktopMediaQuery = window.matchMedia(DESKTOP_MEDIA_QUERY)
+  syncDesktop()
+  desktopMediaQuery.addEventListener('change', syncDesktop)
+})
+
+onUnmounted(() => {
+  desktopMediaQuery?.removeEventListener('change', syncDesktop)
+})
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
@@ -66,7 +90,7 @@ watch(
 
 <template>
   <div class="min-h-screen">
-    <header class="sticky top-0 z-50 border-b border-slate-200 bg-white">
+    <header v-if="!hideMobileChrome" class="sticky top-0 z-50 border-b border-slate-200 bg-white">
       <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <div class="flex min-w-0 items-center gap-3 sm:gap-6">
           <button
@@ -137,7 +161,7 @@ watch(
     </header>
 
     <div
-      v-if="message"
+      v-if="message && !hideMobileChrome"
       class="border-b px-4 py-3 text-sm"
       :class="{
         'border-green-200 bg-green-50 text-green-800': kind === 'success',
@@ -151,11 +175,14 @@ watch(
       </div>
     </div>
 
-    <main class="mx-auto max-w-6xl px-4 py-6">
+    <main
+      class="mx-auto max-w-6xl"
+      :class="hideMobileChrome ? 'sm:px-4 sm:py-6' : 'px-4 py-6'"
+    >
       <slot />
     </main>
 
-    <div class="border-t border-slate-200 bg-white px-4 py-6">
+    <div v-if="!hideMobileChrome" class="border-t border-slate-200 bg-white px-4 py-6">
       <SiteFooter />
     </div>
   </div>
