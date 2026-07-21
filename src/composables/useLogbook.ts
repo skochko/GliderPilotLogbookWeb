@@ -49,21 +49,6 @@ export function useLogbook() {
     }
   }
 
-  async function create(payload: LogbookCreateRequest): Promise<LogbookCreateResponse | null> {
-    mutating.value = true
-    error.value = null
-    try {
-      const response = await logbookApi.createLogbook(payload)
-      status.value = response
-      return response
-    } catch (err) {
-      error.value = isApiError(err) ? err.message : 'Failed to create logbook'
-      return null
-    } finally {
-      mutating.value = false
-    }
-  }
-
   async function applyWizard(payload: LogbookCreateRequest): Promise<LogbookCreateResponse | null> {
     mutating.value = true
     error.value = null
@@ -102,7 +87,6 @@ export function useLogbook() {
     error: readonly(error),
     fetchStatus,
     connect,
-    create,
     applyWizard,
     disconnect,
   }

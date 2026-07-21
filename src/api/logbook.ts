@@ -13,13 +13,6 @@ export function connectLogbook(payload: { spreadsheet_id: string }): Promise<Log
   })
 }
 
-export function createLogbook(payload: LogbookCreateRequest): Promise<LogbookCreateResponse> {
-  return apiJson<LogbookCreateResponse>('/logbook/create', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  })
-}
-
 export function applyLogbookWizard(payload: LogbookCreateRequest): Promise<LogbookCreateResponse> {
   return apiJson<LogbookCreateResponse>('/logbook/wizard/apply', {
     method: 'POST',

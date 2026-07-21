@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import MarkdownContent from '@/components/MarkdownContent.vue'
 import { getSettings } from '@/api/settings'
-import { createLogbookAuthRedirect, fetchCreateLogbookScopes } from '@/api/auth'
 import { getPage } from '@/api/pages'
 import { listOrganizations, type OrganizationListItem } from '@/api/organizations'
 import { useAuth } from '@/composables/useAuth'
@@ -14,7 +13,6 @@ import { useFlashMessage } from '@/composables/useFlashMessage'
 import { useGooglePicker } from '@/composables/useGooglePicker'
 import { useLogbook } from '@/composables/useLogbook'
 import {
-  type CreateLogbookMode,
   clearCreateLogbookWizardState,
   consumeCreateLogbookPendingSubmit,
   loadCreateLogbookWizardState,
@@ -31,18 +29,16 @@ import { useLicenseOptions, withLegacyLookupOption } from '@/composables/useLice
 import { defaultLogbookCreateForm } from '@/types/logbookCreate'
 import type { Page } from '@/types'
 
-const STEP_METHOD = 1
-const STEP_SETUP = 2
-const STEP_PERSONAL = 3
-const STEP_LICENSE = 4
-const STEP_TOTALS = 5
-const STEP_MEDICAL = 6
-const STEP_CLUB = 7
+const STEP_SETUP = 1
+const STEP_PERSONAL = 2
+const STEP_LICENSE = 3
+const STEP_TOTALS = 4
+const STEP_MEDICAL = 5
+const STEP_CLUB = 6
 
 const router = useRouter()
-const route = useRoute()
 const { user, fetchMe } = useAuth()
-const { connect, create, applyWizard, mutating, error } = useLogbook()
+const { connect, applyWizard, mutating, error } = useLogbook()
 const { pickSpreadsheet } = useGooglePicker()
 const { show } = useFlashMessage()
 const {
@@ -60,12 +56,8 @@ const {
   load: loadLicenseOptions,
 } = useLicenseOptions()
 
-const createMode = ref<CreateLogbookMode | null>(null)
-const step = ref(STEP_METHOD)
+const step = ref(STEP_SETUP)
 const stepsNavRef = ref<HTMLElement | null>(null)
-const driveScopeGranted = ref(false)
-const driveScopeLoading = ref(false)
-const driveScopeError = ref<string | null>(null)
 const validationError = ref<string | null>(null)
 const manualConfirmed = ref(false)
 const manualInstruction = ref<Page | null>(null)
@@ -87,7 +79,7 @@ const organizationsError = ref<string | null>(null)
 
 const form = reactive(defaultLogbookCreateForm())
 
-const stepLabels = ['Method', 'Setup', 'Personal', 'License', 'Totals', 'Medical', 'Club sync'] as const
+const stepLabels = ['Setup', 'Personal', 'License', 'Totals', 'Medical', 'Club sync'] as const
 const totalSteps = stepLabels.length
 
 const showInstructorFields = computed(() => isInstructorPrivilege(form.pilot_privilege))
@@ -97,17 +89,12 @@ const licenseTypeOptions = computed(() => withLegacyLookupOption(licenseTypes.va
 const licenseAuthorityOptions = computed(() =>
   withLegacyLookupOption(licenseAuthorities.value, form.license_authority),
 )
-const isManual = computed(() => createMode.value === 'manual')
-const isAutomatic = computed(() => createMode.value === 'automatic')
 const logbookConnected = computed(() => Boolean(user.value?.has_logbook))
-const nextDisabled = computed(
-  () => step.value === STEP_SETUP && isManual.value && !manualConfirmed.value,
-)
+const nextDisabled = computed(() => step.value === STEP_SETUP && !manualConfirmed.value)
 const nextBusy = computed(
   () =>
     mutating.value ||
-    driveScopeLoading.value ||
-    (step.value === STEP_SETUP && isManual.value && (pickerBusy.value || prefillLoading.value)),
+    (step.value === STEP_SETUP && (pickerBusy.value || prefillLoading.value)),
 )
 
 const selectedOrganization = computed(() =>
@@ -116,7 +103,6 @@ const selectedOrganization = computed(() =>
 
 function currentWizardState() {
   return {
-    createMode: createMode.value,
     step: step.value,
     form: { ...form },
     skippedLicense: skippedLicense.value,
@@ -131,7 +117,6 @@ function currentWizardState() {
 function restoreWizardState(): void {
   const saved = loadCreateLogbookWizardState()
   if (!saved) return
-  createMode.value = saved.createMode
   step.value = saved.step
   Object.assign(form, saved.form)
   skippedLicense.value = saved.skippedLicense
@@ -144,26 +129,6 @@ function restoreWizardState(): void {
 
 function persistWizardState(pendingSubmit = false): void {
   saveCreateLogbookWizardState(currentWizardState(), pendingSubmit)
-}
-
-function redirectForDriveAccess(): void {
-  persistWizardState()
-  createLogbookAuthRedirect()
-}
-
-async function loadDriveScopeStatus(): Promise<void> {
-  if (!isAutomatic.value) return
-  driveScopeLoading.value = true
-  driveScopeError.value = null
-  try {
-    const status = await fetchCreateLogbookScopes()
-    driveScopeGranted.value = status.granted
-  } catch {
-    driveScopeError.value = 'Could not verify Google Drive permissions.'
-    driveScopeGranted.value = false
-  } finally {
-    driveScopeLoading.value = false
-  }
 }
 
 async function loadManualInstruction(): Promise<void> {
@@ -234,26 +199,9 @@ async function openLogbookPicker(): Promise<boolean> {
   }
 }
 
-function selectMode(mode: CreateLogbookMode): void {
-  createMode.value = mode
-  persistWizardState()
-}
-
-watch(createMode, (mode) => {
-  if (mode === 'manual') {
-    void loadManualInstruction()
-  }
-  if (mode === 'automatic') {
-    void loadDriveScopeStatus()
-  }
-})
-
 watch(step, (value) => {
-  if (value === STEP_SETUP && isManual.value && !manualInstruction.value) {
+  if (value === STEP_SETUP && !manualInstruction.value) {
     void loadManualInstruction()
-  }
-  if (value === STEP_SETUP && isAutomatic.value) {
-    void loadDriveScopeStatus()
   }
   void nextTick(scrollActiveStepIntoView)
 }, { flush: 'post' })
@@ -269,30 +217,10 @@ onMounted(async () => {
   restoreWizardState()
   await Promise.all([loadPilotPrivileges(), loadLicenseOptions()])
   const pendingSubmit = consumeCreateLogbookPendingSubmit()
-  const driveAuth = route.query.drive_auth as string | undefined
 
-  if (driveAuth === 'success' || driveAuth === 'error' || driveAuth === 'account_mismatch') {
-    await router.replace({ path: route.path })
-  }
-
-  if (isAutomatic.value) {
-    await loadDriveScopeStatus()
-    if (driveAuth === 'success' && driveScopeGranted.value && step.value <= STEP_SETUP) {
-      step.value = STEP_PERSONAL
-      persistWizardState()
-    } else if (driveAuth === 'account_mismatch') {
-      driveScopeError.value =
-        'You signed in to Google with a different account than the one used in this app. Use the same Google account and try again.'
-    } else if (driveAuth === 'error') {
-      driveScopeError.value = 'Could not complete Google Drive authorisation. Please try again.'
-    }
-  }
-
-  if (isManual.value) {
-    void loadManualInstruction()
-    if (user.value?.has_logbook && !form.pilot_name.trim()) {
-      await prefillFormFromConnectedLogbook()
-    }
+  void loadManualInstruction()
+  if (user.value?.has_logbook && !form.pilot_name.trim()) {
+    await prefillFormFromConnectedLogbook()
   }
 
   if (pendingSubmit && step.value === STEP_CLUB) {
@@ -329,7 +257,7 @@ function isMedicalStepEmpty(): boolean {
 }
 
 function goBack(): void {
-  if (step.value > STEP_METHOD) {
+  if (step.value > STEP_SETUP) {
     step.value -= 1
     persistWizardState()
   }
@@ -338,32 +266,14 @@ function goBack(): void {
 async function goNext(): Promise<void> {
   validationError.value = null
 
-  if (step.value === STEP_METHOD) {
-    if (!createMode.value) {
-      validationError.value = 'Choose how you want to create your logbook.'
+  if (step.value === STEP_SETUP) {
+    if (!manualConfirmed.value) {
+      validationError.value = 'Confirm that you created your logbook using the instructions.'
       return
     }
-    step.value = STEP_SETUP
-    persistWizardState()
-    return
-  }
-
-  if (step.value === STEP_SETUP) {
-    if (isManual.value) {
-      if (!manualConfirmed.value) {
-        validationError.value = 'Confirm that you created your logbook using the instructions.'
-        return
-      }
-      if (!logbookConnected.value) {
-        const connected = await openLogbookPicker()
-        if (!connected) return
-      }
-    }
-    if (isAutomatic.value) {
-      if (!driveScopeGranted.value) {
-        redirectForDriveAccess()
-        return
-      }
+    if (!logbookConnected.value) {
+      const connected = await openLogbookPicker()
+      if (!connected) return
     }
     step.value = STEP_PERSONAL
     persistWizardState()
@@ -407,14 +317,6 @@ async function submit(): Promise<void> {
     return
   }
 
-  if (isAutomatic.value && !driveScopeGranted.value) {
-    await loadDriveScopeStatus()
-    if (!driveScopeGranted.value) {
-      redirectForDriveAccess()
-      return
-    }
-  }
-
   const payload = buildLogbookCreatePayload(form, {
     skippedLicense: skippedLicense.value,
     skippedTotals: skippedTotals.value,
@@ -423,7 +325,7 @@ async function submit(): Promise<void> {
     organizationId: selectedOrganizationId.value,
   })
 
-  const response = isManual.value ? await applyWizard(payload) : await create(payload)
+  const response = await applyWizard(payload)
 
   if (response) {
     clearCreateLogbookWizardState()
@@ -431,16 +333,13 @@ async function submit(): Promise<void> {
     if (response.club_automation_request) {
       show(response.club_automation_request.message, 'success')
     } else {
-      show(isManual.value ? 'Logbook details saved.' : 'Logbook created successfully.', 'success')
+      show('Logbook details saved.', 'success')
     }
     await router.push('/dashboard')
   }
 }
 
 async function retrySubmit(): Promise<void> {
-  if (isAutomatic.value) {
-    await loadDriveScopeStatus()
-  }
   await submit()
 }
 </script>
@@ -450,7 +349,7 @@ async function retrySubmit(): Promise<void> {
     <div>
       <h1 class="text-2xl font-bold text-slate-900">Create your logbook</h1>
       <p class="mt-2 text-slate-600">
-        Copy the template yourself or let us create it in your Google Drive, then enter your pilot details.
+        Copy the official template in Google Drive, connect it here, then enter your pilot details.
       </p>
     </div>
 
@@ -490,72 +389,12 @@ async function retrySubmit(): Promise<void> {
       :retry-busy="licenseOptionsLoading"
       @retry="loadLicenseOptions"
     />
-    <ErrorBanner v-if="driveScopeError" :message="driveScopeError" />
     <ErrorBanner v-if="pickerError" :message="pickerError" />
     <ErrorBanner v-if="prefillError" :message="prefillError" @retry="prefillFormFromConnectedLogbook()" />
 
     <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <form class="space-y-4" @submit.prevent="goNext">
-        <template v-if="step === STEP_METHOD">
-          <h2 class="text-lg font-semibold text-slate-900">How would you like to create your logbook?</h2>
-          <div class="grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              class="rounded-lg border p-4 text-left transition"
-              :class="
-                createMode === 'automatic'
-                  ? 'border-sky-400 bg-sky-50 ring-1 ring-sky-200'
-                  : 'border-slate-200 hover:border-slate-300'
-              "
-              @click="selectMode('automatic')"
-            >
-              <div class="flex flex-wrap items-center gap-2">
-                <p class="font-semibold text-slate-900">Create automatically</p>
-                <span
-                  class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200"
-                >
-                  Recommended
-                </span>
-              </div>
-              <p class="mt-1 text-sm text-slate-600">
-                We copy the official template into your Google Drive and set up the logbook for you.
-              </p>
-              <p
-                class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950"
-              >
-                Requires <strong>full access to your Google Drive</strong> to create the folder and copy
-                the template. Google keeps this permission until you remove it — it does not disappear after
-                setup. After your logbook is created, remove full Drive access from
-                <strong>Profile → Google access</strong> (one more Google sign-in; per-file access only).
-              </p>
-              <p
-                class="mt-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700"
-              >
-                <strong class="font-medium text-slate-900">Account &amp; storage:</strong> choose a
-                Google account with enough Drive space for the logbook and flight media over time. A
-                separate account is optional but can keep flying records apart from personal or work
-                files.
-              </p>
-            </button>
-            <button
-              type="button"
-              class="rounded-lg border p-4 text-left transition"
-              :class="
-                createMode === 'manual'
-                  ? 'border-sky-400 bg-sky-50 ring-1 ring-sky-200'
-                  : 'border-slate-200 hover:border-slate-300'
-              "
-              @click="selectMode('manual')"
-            >
-              <p class="font-semibold text-slate-900">Create manually</p>
-              <p class="mt-1 text-sm text-slate-600">
-                Copy the template in Google Drive yourself. Only the spreadsheet you select is shared with us.
-              </p>
-            </button>
-          </div>
-        </template>
-
-        <template v-else-if="step === STEP_SETUP && isManual">
+        <template v-if="step === STEP_SETUP">
           <h2 class="text-lg font-semibold text-slate-900">Copy the template</h2>
           <LoadingState v-if="manualInstructionLoading" />
           <ErrorBanner
@@ -575,33 +414,6 @@ async function retrySubmit(): Promise<void> {
           </label>
           <p v-if="manualConfirmed && logbookConnected" class="text-sm text-emerald-700">
             Logbook connected. Press Next to continue.
-          </p>
-        </template>
-
-        <template v-else-if="step === STEP_SETUP && isAutomatic">
-          <h2 class="text-lg font-semibold text-slate-900">Automatic creation</h2>
-          <p class="text-sm text-slate-600">
-            To copy the public template into your Google Drive, we need permission to access your Google
-            Drive for this setup step. Google keeps this grant until you remove it — it does not expire
-            automatically after the logbook is created.
-          </p>
-          <p class="text-sm text-slate-600">
-            Once your logbook is created, you can remove full Drive access from
-            <RouterLink to="/profile" class="font-medium text-sky-700 hover:text-sky-800">
-              Profile → Google access
-            </RouterLink>
-            . You will need to sign in with Google again afterwards (per-file access to your logbook
-            only — not your entire Drive).
-            <RouterLink
-              to="/help/google-drive-access"
-              class="font-medium text-sky-700 hover:text-sky-800"
-            >
-              Learn more
-            </RouterLink>
-          </p>
-          <LoadingState v-if="driveScopeLoading" />
-          <p v-else-if="driveScopeGranted" class="text-sm text-emerald-700">
-            Google Drive access granted. Continue to enter your pilot details.
           </p>
         </template>
 
@@ -776,7 +588,7 @@ async function retrySubmit(): Promise<void> {
 
         <div class="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
           <ActionButton
-            v-if="step > STEP_METHOD"
+            v-if="step > STEP_SETUP"
             type="button"
             variant="secondary"
             :disabled="mutating"
@@ -791,13 +603,7 @@ async function retrySubmit(): Promise<void> {
             :busy="nextBusy"
             :disabled="nextDisabled"
           >
-            {{
-              step === STEP_CLUB
-                ? isManual
-                  ? 'Save logbook details'
-                  : 'Create logbook'
-                : 'Next'
-            }}
+            {{ step === STEP_CLUB ? 'Save logbook details' : 'Next' }}
           </ActionButton>
         </div>
       </form>

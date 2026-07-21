@@ -3,30 +3,15 @@ import { parseApiError } from './errors'
 import { notifyAccountIncomplete } from './sessionInvalidation'
 import type { UserMe } from '@/types'
 
-export interface CreateLogbookScopeStatus {
-  granted: boolean
-  authorization_path: string
-}
-
 export interface GoogleScopeStatus {
   available: boolean
   scopes: string[]
   sign_in: boolean
   drive_file: boolean
-  full_drive: boolean
 }
 
 export function loginRedirect(): void {
   window.location.href = `${API}/auth/google`
-}
-
-export function createLogbookAuthRedirect(returnTo = '/logbook/create'): void {
-  const params = new URLSearchParams({ return_to: `${window.location.origin}${returnTo}` })
-  window.location.href = `${API}/auth/google/create-logbook?${params.toString()}`
-}
-
-export async function fetchCreateLogbookScopes(): Promise<CreateLogbookScopeStatus> {
-  return apiJson<CreateLogbookScopeStatus>('/auth/google/create-logbook/scopes')
 }
 
 export async function fetchGoogleScopes(): Promise<GoogleScopeStatus> {

@@ -43,7 +43,7 @@ export const PUBLIC_PAGE_DESCRIPTIONS: Record<string, string> = {
   '/disclaimer':
     'Glider Pilot Logbook is a Google Sheets tool, not an official CAA logbook or aviation advice. Review entries before relying on them for licensing or insurance.',
   '/help/google-drive-access':
-    'Why Glider Pilot Logbook requests Google Drive access: per-file logbook use day to day, full Drive only for automatic setup, and how to revoke permissions.',
+    'Why Glider Pilot Logbook requests Google Drive access: per-file logbook use only, and how to review or revoke permissions in your Google Account.',
   '/club/automation':
     'How gliding clubs import flights into pilots’ Google Sheets logbooks with consent. Guide to club integration and automatic flight log import.',
   '/club/downloads':

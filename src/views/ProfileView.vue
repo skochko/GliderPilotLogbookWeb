@@ -9,7 +9,6 @@ import { isApiError } from '@/api/errors'
 import {
   fetchGoogleScopes,
   googleReconnectRedirect,
-  revokeGoogleAccess,
   type GoogleScopeStatus,
 } from '@/api/auth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
@@ -31,13 +30,9 @@ const submitError = ref<string | null>(null)
 const googleScopes = ref<GoogleScopeStatus | null>(null)
 const scopesLoading = ref(false)
 const scopesError = ref<string | null>(null)
-const revokeBusy = ref(false)
-const revokeError = ref<string | null>(null)
+const googleAccessError = ref<string | null>(null)
 
 const hasLogbook = computed(() => profile.value?.has_logbook ?? false)
-const showRevokeFullDriveFlow = computed(
-  () => hasLogbook.value && googleScopes.value?.available && googleScopes.value.full_drive,
-)
 const needsGoogleReconnect = computed(
   () => hasLogbook.value && googleScopes.value !== null && !googleScopes.value.available,
 )
@@ -59,12 +54,6 @@ const googleAccessItems = computed(() => {
       description: 'Read and update your logbook spreadsheet only',
       granted: scopes.drive_file,
     },
-    {
-      key: 'full_drive',
-      label: 'Full Google Drive access',
-      description: 'Needed only to create a logbook automatically from our template',
-      granted: scopes.full_drive,
-    },
   ]
 })
 
@@ -77,25 +66,6 @@ async function loadGoogleScopes(): Promise<void> {
     scopesError.value = isApiError(err) ? err.message : 'Could not load Google access status.'
   } finally {
     scopesLoading.value = false
-  }
-}
-
-async function handleRevokeFullDriveAccess(): Promise<void> {
-  if (revokeBusy.value) return
-
-  revokeError.value = null
-  revokeBusy.value = true
-  try {
-    await revokeGoogleAccess()
-    await loadGoogleScopes()
-    show(
-      'Google access removed. Reconnect with Google to continue using your logbook.',
-      'info',
-    )
-  } catch (err) {
-    revokeError.value = isApiError(err) ? err.message : 'Could not remove Google access.'
-  } finally {
-    revokeBusy.value = false
   }
 }
 
@@ -112,11 +82,11 @@ async function handleReconnectQuery(): Promise<void> {
     return
   }
   if (reconnect === 'account_mismatch') {
-    revokeError.value =
+    googleAccessError.value =
       'You signed in with a different Google account. Use the same account as your logbook and try again.'
     return
   }
-  revokeError.value = 'Could not restore Google access. Please try again.'
+  googleAccessError.value = 'Could not restore Google access. Please try again.'
 }
 
 onMounted(async () => {
@@ -248,7 +218,7 @@ async function confirmDisconnect(): Promise<void> {
           :retry-busy="scopesLoading"
           @retry="loadGoogleScopes"
         />
-        <ErrorBanner v-if="revokeError" class="mt-4" :message="revokeError" />
+        <ErrorBanner v-if="googleAccessError" class="mt-4" :message="googleAccessError" />
         <template v-else-if="googleScopes?.available">
           <ul class="mt-4 space-y-3 text-sm">
             <li
@@ -273,33 +243,6 @@ async function confirmDisconnect(): Promise<void> {
               </span>
             </li>
           </ul>
-
-          <div
-            v-if="showRevokeFullDriveFlow"
-            class="mt-4 space-y-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950"
-          >
-            <p>
-              Your logbook is already set up. Full Google Drive access is no longer needed for daily
-              use. You can remove it here and keep only per-file access to your logbook spreadsheet.
-            </p>
-            <p>
-              <strong>Important:</strong> removing access revokes <em>all</em> Google permissions for
-              this app — not only full Drive. You will need to
-              <strong>sign in with Google again</strong> afterwards (per-file access only, not your
-              entire Drive). You stay signed in to this website; only the Google link is reset.
-            </p>
-            <div class="flex flex-wrap items-center gap-3">
-              <ActionButton type="button" :busy="revokeBusy" @click="handleRevokeFullDriveAccess">
-                Remove Google access
-              </ActionButton>
-              <RouterLink
-                to="/help/google-drive-access"
-                class="font-medium text-sky-800 underline hover:text-sky-900"
-              >
-                Manual steps in Google Account
-              </RouterLink>
-            </div>
-          </div>
         </template>
 
         <div

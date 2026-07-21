@@ -3,10 +3,7 @@ import type { LogbookCreateFormState } from '@/types/logbookCreate'
 const WIZARD_STATE_KEY = 'gpl-create-logbook-wizard'
 const PENDING_SUBMIT_KEY = 'gpl-create-logbook-pending-submit'
 
-export type CreateLogbookMode = 'manual' | 'automatic'
-
 export interface CreateLogbookWizardState {
-  createMode: CreateLogbookMode | null
   step: number
   form: LogbookCreateFormState
   skippedLicense: boolean
@@ -15,6 +12,10 @@ export interface CreateLogbookWizardState {
   skippedClubAutomation: boolean
   selectedOrganizationId: number | null
   manualConfirmed: boolean
+}
+
+interface LegacyCreateLogbookWizardState extends CreateLogbookWizardState {
+  createMode?: 'manual' | 'automatic' | null
 }
 
 export function saveCreateLogbookWizardState(state: CreateLogbookWizardState, pendingSubmit = false): void {
@@ -30,7 +31,14 @@ export function loadCreateLogbookWizardState(): CreateLogbookWizardState | null 
   const raw = sessionStorage.getItem(WIZARD_STATE_KEY)
   if (!raw) return null
   try {
-    return JSON.parse(raw) as CreateLogbookWizardState
+    const parsed = JSON.parse(raw) as LegacyCreateLogbookWizardState
+    if ('createMode' in parsed) {
+      if (parsed.step > 1) {
+        parsed.step -= 1
+      }
+      delete parsed.createMode
+    }
+    return parsed
   } catch {
     sessionStorage.removeItem(WIZARD_STATE_KEY)
     return null
