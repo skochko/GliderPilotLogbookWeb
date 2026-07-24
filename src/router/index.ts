@@ -33,6 +33,10 @@ const router = createRouter({
       redirect: '/club/downloads',
     },
     {
+      path: '/club/automation',
+      redirect: '/club/synchronisation',
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),

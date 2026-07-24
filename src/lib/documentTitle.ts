@@ -15,7 +15,7 @@ export const PUBLIC_PAGE_TITLES: Record<string, string> = {
   '/disclaimer': `Disclaimer – ${SITE_NAME}`,
   '/help/google-drive-access':
     'Google Drive Access – Why Glider Pilot Logbook Requests These Permissions',
-  '/club/automation': 'Club Integration – Automatic Flight Import for Gliding Clubs',
+  '/club/synchronisation': 'For Clubs: Automated Synchronisation – Glider Pilot Logbook',
   '/club/downloads': 'Club Downloads – Windows Software for Gliding Clubs',
   '/login': `Start – ${SITE_NAME}`,
   '/unsubscribe': `Email Unsubscribe – ${SITE_NAME}`,
@@ -44,8 +44,8 @@ export const PUBLIC_PAGE_DESCRIPTIONS: Record<string, string> = {
     'Glider Pilot Logbook is a Google Sheets tool, not an official CAA logbook or aviation advice. Review entries before relying on them for licensing or insurance.',
   '/help/google-drive-access':
     'Why Glider Pilot Logbook requests Google Drive access: per-file logbook use only, and how to review or revoke permissions in your Google Account.',
-  '/club/automation':
-    'How gliding clubs import flights into pilots’ Google Sheets logbooks with consent. Guide to club integration and automatic flight log import.',
+  '/club/synchronisation':
+    'How gliding clubs import flights into pilots’ Google Sheets logbooks with consent using Glider Pilot Logbook Automated Synchronisation.',
   '/club/downloads':
     'Download Glider Pilot Logbook Automation for Windows gliding clubs — publisher certificate, release package, and setup guidance for club IT teams.',
   '/login':
@@ -63,7 +63,7 @@ export const PAGE_TYPE_DESCRIPTIONS: Record<RoutablePageType, string> = {
   cookies: PUBLIC_PAGE_DESCRIPTIONS['/cookies']!,
   disclaimer: PUBLIC_PAGE_DESCRIPTIONS['/disclaimer']!,
   google_drive_access: PUBLIC_PAGE_DESCRIPTIONS['/help/google-drive-access']!,
-  club_automation: PUBLIC_PAGE_DESCRIPTIONS['/club/automation']!,
+  club_automation: PUBLIC_PAGE_DESCRIPTIONS['/club/synchronisation']!,
   club_automation_download: PUBLIC_PAGE_DESCRIPTIONS['/club/downloads']!,
 }
 
@@ -119,6 +119,6 @@ export const PAGE_TYPE_TITLES: Record<RoutablePageType, string> = {
   cookies: PUBLIC_PAGE_TITLES['/cookies']!,
   disclaimer: PUBLIC_PAGE_TITLES['/disclaimer']!,
   google_drive_access: PUBLIC_PAGE_TITLES['/help/google-drive-access']!,
-  club_automation: PUBLIC_PAGE_TITLES['/club/automation']!,
+  club_automation: PUBLIC_PAGE_TITLES['/club/synchronisation']!,
   club_automation_download: PUBLIC_PAGE_TITLES['/club/downloads']!,
 }

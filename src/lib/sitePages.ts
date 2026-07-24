@@ -16,7 +16,7 @@ export const HELP_PAGES = [
 /** Club programme — downloads and onboarding for gliding clubs. */
 export const CLUB_PAGES = [
   { type: 'club_automation_download', path: '/club/downloads', label: 'Downloads' },
-  { type: 'club_automation', path: '/club/automation', label: 'Automation' },
+  { type: 'club_automation', path: '/club/synchronisation', label: 'Synchronisation' },
 ] as const
 
 export const SITE_PAGE_ROUTES = [...SITE_PAGES, ...HELP_PAGES, ...CLUB_PAGES] as const

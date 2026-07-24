@@ -15,12 +15,12 @@ describe('shareMeta', () => {
 
   it('builds canonical URLs', () => {
     expect(canonicalUrl('/')).toBe('https://gliderpilotlogbook.co.uk/')
-    expect(canonicalUrl('/club/automation')).toBe('https://gliderpilotlogbook.co.uk/club/automation')
+    expect(canonicalUrl('/club/synchronisation')).toBe('https://gliderpilotlogbook.co.uk/club/synchronisation')
   })
 
   it('includes club pages with section-specific copy', () => {
-    const clubAutomation = getSharePages().find((page) => page.path === '/club/automation')
-    expect(clubAutomation?.title).toBe('Club Integration – Automatic Flight Import for Gliding Clubs')
+    const clubAutomation = getSharePages().find((page) => page.path === '/club/synchronisation')
+    expect(clubAutomation?.title).toBe('For Clubs: Automated Synchronisation – Glider Pilot Logbook')
     expect(clubAutomation?.description.toLowerCase()).toContain('club')
   })
 })

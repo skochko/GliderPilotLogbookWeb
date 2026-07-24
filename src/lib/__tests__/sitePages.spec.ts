@@ -11,7 +11,7 @@ describe('sitePages', () => {
   it('maps known paths to page types', () => {
     expect(getSitePageByPath('/privacy')?.type).toBe('privacy')
     expect(getSitePageByPath('/club/downloads')?.type).toBe('club_automation_download')
-    expect(getSitePageByPath('/club/automation')?.type).toBe('club_automation')
+    expect(getSitePageByPath('/club/synchronisation')?.type).toBe('club_automation')
     expect(getSitePageByPath('/unknown')).toBeUndefined()
   })
 

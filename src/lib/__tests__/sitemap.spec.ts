@@ -5,11 +5,11 @@ describe('sitemap', () => {
   it('includes club and help pages', () => {
     const paths = getSitemapEntries().map((entry) => entry.path)
     expect(paths).toContain('/club/downloads')
-    expect(paths).toContain('/club/automation')
+    expect(paths).toContain('/club/synchronisation')
     expect(paths).toContain('/help/google-drive-access')
   })
 
   it('builds absolute URLs', () => {
-    expect(sitemapUrl('/club/automation')).toBe('https://gliderpilotlogbook.co.uk/club/automation')
+    expect(sitemapUrl('/club/synchronisation')).toBe('https://gliderpilotlogbook.co.uk/club/synchronisation')
   })
 })

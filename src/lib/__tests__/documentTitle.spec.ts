@@ -23,8 +23,8 @@ describe('documentTitle', () => {
   })
 
   it('uses marketing titles for club pages', () => {
-    expect(PUBLIC_PAGE_TITLES['/club/automation']).toBe(
-      'Club Integration – Automatic Flight Import for Gliding Clubs',
+    expect(PUBLIC_PAGE_TITLES['/club/synchronisation']).toBe(
+      'For Clubs: Automated Synchronisation – Glider Pilot Logbook',
     )
     expect(PUBLIC_PAGE_TITLES['/privacy']).toBe('Privacy Policy – Glider Pilot Logbook')
     expect(PUBLIC_PAGE_TITLES['/']).toBe(
