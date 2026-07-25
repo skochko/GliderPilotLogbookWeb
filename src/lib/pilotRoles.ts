@@ -10,7 +10,7 @@ export type CrewMember = {
 }
 
 const PILOT_ROLE_LABELS: Record<PilotRole, string> = {
-  p1: 'P1',
+  p1: 'PIC',
   p2: 'P2',
   instructor: 'I',
 }

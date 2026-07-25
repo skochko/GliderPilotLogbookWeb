@@ -43,7 +43,7 @@ export const FLIGHT_ROLE_FILTER_OPTIONS: ReadonlyArray<{
   label: string
 }> = [
   { value: '', label: 'All roles' },
-  { value: 'p1', label: 'P1' },
+  { value: 'p1', label: 'PIC' },
   { value: 'p2', label: 'P2' },
   { value: 'instructor', label: 'Instructor' },
 ]

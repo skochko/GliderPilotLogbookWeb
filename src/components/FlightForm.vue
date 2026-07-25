@@ -4,6 +4,7 @@ import ActionButton from '@/components/ActionButton.vue'
 import DatalistInput from '@/components/DatalistInput.vue'
 import { collectFlightFieldSuggestions } from '@/lib/flightSuggestions'
 import { launchTypeSelectOptions, normalizeLaunchTypeCode } from '@/lib/launchTypes'
+import { userRemarksText } from '@/lib/mediaTags'
 import type { Flight } from '@/types'
 
 const props = withDefaults(
@@ -79,7 +80,7 @@ watch(
     form.launch_type = normalizeLaunchTypeCode(flight.launch_type)
     form.landings = flight.landings
     form.is_instructor = flight.is_instructor
-    form.remarks = flight.remarks
+    form.remarks = userRemarksText(flight.remarks)
   },
   { immediate: true },
 )

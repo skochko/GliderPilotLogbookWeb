@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -25,6 +25,7 @@ const fieldErrors = ref<Record<string, string[]>>({})
 const submitError = ref<string | null>(null)
 const pageReady = ref(false)
 const deleteOpen = ref(false)
+const mediaBusy = ref(false)
 const isDesktop = ref(
   typeof window !== 'undefined' ? window.matchMedia(DESKTOP_MEDIA_QUERY).matches : false,
 )
@@ -32,6 +33,21 @@ const isDesktop = ref(
 const flightId = decodeFlightId(route.params.id as string)
 
 let desktopMediaQuery: MediaQueryList | null = null
+
+async function scrollToRequestedSection(): Promise<void> {
+  if (!pageReady.value || route.hash !== '#media-attachments') {
+    return
+  }
+  await nextTick()
+  document.getElementById('media-attachments')?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  })
+}
+
+watch([() => route.hash, pageReady], () => {
+  void scrollToRequestedSection()
+})
 
 function syncBodyScrollLock(): void {
   document.body.style.overflow = isDesktop.value ? '' : 'hidden'
@@ -52,6 +68,7 @@ onMounted(() => {
     })
     .finally(() => {
       pageReady.value = true
+      void scrollToRequestedSection()
     })
 })
 
@@ -61,14 +78,14 @@ onUnmounted(() => {
 })
 
 function onCancel(): void {
-  if (mutating.value) {
+  if (mutating.value || mediaBusy.value) {
     return
   }
   void router.push('/flights')
 }
 
 async function onSubmit(payload: Record<string, unknown>): Promise<void> {
-  if (mutating.value) {
+  if (mutating.value || mediaBusy.value) {
     return
   }
 
@@ -91,7 +108,7 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
 }
 
 async function confirmDelete(): Promise<void> {
-  if (mutating.value) {
+  if (mutating.value || mediaBusy.value) {
     return
   }
 
@@ -118,7 +135,7 @@ async function confirmDelete(): Promise<void> {
         title="Edit flight"
         subtitle="Update flight details in your logbook."
         title-id="flight-edit-title"
-        :back-disabled="mutating"
+        :back-disabled="mutating || mediaBusy"
         @back="onCancel"
       >
         <LoadingState v-if="!pageReady" label="Loading flight details…" />
@@ -132,7 +149,7 @@ async function confirmDelete(): Promise<void> {
               :flight="flight"
               :flights="flights"
               :field-errors="fieldErrors"
-              :saving="mutating"
+              :saving="mutating || mediaBusy"
               :show-actions="false"
               @submit="onSubmit"
               @cancel="onCancel"
@@ -140,6 +157,7 @@ async function confirmDelete(): Promise<void> {
             <FlightMediaSection
               :flight-id="flightId"
               :media="flight.media"
+              @busy-change="mediaBusy = $event"
               @updated="flight = $event"
             />
           </div>
@@ -150,7 +168,7 @@ async function confirmDelete(): Promise<void> {
             <ActionButton
               variant="secondary"
               class="min-w-0 flex-1"
-              :disabled="mutating"
+              :disabled="mutating || mediaBusy"
               @click="onCancel"
             >
               Cancel
@@ -159,6 +177,7 @@ async function confirmDelete(): Promise<void> {
               type="submit"
               :form="FLIGHT_EDIT_FORM_ID"
               class="min-w-0 flex-1"
+              :disabled="mutating || mediaBusy"
               :busy="mutating"
             >
               Save
@@ -167,7 +186,7 @@ async function confirmDelete(): Promise<void> {
           <button
             type="button"
             class="w-full py-1 text-sm font-medium text-red-600 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-center"
-            :disabled="mutating"
+            :disabled="mutating || mediaBusy"
             @click="deleteOpen = true"
           >
             Delete flight

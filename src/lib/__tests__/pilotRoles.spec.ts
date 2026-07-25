@@ -3,13 +3,13 @@ import { crewMembersFromFlight, formatPilotRoles, formatRoleCompanionDisplay, fo
 
 describe('pilotRoles', () => {
   it('maps role codes to labels', () => {
-    expect(pilotRoleLabel('p1')).toBe('P1')
+    expect(pilotRoleLabel('p1')).toBe('PIC')
     expect(pilotRoleLabel('p2')).toBe('P2')
     expect(pilotRoleLabel('instructor')).toBe('I')
   })
 
   it('formats multiple roles', () => {
-    expect(formatPilotRoles(['p1', 'instructor'])).toBe('P1, I')
+    expect(formatPilotRoles(['p1', 'instructor'])).toBe('PIC, I')
     expect(formatPilotRoles([])).toBe('—')
   })
 

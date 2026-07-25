@@ -6,12 +6,12 @@ import FlightImageViewerDialog from '@/components/FlightImageViewerDialog.vue'
 import SpinnerIcon from '@/components/SpinnerIcon.vue'
 import { listFlightMedia } from '@/api/flightMedia'
 import { isApiError } from '@/api/errors'
-import { mediaTypeLabel } from '@/lib/mediaTags'
 import type { FlightMediaItem } from '@/types'
 
 const props = defineProps<{
   open: boolean
   flightId: string | null
+  media?: readonly FlightMediaItem[]
 }>()
 
 const emit = defineEmits<{
@@ -29,6 +29,9 @@ const imageFilename = ref<string | null>(null)
 const imageLabel = ref<string | null>(null)
 
 const hasItems = computed(() => items.value.length > 0)
+const dialogTitle = computed(() =>
+  items.value.length ? `Attachments (${items.value.length})` : 'Attachments',
+)
 
 function openIgcMap(item: FlightMediaItem): void {
   if (!props.flightId) {
@@ -64,6 +67,10 @@ async function loadMedia(): Promise<void> {
   if (!props.flightId) {
     return
   }
+  if (props.media) {
+    items.value = [...props.media]
+    return
+  }
   loading.value = true
   error.value = null
   try {
@@ -93,12 +100,12 @@ watch(
   <dialog
     v-if="open"
     open
-    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+    class="fixed inset-0 z-50 m-0 flex h-full w-full max-h-none max-w-none items-center justify-center border-0 bg-slate-900/40 p-4"
     @click.self="emit('close')"
   >
     <div class="w-full max-w-md rounded-lg border border-slate-200 bg-white shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-        <h2 class="text-lg font-semibold text-slate-900">Flight media</h2>
+        <h2 class="text-lg font-semibold text-slate-900">{{ dialogTitle }}</h2>
         <button
           type="button"
           class="rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
@@ -121,53 +128,41 @@ watch(
 
         <p v-else-if="!hasItems" class="text-sm text-slate-500">No media attached to this flight.</p>
 
-        <ul v-else class="space-y-3">
+        <ul v-else class="space-y-2">
           <li
             v-for="item in items"
             :key="`${item.type}:${item.filename}`"
-            class="rounded-md border border-slate-200 px-3 py-2"
+            class="flex min-h-12 items-center justify-between gap-3 rounded-md border border-slate-200 px-3 py-2"
           >
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <p class="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  {{ mediaTypeLabel(item.type) }}
-                </p>
-                <p class="truncate text-sm font-medium text-slate-900" :title="item.filename">
-                  {{ item.label }}
-                </p>
-              </div>
-              <div class="flex shrink-0 flex-col items-end gap-1">
-                <button
-                  v-if="item.type === 'igc'"
-                  type="button"
-                  class="text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
-                  @click="openIgcMap(item)"
-                >
-                  View on map
-                </button>
-                <button
-                  v-if="item.type === 'image'"
-                  type="button"
-                  class="text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
-                  @click="openImageViewer(item)"
-                >
-                  View image
-                </button>
-                <a
-                  v-if="item.drive_url && item.type !== 'igc' && item.type !== 'image'"
-                  :href="item.drive_url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
-                >
-                  Open in Drive
-                </a>
-                <span
-                  v-else-if="item.type !== 'igc' && item.type !== 'image'"
-                  class="text-xs text-slate-400"
-                >Not found on Drive</span>
-              </div>
-            </div>
+            <p class="min-w-0 truncate text-sm font-medium text-slate-900" :title="item.filename">
+              {{ item.label }}
+            </p>
+            <button
+              v-if="item.type === 'igc'"
+              type="button"
+              class="shrink-0 text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
+              @click="openIgcMap(item)"
+            >
+              View on map
+            </button>
+            <button
+              v-else-if="item.type === 'image'"
+              type="button"
+              class="shrink-0 text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
+              @click="openImageViewer(item)"
+            >
+              View image
+            </button>
+            <a
+              v-else-if="item.drive_url"
+              :href="item.drive_url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="shrink-0 text-sm font-medium text-sky-700 hover:text-sky-900 hover:underline"
+            >
+              Open in Drive
+            </a>
+            <span v-else class="shrink-0 text-xs text-slate-400">Not found</span>
           </li>
         </ul>
       </div>

@@ -34,7 +34,7 @@ export function buildFlyingTotalsRows(stats: Readonly<FlyingTotalsSource>): Flyi
     },
     {
       key: 'p1',
-      label: 'P1',
+      label: 'PIC',
       hours: stats.total_pic_hours,
       count: stats.pic_flights,
       countLabel: stats.pic_flights === 1 ? 'flight' : 'flights',

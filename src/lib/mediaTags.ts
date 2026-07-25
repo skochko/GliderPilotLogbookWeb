@@ -1,6 +1,7 @@
 import type { FlightMediaItem } from '@/types'
 
 const MEDIA_TAG_PATTERN = /\[(video|image|audio|file|igc):([^\]]+)\]/g
+const MEDIA_ATTACHMENTS_BLOCK_PATTERN = /(?:^|\n)\[(?:Tracks|Images|Videos|Files|Attachments):[^\n]*\]/g
 
 type FlightWithMedia = {
   media?: readonly FlightMediaItem[] | null
@@ -12,6 +13,7 @@ export type MediaListIcon = 'video' | 'image' | 'generic'
 export function stripMediaTags(remarks: string | null | undefined): string {
   return (remarks ?? '')
     .replace(MEDIA_TAG_PATTERN, ' ')
+    .replace(MEDIA_ATTACHMENTS_BLOCK_PATTERN, ' ')
     .replace(/\s+/g, ' ')
     .trim()
 }

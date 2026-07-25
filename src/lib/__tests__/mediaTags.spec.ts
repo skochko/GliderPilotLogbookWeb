@@ -33,6 +33,9 @@ describe('mediaTags', () => {
 
   it('strips media tags from remarks', () => {
     expect(stripMediaTags('[video:clip.mp4] Nice flight')).toBe('Nice flight')
+    expect(
+      stripMediaTags('Nice flight\n\n[Videos: clip.mp4]'),
+    ).toBe('Nice flight')
     expect(hasUserRemarks('[video:clip.mp4]')).toBe(false)
     expect(hasUserRemarks('[video:clip.mp4] Instructor sign-off')).toBe(true)
     expect(userRemarksText('[igc:track.igc] Thermal day')).toBe('Thermal day')

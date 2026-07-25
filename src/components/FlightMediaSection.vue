@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import IgcMapDialog from '@/components/IgcMapDialog.vue'
@@ -23,6 +23,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   updated: [Flight]
+  'busy-change': [boolean]
 }>()
 
 const { pickDriveFile } = useGooglePicker()
@@ -40,9 +41,12 @@ const imageViewerOpen = ref(false)
 const imageFilename = ref<string | null>(null)
 const imageLabel = ref<string | null>(null)
 
+const busy = computed(() => uploading.value || attaching.value)
 const mediaCount = computed(() => props.media?.length ?? 0)
 const canAddMore = computed(() => mediaCount.value < FLIGHT_MEDIA_MAX_FILES)
 const maxUploadLabel = `${FLIGHT_MEDIA_MAX_UPLOAD_BYTES / (1024 * 1024)} MB`
+
+watch(busy, (value) => emit('busy-change', value), { immediate: true })
 
 function openFilePicker(): void {
   fileInput.value?.click()
@@ -142,7 +146,7 @@ function closeImageViewer(): void {
 </script>
 
 <template>
-  <section class="space-y-3 border-t border-slate-200 pt-4">
+  <section id="media-attachments" class="space-y-3 border-t border-slate-200 pt-4">
     <div class="flex items-center justify-between gap-3">
       <div>
         <h3 class="text-sm font-medium text-slate-900">Media attachments</h3>

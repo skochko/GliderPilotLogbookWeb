@@ -22,6 +22,7 @@ import {
   pilotRolesFromFlight,
   roleCompanionName,
 } from '@/lib/pilotRoles'
+import { launchTypeBadgeClass, normalizeLaunchTypeCode } from '@/lib/launchTypes'
 import { truncateText } from '@/lib/text'
 import type { Flight, FlightMediaItem } from '@/types'
 
@@ -42,6 +43,7 @@ const detailOpen = ref(false)
 const detailFlight = ref<Flight | null>(null)
 const mediaOpen = ref(false)
 const mediaFlightId = ref<string | null>(null)
+const mediaItems = ref<FlightMediaItem[]>([])
 const igcMapOpen = ref(false)
 const igcFlightId = ref<string | null>(null)
 const igcFilename = ref<string | null>(null)
@@ -75,6 +77,7 @@ function rowClass(flight: Flight, index: number): string {
 
 function openMedia(flight: Flight): void {
   mediaFlightId.value = flight.id
+  mediaItems.value = [...(flight.media ?? [])]
   mediaOpen.value = true
 }
 
@@ -142,11 +145,19 @@ function openRemarks(flight: Flight): void {
       <table class="min-w-full text-sm">
         <thead class="bg-[var(--sheet-header-color)] text-left text-slate-700">
           <tr>
-            <th class="w-10 px-2 py-2 text-center font-medium">Day</th>
-            <th class="px-2 py-2 font-medium sm:px-3">Role</th>
-            <th class="px-2 py-2 font-medium sm:px-3">Glider</th>
-            <th class="hidden px-3 py-2 font-medium sm:table-cell">Launch</th>
-            <th class="px-2 py-2 text-center font-medium sm:px-3">Time</th>
+            <th class="w-20 px-2 py-2 text-center font-medium">Day</th>
+            <th class="px-2 py-2 font-medium sm:px-3">
+              <span class="block">Role</span>
+              <span class="block text-xs font-normal text-slate-600">Crew</span>
+            </th>
+            <th class="px-2 py-2 font-medium sm:px-3">
+              <span class="block">Glider</span>
+              <span class="block text-xs font-normal text-slate-600">Launch</span>
+            </th>
+            <th class="px-2 py-2 text-center font-medium sm:px-3">
+              <span class="block">Time</span>
+              <span class="block text-xs font-normal text-slate-600">Place</span>
+            </th>
             <th class="hidden max-w-[12rem] px-3 py-2 font-medium lg:table-cell">Remarks</th>
             <th class="w-[6.5rem] px-2 py-2 text-left font-medium sm:w-28">Extras</th>
           </tr>
@@ -154,7 +165,7 @@ function openRemarks(flight: Flight): void {
         <tbody>
           <template v-for="group in flightGroups" :key="group.key">
             <tr class="border-t border-slate-200 bg-slate-100">
-              <td colspan="7" class="px-2 py-1 text-sm font-semibold text-slate-700 sm:px-4 sm:py-1.5">
+              <td colspan="6" class="px-2 py-1 text-sm font-semibold text-slate-700 sm:px-4 sm:py-1.5">
                 {{ group.label }}
               </td>
             </tr>
@@ -165,10 +176,12 @@ function openRemarks(flight: Flight): void {
               :class="rowClass(flight, index)"
               @click="openDetail(flight)"
             >
-              <td class="px-2 py-2 text-center font-medium tabular-nums text-slate-900">
-                {{ formatDayNumber(flight.date) }}
+              <td class="w-20 px-2 py-1.5 text-center font-medium tabular-nums text-slate-900">
+                <div class="relative flex h-full min-h-[2.75rem] items-center justify-center">
+                  <p>{{ formatDayNumber(flight.date) }}</p>
+                </div>
               </td>
-              <td class="max-w-[7.5rem] px-2 py-2 sm:max-w-none sm:px-3">
+              <td class="max-w-[7.5rem] px-2 py-1.5 sm:max-w-none sm:px-3">
                 <div
                   v-if="pilotRolesFromFlight(flight).length"
                   class="inline-flex max-w-full flex-nowrap items-center gap-0.5"
@@ -191,17 +204,39 @@ function openRemarks(flight: Flight): void {
                   {{ formatRoleCompanionDisplay(pilotRolesFromFlight(flight), flight) }}
                 </p>
               </td>
-              <td class="max-w-[7rem] px-2 py-2 sm:max-w-none sm:px-3">
+              <td class="max-w-[7rem] px-2 py-1.5 sm:max-w-none sm:px-3">
                 <p class="truncate text-slate-900">{{ flight.glider }}</p>
-                <p v-if="flight.registration?.trim()" class="mt-0.5 truncate text-xs text-slate-500">
-                  {{ flight.registration.trim() }}
+                <div
+                  v-if="flight.registration?.trim() || normalizeLaunchTypeCode(flight.launch_type)"
+                  class="mt-0.5 flex items-center gap-1"
+                >
+                  <span
+                    v-if="flight.registration?.trim()"
+                    class="min-w-0 truncate text-xs text-slate-500"
+                  >
+                    {{ flight.registration.trim() }}
+                  </span>
+                  <span
+                    v-if="normalizeLaunchTypeCode(flight.launch_type)"
+                    class="inline-flex shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none ring-1 ring-inset"
+                    :class="launchTypeBadgeClass(flight.launch_type)"
+                    :title="flight.launch_type"
+                  >
+                    {{ normalizeLaunchTypeCode(flight.launch_type) }}
+                  </span>
+                </div>
+              </td>
+              <td class="px-2 py-1.5 text-center tabular-nums sm:px-3">
+                <FlightDurationCell :value="flight.flight_time" />
+                <p
+                  v-if="flight.departure_place?.trim()"
+                  class="mt-0.5 max-w-[6rem] truncate text-xs font-normal text-slate-500 sm:max-w-[8rem]"
+                  :title="flight.departure_place.trim()"
+                >
+                  {{ flight.departure_place.trim() }}
                 </p>
               </td>
-              <td class="hidden px-3 py-2 sm:table-cell">{{ flight.launch_type || '—' }}</td>
-              <td class="px-2 py-2 text-center tabular-nums sm:px-3">
-                <FlightDurationCell :value="flight.flight_time" />
-              </td>
-              <td class="hidden max-w-[12rem] px-3 py-2 lg:table-cell">
+              <td class="hidden max-w-[12rem] px-3 py-1.5 lg:table-cell">
                 <button
                   v-if="hasUserRemarks(flight.remarks)"
                   type="button"
@@ -213,7 +248,7 @@ function openRemarks(flight: Flight): void {
                 </button>
                 <span v-else class="text-slate-300">—</span>
               </td>
-              <td class="px-2 py-2 align-middle">
+              <td class="px-2 py-1.5 align-middle">
                 <FlightRowActions
                   :flight="flight"
                   @open-igc="openIgcMap(flight)"
@@ -243,6 +278,7 @@ function openRemarks(flight: Flight): void {
     <FlightMediaDialog
       :open="mediaOpen"
       :flight-id="mediaFlightId"
+      :media="mediaItems"
       @close="mediaOpen = false"
     />
 

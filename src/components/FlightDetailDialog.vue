@@ -185,7 +185,7 @@ const summaryBadges = computed(() => {
     })
   }
 
-  if (flight.value.landings > 0) {
+  if (flight.value.landings > 1) {
     badges.push({
       key: 'landings',
       label: landingsLabel(flight.value.landings),
@@ -331,11 +331,21 @@ const mediaItems = computed(() => flight.value?.media ?? [])
               </p>
             </article>
 
-            <article v-if="mediaItems.length" :class="[dashboardPanelClass, 'p-3']">
+            <article :class="[dashboardPanelClass, 'p-3']">
               <p :class="[dashboardFieldLabelClass, 'mb-2']">
                 {{ mediaItems.length === 1 ? 'Attachment' : 'Attachments' }}
               </p>
-              <ul class="space-y-2">
+              <div v-if="!mediaItems.length" class="rounded-md border border-dashed border-sky-200 bg-sky-50/60 p-3">
+                <p class="text-sm text-slate-600">No attachments yet.</p>
+                <RouterLink
+                  :to="`/flights/${encodeFlightId(flight.id)}#media-attachments`"
+                  class="mt-2 inline-flex text-sm font-semibold text-sky-700 hover:text-sky-900 hover:underline"
+                  @click="closeDialog"
+                >
+                  Add attachment
+                </RouterLink>
+              </div>
+              <ul v-else class="space-y-2">
                 <li
                   v-for="item in mediaItems"
                   :key="`${item.type}:${item.filename}`"
