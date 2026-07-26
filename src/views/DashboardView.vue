@@ -35,6 +35,17 @@ const recentFlightsLoading = ref(false)
 const recentFlightsError = ref<string | null>(null)
 const recentFlightsInitialized = ref(false)
 
+const pilotName = computed(() => displaySettings.value?.pilot_name ?? '')
+const lastFlight = computed<Flight | null>(() => {
+  return (
+    [...recentFlights.value]
+      .sort((a, b) =>
+        `${a.date} ${a.launch_time}`.localeCompare(`${b.date} ${b.launch_time}`),
+      )
+      .at(-1) ?? null
+  )
+})
+
 const loading = computed(() => statsLoading.value || statusLoading.value || recentFlightsLoading.value)
 const initialized = computed(() => statsInitialized.value && statusInitialized.value && recentFlightsInitialized.value)
 const error = computed(() => statsError.value || statusError.value || syncError.value)
@@ -117,14 +128,19 @@ watch(initialized, (ready) => {
     />
 
     <template v-else-if="statistics">
-      <DashboardLegalitySection v-if="dashboardStatus" :status="dashboardStatus" />
+      <DashboardLegalitySection
+        v-if="dashboardStatus"
+        :status="dashboardStatus"
+        :pilot-name="pilotName"
+        :last-flight="lastFlight"
+      />
+
+      <DashboardFlyingTotals :statistics="statistics" />
 
       <DashboardMonthlyChart
         :monthly-data="statistics.flights_by_month ?? []"
         :weekly-data="statistics.flights_by_week ?? []"
       />
-
-      <DashboardFlyingTotals :statistics="statistics" />
 
       <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">

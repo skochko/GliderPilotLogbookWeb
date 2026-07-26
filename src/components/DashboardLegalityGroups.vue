@@ -77,7 +77,8 @@ function statusLabel(status: DashboardStatusEnum): string {
         <div v-for="row in group.rows" :key="row.id">
           <button
             type="button"
-            class="flex w-full items-start gap-3 text-left"
+            class="flex w-full items-center gap-3 rounded-md text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+            :aria-expanded="isExpanded(group.id, row.id)"
             @click="toggleItem(group.id, row.id)"
           >
             <span
@@ -93,6 +94,11 @@ function statusLabel(status: DashboardStatusEnum): string {
                 {{ rowProgress(row) }}
               </span>
             </span>
+            <span
+              class="shrink-0 text-lg leading-none text-slate-400 transition-transform"
+              :class="{ 'rotate-90': isExpanded(group.id, row.id) }"
+              aria-hidden="true"
+            >›</span>
           </button>
 
           <div
@@ -131,14 +137,16 @@ function statusLabel(status: DashboardStatusEnum): string {
             v-for="chip in group.chips"
             :key="chip.id"
             type="button"
-            :class="[dashboardChipBaseClass, chipStyles[chip.status]]"
+            :class="[dashboardChipBaseClass, chipStyles[chip.status], 'gap-1']"
+            :aria-expanded="isExpanded(group.id, chip.id)"
             @click="toggleItem(group.id, chip.id)"
           >
-            <span
-              class="h-1.5 w-1.5 shrink-0 rounded-full"
-              :class="statusDotStyles[chip.status]"
-            />
             {{ chip.label }}
+            <span
+              class="text-sm leading-none opacity-60 transition-transform"
+              :class="{ 'rotate-90': isExpanded(group.id, chip.id) }"
+              aria-hidden="true"
+            >›</span>
           </button>
         </div>
 
@@ -151,13 +159,6 @@ function statusLabel(status: DashboardStatusEnum): string {
             class="mt-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
           >
             <div class="flex items-start gap-3">
-              <span
-                class="mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full"
-                :class="statusDotStyles[chip.status]"
-                :title="statusLabel(chip.status)"
-                role="img"
-                :aria-label="statusLabel(chip.status)"
-              />
               <div class="min-w-0 flex-1 text-xs text-slate-600">
                 <p class="font-medium text-slate-800">{{ chip.label }}</p>
                 <p v-if="requirementProgress(chip)" class="mt-0.5 tabular-nums text-slate-500">

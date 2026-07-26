@@ -145,7 +145,7 @@ function openRemarks(flight: Flight): void {
       <table class="min-w-full text-sm">
         <thead class="bg-[var(--sheet-header-color)] text-left text-slate-700">
           <tr>
-            <th class="w-20 px-2 py-2 text-center font-medium">Day</th>
+            <th class="w-10 px-2 py-2 text-center font-medium">Day</th>
             <th class="px-2 py-2 font-medium sm:px-3">
               <span class="block">Role</span>
               <span class="block text-xs font-normal text-slate-600">Crew</span>
@@ -176,7 +176,7 @@ function openRemarks(flight: Flight): void {
               :class="rowClass(flight, index)"
               @click="openDetail(flight)"
             >
-              <td class="w-20 px-2 py-1.5 text-center font-medium tabular-nums text-slate-900">
+              <td class="w-10 px-2 py-1.5 text-center font-medium tabular-nums text-slate-900">
                 <div class="relative flex h-full min-h-[2.75rem] items-center justify-center">
                   <p>{{ formatDayNumber(flight.date) }}</p>
                 </div>

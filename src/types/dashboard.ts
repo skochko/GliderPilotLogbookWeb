@@ -77,6 +77,7 @@ export interface DashboardLegalityGroup {
 }
 
 export interface DashboardStatus {
+  pilot_privilege: string
   medical: DashboardMedical[]
   qualifications: DashboardQualification[]
   legality_groups?: DashboardLegalityGroup[]
