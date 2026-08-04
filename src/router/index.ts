@@ -49,6 +49,12 @@ const router = createRouter({
       meta: { publicPage: true },
     },
     {
+      path: '/club/:token',
+      name: 'club-link',
+      component: () => import('@/views/ClubLinkView.vue'),
+      meta: { publicPage: true },
+    },
+    {
       path: '/connect',
       name: 'connect',
       component: () => import('@/views/ConnectLogbookView.vue'),
@@ -63,8 +69,14 @@ const router = createRouter({
     {
       path: '/logbook/create',
       name: 'logbook-create',
-      component: () => import('@/views/CreateLogbookView.vue'),
+      component: () => import('@/views/CreateLogbookSimpleView.vue'),
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/logbook/setup',
+      name: 'logbook-setup',
+      component: () => import('@/views/CreateLogbookView.vue'),
+      meta: { requiresAuth: true, requiresLogbook: true },
     },
     {
       path: '/dashboard',

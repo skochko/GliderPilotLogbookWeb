@@ -73,6 +73,7 @@ export function buildLogbookCreatePayload(
     skippedMedical: boolean
     skippedClubAutomation: boolean
     organizationId: number | null
+    automationConsent?: boolean
   },
 ): LogbookCreateRequest {
   const payload: LogbookCreateRequest = {
@@ -131,6 +132,7 @@ export function buildLogbookCreatePayload(
 
   if (!options.skippedClubAutomation && options.organizationId != null) {
     payload.organization_id = options.organizationId
+    payload.automation_consent = options.automationConsent === true
   }
 
   return payload

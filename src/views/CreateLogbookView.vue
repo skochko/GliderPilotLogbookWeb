@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
@@ -37,6 +37,7 @@ const STEP_MEDICAL = 5
 const STEP_CLUB = 6
 
 const router = useRouter()
+const route = useRoute()
 const { user, fetchMe } = useAuth()
 const { connect, applyWizard, mutating, error } = useLogbook()
 const { pickSpreadsheet } = useGooglePicker()
@@ -73,11 +74,13 @@ const skippedTotals = ref(false)
 const skippedMedical = ref(false)
 const skippedClubAutomation = ref(false)
 const selectedOrganizationId = ref<number | null>(null)
+const clubAutomationConsent = ref(false)
 const organizations = ref<OrganizationListItem[]>([])
 const organizationsLoading = ref(true)
 const organizationsError = ref<string | null>(null)
 
 const form = reactive(defaultLogbookCreateForm())
+const postCreateSetup = computed(() => route.name === 'logbook-setup')
 
 const stepLabels = ['Setup', 'Personal', 'License', 'Totals', 'Medical', 'Club sync'] as const
 const totalSteps = stepLabels.length
@@ -215,6 +218,10 @@ function scrollActiveStepIntoView(): void {
 
 onMounted(async () => {
   restoreWizardState()
+  if (postCreateSetup.value) {
+    step.value = STEP_PERSONAL
+    manualConfirmed.value = true
+  }
   await Promise.all([loadPilotPrivileges(), loadLicenseOptions()])
   const pendingSubmit = consumeCreateLogbookPendingSubmit()
 
@@ -297,6 +304,14 @@ async function goNext(): Promise<void> {
   if (step.value === STEP_CLUB && selectedOrganizationId.value == null) {
     skippedClubAutomation.value = true
   }
+  if (
+    step.value === STEP_CLUB &&
+    selectedOrganizationId.value !== null &&
+    !clubAutomationConsent.value
+  ) {
+    validationError.value = 'Confirm the club automation consent before continuing.'
+    return
+  }
 
   if (step.value < totalSteps) {
     step.value += 1
@@ -323,6 +338,7 @@ async function submit(): Promise<void> {
     skippedMedical: skippedMedical.value,
     skippedClubAutomation: skippedClubAutomation.value,
     organizationId: selectedOrganizationId.value,
+    automationConsent: clubAutomationConsent.value,
   })
 
   const response = await applyWizard(payload)
@@ -347,9 +363,15 @@ async function retrySubmit(): Promise<void> {
 <template>
   <div class="mx-auto max-w-2xl space-y-6 py-8">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">Create your logbook</h1>
+      <h1 class="text-2xl font-bold text-slate-900">
+        {{ postCreateSetup ? 'Complete your logbook setup' : 'Create your logbook' }}
+      </h1>
       <p class="mt-2 text-slate-600">
-        Copy the official template in Google Drive, connect it here, then enter your pilot details.
+        {{
+          postCreateSetup
+            ? 'Your logbook has been created. Complete the remaining details to use all features.'
+            : 'Copy the official template in Google Drive, connect it here, then enter your pilot details.'
+        }}
       </p>
     </div>
 
@@ -580,6 +602,13 @@ async function retrySubmit(): Promise<void> {
             >
               {{ ORGANIZATION_AUTOMATION_FORM_NOTICE }}
             </p>
+            <label v-if="selectedOrganization" class="mt-3 flex items-start gap-3 text-sm text-slate-700">
+              <input v-model="clubAutomationConsent" type="checkbox" class="mt-1" />
+              <span>
+                I agree that {{ selectedOrganization.name }} may receive access to my logbook
+                to add flight records.
+              </span>
+            </label>
             <p v-if="organizations.length === 0" class="text-sm text-slate-500">
               No organisations are available yet. Press Next to finish without club sync.
             </p>

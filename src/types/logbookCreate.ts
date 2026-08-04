@@ -24,6 +24,8 @@ export interface LogbookCreateMedical {
 
 export interface LogbookCreateRequest {
   pilot_name: string
+  source?: 'direct' | 'club_link'
+  automation_consent?: boolean
   pilot_address?: string
   pilot_privilege?: PilotPrivilege
   instructor_from_date?: string
@@ -56,6 +58,28 @@ export interface LogbookCreateResponse {
   template_upgrade_available?: string | null
   public_template_copy_url?: string
   club_automation_request?: ClubAutomationRequestSummary | null
+}
+
+export type LogbookCreationJobStatus = 'queued' | 'running' | 'succeeded' | 'failed'
+
+export type LogbookCreationJobStage =
+  | 'queued'
+  | 'preparing'
+  | 'copying_template'
+  | 'applying_structure'
+  | 'connecting'
+  | 'finishing'
+  | 'complete'
+
+export interface LogbookCreationJob {
+  job_id: string
+  status: LogbookCreationJobStatus
+  stage: LogbookCreationJobStage
+  percent: number
+  result: LogbookCreateResponse | null
+  error: string
+  created_at: string
+  updated_at: string
 }
 
 export interface LogbookCreateFormState {

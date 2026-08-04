@@ -2,13 +2,32 @@ import { readonly, ref } from 'vue'
 import * as logbookApi from '@/api/logbook'
 import { isApiError } from '@/api/errors'
 import type { LogbookStatus } from '@/types'
-import type { LogbookCreateRequest, LogbookCreateResponse } from '@/types/logbookCreate'
+import type {
+  LogbookCreateRequest,
+  LogbookCreateResponse,
+  LogbookCreationJob,
+} from '@/types/logbookCreate'
 
 const status = ref<LogbookStatus | null>(null)
+const creationJob = ref<LogbookCreationJob | null>(null)
 const loading = ref(false)
 const initialized = ref(false)
 const mutating = ref(false)
 const error = ref<string | null>(null)
+const CREATION_JOB_KEY = 'glider-pilot-logbook-creation-job'
+let creationGeneration = 0
+
+function saveCreationJobId(jobId: string): void {
+  sessionStorage.setItem(CREATION_JOB_KEY, jobId)
+}
+
+function clearCreationJobId(): void {
+  sessionStorage.removeItem(CREATION_JOB_KEY)
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
+}
 
 export function resetLogbookState(): void {
   status.value = null
@@ -16,6 +35,9 @@ export function resetLogbookState(): void {
   initialized.value = false
   mutating.value = false
   error.value = null
+  creationJob.value = null
+  creationGeneration += 1
+  clearCreationJobId()
 }
 
 export function useLogbook() {
@@ -64,6 +86,69 @@ export function useLogbook() {
     }
   }
 
+  async function create(payload: LogbookCreateRequest): Promise<LogbookCreateResponse | null> {
+    const generation = ++creationGeneration
+    mutating.value = true
+    error.value = null
+    try {
+      const job = await logbookApi.createLogbook(payload)
+      creationJob.value = job
+      saveCreationJobId(job.job_id)
+      return await waitForCreation(job, generation)
+    } catch (err) {
+      error.value = isApiError(err) ? err.message : 'Failed to create logbook'
+      return null
+    } finally {
+      mutating.value = false
+    }
+  }
+
+  async function waitForCreation(
+    initialJob: LogbookCreationJob,
+    generation: number,
+  ): Promise<LogbookCreateResponse | null> {
+    let job = initialJob
+    while (generation === creationGeneration) {
+      creationJob.value = job
+      if (job.status === 'succeeded' && job.result) {
+        status.value = job.result
+        clearCreationJobId()
+        return job.result
+      }
+      if (job.status === 'failed') {
+        clearCreationJobId()
+        error.value = job.error || 'Failed to create logbook'
+        return null
+      }
+      await delay(1000)
+      job = await logbookApi.getLogbookCreationStatus(job.job_id)
+    }
+    return null
+  }
+
+  async function resumeCreate(): Promise<LogbookCreateResponse | null> {
+    const jobId = sessionStorage.getItem(CREATION_JOB_KEY)
+    if (!jobId) return null
+
+    const generation = ++creationGeneration
+    mutating.value = true
+    error.value = null
+    try {
+      const job = await logbookApi.getLogbookCreationStatus(jobId)
+      creationJob.value = job
+      return await waitForCreation(job, generation)
+    } catch (err) {
+      error.value = isApiError(err) ? err.message : 'Failed to check logbook creation'
+      return null
+    } finally {
+      mutating.value = false
+    }
+  }
+
+  function stopCreatePolling(): void {
+    creationGeneration += 1
+  }
+
   async function disconnect(): Promise<boolean> {
     mutating.value = true
     error.value = null
@@ -81,6 +166,7 @@ export function useLogbook() {
 
   return {
     status: readonly(status),
+    creationJob: readonly(creationJob),
     loading: readonly(loading),
     initialized: readonly(initialized),
     mutating: readonly(mutating),
@@ -88,6 +174,9 @@ export function useLogbook() {
     fetchStatus,
     connect,
     applyWizard,
+    create,
+    resumeCreate,
+    stopCreatePolling,
     disconnect,
   }
 }

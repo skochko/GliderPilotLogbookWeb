@@ -87,6 +87,13 @@ const faqItems = [
 onMounted(() => {
   void fetchLanding()
 })
+
+function scrollToDemo(): void {
+  document.getElementById('landing-preview')?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  })
+}
 </script>
 
 <template>
@@ -158,12 +165,13 @@ onMounted(() => {
               >
                 Start
               </RouterLink>
-              <a
-                href="#landing-preview"
+              <button
+                type="button"
+                @click="scrollToDemo"
                 class="inline-flex w-full items-center justify-center rounded-lg border border-landing-border bg-landing-card px-5 py-3 text-sm font-medium text-landing-text transition hover:border-landing-primary/30 hover:bg-white sm:w-auto"
               >
                 View demo
-              </a>
+              </button>
             </div>
 
             <ul class="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-landing-secondary">
