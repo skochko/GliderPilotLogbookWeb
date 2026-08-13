@@ -16,7 +16,7 @@ describe('deferAfterLoad', () => {
   it('runs callback after load when document is not complete', () => {
     Object.defineProperty(document, 'readyState', { configurable: true, value: 'interactive' })
 
-    const callback = vi.fn()
+    const callback = vi.fn<() => void>()
     deferAfterLoad(callback)
     expect(callback).not.toHaveBeenCalled()
 
@@ -27,7 +27,7 @@ describe('deferAfterLoad', () => {
   it('runs callback immediately when document is already complete', () => {
     Object.defineProperty(document, 'readyState', { configurable: true, value: 'complete' })
 
-    const callback = vi.fn()
+    const callback = vi.fn<() => void>()
     deferAfterLoad(callback)
     expect(callback).toHaveBeenCalledOnce()
   })

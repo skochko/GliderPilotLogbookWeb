@@ -44,6 +44,7 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/flights', label: 'Flights' },
   { to: '/statistics', label: 'Statistics' },
+  { to: '/qualification-events', label: 'Training & Qualification Events' },
   { to: '/settings', label: 'Settings' },
   { to: '/automation', label: 'Automation' },
   { to: '/profile', label: 'Profile' },

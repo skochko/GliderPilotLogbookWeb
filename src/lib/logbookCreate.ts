@@ -19,8 +19,11 @@ const CREATE_FORM_FIELDS = [
   'license_authority',
   'prior_total_time',
   'prior_pic_time',
+  'prior_pic_flight_count',
   'prior_p2_time',
+  'prior_p2_flight_count',
   'prior_instructor_time',
+  'prior_instructor_flight_count',
   'prior_flight_count',
   'prior_kms_flown',
   'medical_type',
@@ -44,7 +47,9 @@ function copyCreateFormField<K extends (typeof CREATE_FORM_FIELDS)[number]>(
   profileForm: ReturnType<typeof emptyLogbookProfileForm>,
   field: K,
 ): void {
-  form[field] = profileForm[field]
+  const targetForm = form as unknown as Record<string, unknown>
+  const sourceForm = profileForm as unknown as Record<string, unknown>
+  targetForm[field] = sourceForm[field]
 }
 
 export function createFormHasProfileData(form: LogbookCreateFormState): boolean {
@@ -113,8 +118,11 @@ export function buildLogbookCreatePayload(
     payload.prior_totals = {
       total_time: form.prior_total_time.trim(),
       pic_time: form.prior_pic_time.trim(),
+      pic_flight_count: parseOptionalFlightCount(form.prior_pic_flight_count),
       p2_time: form.prior_p2_time.trim(),
+      p2_flight_count: parseOptionalFlightCount(form.prior_p2_flight_count),
       instructor_time: form.prior_instructor_time.trim(),
+      instructor_flight_count: parseOptionalFlightCount(form.prior_instructor_flight_count),
       flight_count: flightCount,
       kms_flown: form.prior_kms_flown.trim(),
     }
@@ -133,6 +141,9 @@ export function buildLogbookCreatePayload(
   if (!options.skippedClubAutomation && options.organizationId != null) {
     payload.organization_id = options.organizationId
     payload.automation_consent = options.automationConsent === true
+    if (form.automation_import_from_date) {
+      payload.automation_import_from_date = form.automation_import_from_date
+    }
   }
 
   return payload

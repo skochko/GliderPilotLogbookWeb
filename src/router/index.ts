@@ -67,7 +67,7 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/logbook/create',
+      path: '/logbook/create/:organizationSlug?',
       name: 'logbook-create',
       component: () => import('@/views/CreateLogbookSimpleView.vue'),
       meta: { requiresAuth: true },
@@ -94,6 +94,12 @@ const router = createRouter({
       path: '/statistics',
       name: 'statistics',
       component: () => import('@/views/StatisticsView.vue'),
+      meta: { requiresAuth: true, requiresLogbook: true },
+    },
+    {
+      path: '/qualification-events',
+      name: 'qualification-events',
+      component: () => import('@/views/QualificationEventsView.vue'),
       meta: { requiresAuth: true, requiresLogbook: true },
     },
     {

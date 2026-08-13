@@ -3,14 +3,17 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- referenced by the Vue template
 import LoadingState from '@/components/LoadingState.vue'
-import MarkdownContent from '@/components/MarkdownContent.vue'
+import {
+  getQualificationEvents,
+  updateQualificationEvents,
+} from '@/api/qualificationEvents'
 import { getSettings } from '@/api/settings'
-import { getPage } from '@/api/pages'
+import { getSummary, updateSummary } from '@/api/summary'
 import { listOrganizations, type OrganizationListItem } from '@/api/organizations'
 import { useAuth } from '@/composables/useAuth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
-import { useGooglePicker } from '@/composables/useGooglePicker'
 import { useLogbook } from '@/composables/useLogbook'
 import {
   clearCreateLogbookWizardState,
@@ -18,29 +21,31 @@ import {
   loadCreateLogbookWizardState,
   saveCreateLogbookWizardState,
 } from '@/lib/createLogbookWizardStorage'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- referenced by the Vue template
 import { ORGANIZATION_AUTOMATION_FORM_NOTICE } from '@/lib/organizations'
 import {
   applySheetSettingsToCreateForm,
   buildLogbookCreatePayload,
-  createFormHasProfileData,
 } from '@/lib/logbookCreate'
 import { isBiPrivilege, isFiPrivilege, usePilotPrivileges } from '@/composables/usePilotPrivileges'
 import { useLicenseOptions, withLegacyLookupOption } from '@/composables/useLicenseOptions'
 import { defaultLogbookCreateForm } from '@/types/logbookCreate'
-import type { Page } from '@/types'
+import type { QualificationSummary } from '@/types/summary'
+import {
+  QUALIFICATION_EVENT_TYPES,
+  type QualificationEvent,
+} from '@/types/qualificationEvents'
 
-const STEP_SETUP = 1
-const STEP_PERSONAL = 2
-const STEP_LICENSE = 3
-const STEP_TOTALS = 4
-const STEP_MEDICAL = 5
-const STEP_CLUB = 6
+const STEP_PERSONAL = 1
+const STEP_LICENSE = 2
+const STEP_TOTALS = 3
+const STEP_MEDICAL = 4
+const STEP_QUALIFICATIONS = 5
 
 const router = useRouter()
 const route = useRoute()
 const { user, fetchMe } = useAuth()
-const { connect, applyWizard, mutating, error } = useLogbook()
-const { pickSpreadsheet } = useGooglePicker()
+const { applyWizard, mutating, error } = useLogbook()
 const { show } = useFlashMessage()
 const {
   options: pilotPrivilegeOptions,
@@ -57,17 +62,13 @@ const {
   load: loadLicenseOptions,
 } = useLicenseOptions()
 
-const step = ref(STEP_SETUP)
+const step = ref(STEP_PERSONAL)
 const stepsNavRef = ref<HTMLElement | null>(null)
 const validationError = ref<string | null>(null)
-const manualConfirmed = ref(false)
-const manualInstruction = ref<Page | null>(null)
-const manualInstructionLoading = ref(false)
-const manualInstructionError = ref<string | null>(null)
-const pickerBusy = ref(false)
-const pickerError = ref<string | null>(null)
 const prefillLoading = ref(false)
 const prefillError = ref<string | null>(null)
+const prefillLoaded = ref(false)
+const savingQualificationEvents = ref(false)
 
 const skippedLicense = ref(false)
 const skippedTotals = ref(false)
@@ -75,31 +76,57 @@ const skippedMedical = ref(false)
 const skippedClubAutomation = ref(false)
 const selectedOrganizationId = ref<number | null>(null)
 const clubAutomationConsent = ref(false)
+const automationImportMode = ref<'all' | 'from_date'>('all')
+const automationImportFromDate = ref('')
 const organizations = ref<OrganizationListItem[]>([])
 const organizationsLoading = ref(true)
 const organizationsError = ref<string | null>(null)
 
 const form = reactive(defaultLogbookCreateForm())
+const templateVersion = ref('')
+const qualificationEvents = ref<QualificationEvent[]>([])
+const legacySummary = reactive<QualificationSummary>({
+  by_date_start: '',
+  by_date_end: '',
+  fi_train_date: '',
+  fi_training_date_2: '',
+  bi_ref_date: '',
+  fi_3year_date: '',
+  fi_ref_date: '',
+})
 const postCreateSetup = computed(() => route.name === 'logbook-setup')
+const isV3Template = computed(() => templateVersion.value.startsWith('3.'))
 
-const stepLabels = ['Setup', 'Personal', 'License', 'Totals', 'Medical', 'Club sync'] as const
+const stepLabels = [
+  'Personal ✓',
+  'License',
+  'Totals',
+  'Medical / PMD',
+  'Training & qualification events',
+] as const
 const totalSteps = stepLabels.length
 
 const showInstructorFields = computed(() => isInstructorPrivilege(form.pilot_privilege))
 const showBiRefDate = computed(() => isBiPrivilege(form.pilot_privilege))
 const showFiDates = computed(() => isFiPrivilege(form.pilot_privilege))
+const showLegacyQualificationDates = computed(() => !isV3Template.value)
 const licenseTypeOptions = computed(() => withLegacyLookupOption(licenseTypes.value, form.license_type))
 const licenseAuthorityOptions = computed(() =>
   withLegacyLookupOption(licenseAuthorities.value, form.license_authority),
 )
 const logbookConnected = computed(() => Boolean(user.value?.has_logbook))
-const nextDisabled = computed(() => step.value === STEP_SETUP && !manualConfirmed.value)
+const setupDataLoading = computed(
+  () => postCreateSetup.value && (!prefillLoaded.value || prefillLoading.value),
+)
+const nextDisabled = computed(
+  () => setupDataLoading.value || mutating.value || savingQualificationEvents.value,
+)
 const nextBusy = computed(
   () =>
-    mutating.value ||
-    (step.value === STEP_SETUP && (pickerBusy.value || prefillLoading.value)),
+    mutating.value || savingQualificationEvents.value || prefillLoading.value,
 )
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- referenced by the Vue template
 const selectedOrganization = computed(() =>
   organizations.value.find((org) => org.id === selectedOrganizationId.value) ?? null,
 )
@@ -113,37 +140,30 @@ function currentWizardState() {
     skippedMedical: skippedMedical.value,
     skippedClubAutomation: skippedClubAutomation.value,
     selectedOrganizationId: selectedOrganizationId.value,
-    manualConfirmed: manualConfirmed.value,
+    automationImportMode: automationImportMode.value,
+    automationImportFromDate: automationImportFromDate.value,
   }
 }
 
 function restoreWizardState(): void {
   const saved = loadCreateLogbookWizardState()
   if (!saved) return
-  step.value = saved.step
+  step.value = Math.min(Math.max(saved.step, STEP_PERSONAL), STEP_QUALIFICATIONS)
+  if (step.value > STEP_QUALIFICATIONS) {
+    step.value = STEP_QUALIFICATIONS
+  }
   Object.assign(form, saved.form)
   skippedLicense.value = saved.skippedLicense
   skippedTotals.value = saved.skippedTotals
   skippedMedical.value = saved.skippedMedical
   skippedClubAutomation.value = saved.skippedClubAutomation
   selectedOrganizationId.value = saved.selectedOrganizationId
-  manualConfirmed.value = saved.manualConfirmed
+  automationImportMode.value = saved.automationImportMode ?? 'all'
+  automationImportFromDate.value = saved.automationImportFromDate ?? ''
 }
 
 function persistWizardState(pendingSubmit = false): void {
   saveCreateLogbookWizardState(currentWizardState(), pendingSubmit)
-}
-
-async function loadManualInstruction(): Promise<void> {
-  manualInstructionLoading.value = true
-  manualInstructionError.value = null
-  try {
-    manualInstruction.value = await getPage('logbook_create_manual_short')
-  } catch {
-    manualInstructionError.value = 'Could not load instructions.'
-  } finally {
-    manualInstructionLoading.value = false
-  }
 }
 
 async function loadOrganizations(): Promise<void> {
@@ -165,47 +185,69 @@ async function prefillFormFromConnectedLogbook(): Promise<void> {
   prefillError.value = null
   try {
     const settings = await getSettings()
+    templateVersion.value = settings.template_version ?? ''
     applySheetSettingsToCreateForm(form, settings)
     persistWizardState()
   } catch {
     prefillError.value = 'Could not read details from your logbook.'
   } finally {
     prefillLoading.value = false
+    prefillLoaded.value = true
   }
 }
 
-async function openLogbookPicker(): Promise<boolean> {
-  if (pickerBusy.value) return false
-  pickerError.value = null
-  pickerBusy.value = true
+async function loadQualificationEvents(): Promise<void> {
   try {
-    const picked = await pickSpreadsheet()
-    if (!picked) return false
-    const ok = await connect({ spreadsheet_id: picked.id })
-    if (ok) {
-      await fetchMe()
-      await prefillFormFromConnectedLogbook()
-      if (createFormHasProfileData(form)) {
-        show('Logbook connected. Loaded existing details from your spreadsheet.', 'success')
-      } else {
-        show('Logbook connected.', 'success')
-      }
-      persistWizardState()
+    qualificationEvents.value = (await getQualificationEvents()).events
+  } catch {
+    // The qualification step can still be opened and completed manually.
+  }
+}
+
+async function loadLegacySummary(): Promise<void> {
+  try {
+    Object.assign(legacySummary, await getSummary())
+  } catch {
+    validationError.value = 'Could not load qualification dates.'
+  }
+}
+
+async function saveQualificationEvents(): Promise<boolean> {
+  savingQualificationEvents.value = true
+  try {
+    if (!isV3Template.value) {
+      Object.assign(legacySummary, await updateSummary(legacySummary))
       return true
     }
-    return false
+    qualificationEvents.value = (await updateQualificationEvents(qualificationEvents.value)).events
+    return true
   } catch (err) {
-    pickerError.value = err instanceof Error ? err.message : 'Picker failed'
+    validationError.value = err instanceof Error
+      ? err.message
+      : isV3Template.value
+        ? 'Could not save qualification events.'
+        : 'Could not save qualification dates.'
     return false
   } finally {
-    pickerBusy.value = false
+    savingQualificationEvents.value = false
   }
 }
 
-watch(step, (value) => {
-  if (value === STEP_SETUP && !manualInstruction.value) {
-    void loadManualInstruction()
-  }
+function addQualificationEvent(): void {
+  qualificationEvents.value.push({
+    date: '',
+    place: '',
+    event_type: QUALIFICATION_EVENT_TYPES[0],
+    date_completed: '',
+    remarks: '',
+  })
+}
+
+function removeQualificationEvent(index: number): void {
+  qualificationEvents.value.splice(index, 1)
+}
+
+watch(step, () => {
   void nextTick(scrollActiveStepIntoView)
 }, { flush: 'post' })
 
@@ -220,17 +262,22 @@ onMounted(async () => {
   restoreWizardState()
   if (postCreateSetup.value) {
     step.value = STEP_PERSONAL
-    manualConfirmed.value = true
   }
   await Promise.all([loadPilotPrivileges(), loadLicenseOptions()])
   const pendingSubmit = consumeCreateLogbookPendingSubmit()
 
-  void loadManualInstruction()
-  if (user.value?.has_logbook && !form.pilot_name.trim()) {
+  if (postCreateSetup.value || (user.value?.has_logbook && !form.pilot_name.trim())) {
     await prefillFormFromConnectedLogbook()
+  } else {
+    prefillLoaded.value = true
+  }
+  if (isV3Template.value) {
+    await loadQualificationEvents()
+  } else {
+    await loadLegacySummary()
   }
 
-  if (pendingSubmit && step.value === STEP_CLUB) {
+  if (pendingSubmit) {
     await submit()
   }
 
@@ -252,8 +299,11 @@ function isTotalsStepEmpty(): boolean {
   return (
     !form.prior_total_time.trim() &&
     !form.prior_pic_time.trim() &&
+    !form.prior_pic_flight_count.trim() &&
     !form.prior_p2_time.trim() &&
+    !form.prior_p2_flight_count.trim() &&
     !form.prior_instructor_time.trim() &&
+    !form.prior_instructor_flight_count.trim() &&
     !flightCount &&
     !form.prior_kms_flown.trim()
   )
@@ -264,31 +314,22 @@ function isMedicalStepEmpty(): boolean {
 }
 
 function goBack(): void {
-  if (step.value > STEP_SETUP) {
+  if (step.value > STEP_PERSONAL) {
     step.value -= 1
     persistWizardState()
   }
 }
 
 async function goNext(): Promise<void> {
+  if (mutating.value || savingQualificationEvents.value || setupDataLoading.value) return
   validationError.value = null
-
-  if (step.value === STEP_SETUP) {
-    if (!manualConfirmed.value) {
-      validationError.value = 'Confirm that you created your logbook using the instructions.'
-      return
-    }
-    if (!logbookConnected.value) {
-      const connected = await openLogbookPicker()
-      if (!connected) return
-    }
-    step.value = STEP_PERSONAL
-    persistWizardState()
-    return
-  }
 
   if (step.value === STEP_PERSONAL && !form.pilot_name.trim()) {
     validationError.value = 'Pilot name is required.'
+    return
+  }
+  if (step.value === STEP_PERSONAL && !form.pilot_privilege.trim()) {
+    validationError.value = 'Pilot privilege is required.'
     return
   }
 
@@ -301,18 +342,9 @@ async function goNext(): Promise<void> {
   if (step.value === STEP_MEDICAL && isMedicalStepEmpty()) {
     skippedMedical.value = true
   }
-  if (step.value === STEP_CLUB && selectedOrganizationId.value == null) {
-    skippedClubAutomation.value = true
-  }
-  if (
-    step.value === STEP_CLUB &&
-    selectedOrganizationId.value !== null &&
-    !clubAutomationConsent.value
-  ) {
-    validationError.value = 'Confirm the club automation consent before continuing.'
+  if (step.value === STEP_QUALIFICATIONS && !(await saveQualificationEvents())) {
     return
   }
-
   if (step.value < totalSteps) {
     step.value += 1
     persistWizardState()
@@ -411,50 +443,41 @@ async function retrySubmit(): Promise<void> {
       :retry-busy="licenseOptionsLoading"
       @retry="loadLicenseOptions"
     />
-    <ErrorBanner v-if="pickerError" :message="pickerError" />
     <ErrorBanner v-if="prefillError" :message="prefillError" @retry="prefillFormFromConnectedLogbook()" />
+    <div
+      v-if="setupDataLoading"
+      class="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900"
+      role="status"
+    >
+      Loading your current logbook data…
+    </div>
 
     <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <form class="space-y-4" @submit.prevent="goNext">
-        <template v-if="step === STEP_SETUP">
-          <h2 class="text-lg font-semibold text-slate-900">Copy the template</h2>
-          <LoadingState v-if="manualInstructionLoading" />
-          <ErrorBanner
-            v-else-if="manualInstructionError"
-            :message="manualInstructionError"
-            @retry="loadManualInstruction"
-          />
-          <MarkdownContent
-            v-else-if="manualInstruction"
-            class="manual-instruction"
-            :source="manualInstruction.content"
-          />
-
-          <label class="mt-4 flex items-start gap-3 text-sm text-slate-700">
-            <input v-model="manualConfirmed" type="checkbox" class="mt-1" />
-            <span>I created my logbook using the instructions</span>
-          </label>
-          <p v-if="manualConfirmed && logbookConnected" class="text-sm text-emerald-700">
-            Logbook connected. Press Next to continue.
-          </p>
-        </template>
-
-        <template v-else-if="step === STEP_PERSONAL">
+        <fieldset class="space-y-5" :disabled="setupDataLoading">
+        <template v-if="step === STEP_PERSONAL">
           <h2 class="text-lg font-semibold text-slate-900">Personal information</h2>
 
-          <label class="block text-sm">
-            <span class="font-medium text-slate-700">Pilot name <span class="text-red-600">*</span></span>
+          <label class="block space-y-1 text-sm">
+            <span class="block font-medium text-slate-700">Pilot name <span class="text-red-600">*</span></span>
             <input v-model="form.pilot_name" type="text" class="field-control" required />
           </label>
 
-          <label class="block text-sm">
-            <span class="font-medium text-slate-700">Pilot address</span>
+          <label class="block space-y-1 text-sm">
+            <span class="block font-medium text-slate-700">Pilot address</span>
             <input v-model="form.pilot_address" type="text" class="field-control" />
           </label>
 
-          <label class="block text-sm">
-            <span class="font-medium text-slate-700">Pilot privilege</span>
-            <select v-model="form.pilot_privilege" class="field-control" :disabled="pilotPrivilegesLoading">
+          <label class="block space-y-1 text-sm">
+            <span class="block font-medium text-slate-700">
+              Pilot privilege <span class="text-red-600">*</span>
+            </span>
+            <select
+              v-model="form.pilot_privilege"
+              class="field-control"
+              :disabled="pilotPrivilegesLoading"
+              required
+            >
               <option v-for="option in pilotPrivilegeOptions" :key="option.code" :value="option.code">
                 {{ option.name }}
               </option>
@@ -532,15 +555,27 @@ async function retrySubmit(): Promise<void> {
               <input v-model="form.prior_pic_time" type="text" placeholder="H:MM" class="field-control" />
             </label>
             <label class="block text-sm">
+              <span class="font-medium text-slate-700">PIC flights</span>
+              <input v-model="form.prior_pic_flight_count" type="number" min="0" class="field-control" />
+            </label>
+            <label class="block text-sm">
               <span class="font-medium text-slate-700">P2 time</span>
               <input v-model="form.prior_p2_time" type="text" placeholder="H:MM" class="field-control" />
+            </label>
+            <label class="block text-sm">
+              <span class="font-medium text-slate-700">P2 flights</span>
+              <input v-model="form.prior_p2_flight_count" type="number" min="0" class="field-control" />
             </label>
             <label v-if="showInstructorFields" class="block text-sm">
               <span class="font-medium text-slate-700">Instructor time</span>
               <input v-model="form.prior_instructor_time" type="text" placeholder="H:MM" class="field-control" />
             </label>
+            <label v-if="showInstructorFields" class="block text-sm">
+              <span class="font-medium text-slate-700">Instructor flights</span>
+              <input v-model="form.prior_instructor_flight_count" type="number" min="0" class="field-control" />
+            </label>
             <label class="block text-sm">
-              <span class="font-medium text-slate-700">Landings</span>
+              <span class="font-medium text-slate-700">Total flights</span>
               <input v-model="form.prior_flight_count" type="number" min="0" class="field-control" />
             </label>
             <label class="block text-sm">
@@ -561,7 +596,7 @@ async function retrySubmit(): Promise<void> {
             <input v-model="form.medical_type" type="text" class="field-control" />
           </label>
 
-          <label class="block text-sm">
+          <label v-if="!isV3Template" class="block text-sm">
             <span class="font-medium text-slate-700">Issue date</span>
             <input v-model="form.medical_issue_date" type="date" class="field-control" />
           </label>
@@ -572,7 +607,104 @@ async function retrySubmit(): Promise<void> {
           </label>
         </template>
 
-        <template v-else-if="step === STEP_CLUB">
+        <template v-else-if="step === STEP_QUALIFICATIONS">
+          <h2 class="text-lg font-semibold text-slate-900">
+            {{ showLegacyQualificationDates ? 'Training & qualification dates' : 'Training & qualification events' }}
+          </h2>
+          <p v-if="showLegacyQualificationDates" class="text-sm text-slate-600">
+            Enter the qualification dates recorded in your legacy logbook.
+          </p>
+          <p v-else class="text-sm text-slate-600">
+            Add your previous training and qualification events. You can add or remove events at
+            any time.
+          </p>
+          <div v-if="showLegacyQualificationDates" class="space-y-5">
+            <label v-if="form.pilot_privilege === 'SPL Pilot'" class="block space-y-1 text-sm">
+              <span class="font-medium text-slate-700">Training flight FI(S) — date 1</span>
+              <input v-model="legacySummary.fi_train_date" type="date" class="field-control" />
+            </label>
+            <label v-if="form.pilot_privilege === 'SPL Pilot'" class="block space-y-1 text-sm">
+              <span class="font-medium text-slate-700">Training flight FI(S) — date 2</span>
+              <input v-model="legacySummary.fi_training_date_2" type="date" class="field-control" />
+            </label>
+            <label v-if="form.pilot_privilege === 'BI'" class="block space-y-1 text-sm">
+              <span class="font-medium text-slate-700">BI refresher / demonstration date</span>
+              <input v-model="legacySummary.bi_ref_date" type="date" class="field-control" />
+            </label>
+            <label v-if="form.pilot_privilege === 'FI'" class="block space-y-1 text-sm">
+              <span class="font-medium text-slate-700">FI refresher training date</span>
+              <input v-model="legacySummary.fi_3year_date" type="date" class="field-control" />
+            </label>
+            <label v-if="form.pilot_privilege === 'FI'" class="block space-y-1 text-sm">
+              <span class="font-medium text-slate-700">FI demonstration date</span>
+              <input v-model="legacySummary.fi_ref_date" type="date" class="field-control" />
+            </label>
+            <p
+              v-if="form.pilot_privilege === 'Student Pilot'"
+              class="text-sm text-slate-600"
+            >
+              No qualification dates are required for Student Pilot.
+            </p>
+          </div>
+          <div v-else class="space-y-4">
+            <div
+              v-for="(event, index) in qualificationEvents"
+              :key="event.id ?? `new-${index}`"
+              class="space-y-3 rounded-lg border border-slate-200 p-4"
+            >
+              <div class="flex items-center justify-between gap-3">
+                <h3 class="font-medium text-slate-800">Event {{ index + 1 }}</h3>
+                <button
+                  type="button"
+                  class="text-sm font-medium text-red-700 hover:text-red-900"
+                  @click="removeQualificationEvent(index)"
+                >
+                  Delete
+                </button>
+              </div>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <label class="block text-sm">
+                  <span class="font-medium text-slate-700">Event type</span>
+                  <select v-model="event.event_type" class="field-control">
+                    <option v-for="type in QUALIFICATION_EVENT_TYPES" :key="type" :value="type">
+                      {{ type }}
+                    </option>
+                  </select>
+                </label>
+                <label class="block text-sm">
+                  <span class="font-medium text-slate-700">Date</span>
+                  <input v-model="event.date" type="date" class="field-control" />
+                </label>
+                <label class="block text-sm">
+                  <span class="font-medium text-slate-700">Date completed</span>
+                  <span class="mt-1 block text-xs text-slate-500">
+                    Optional. Leave blank if the same as Date (e.g. multi-day course sign-off).
+                  </span>
+                  <input v-model="event.date_completed" type="date" class="field-control" />
+                </label>
+                <label class="block text-sm">
+                  <span class="font-medium text-slate-700">Place</span>
+                  <input v-model="event.place" type="text" class="field-control" />
+                </label>
+              </div>
+              <label class="block text-sm">
+                <span class="font-medium text-slate-700">Notes</span>
+                <textarea v-model="event.remarks" rows="2" class="field-control" />
+              </label>
+            </div>
+            <button
+              type="button"
+              class="rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200"
+              @click="addQualificationEvent"
+            >
+              Add event
+            </button>
+          </div>
+        </template>
+
+        <!-- Club automation is configured during logbook creation, not in setup. -->
+        <!--
+        <template v-else-if="false">
           <h2 class="text-lg font-semibold text-slate-900">Club automatic flight import</h2>
           <p class="text-sm text-slate-600">
             Connect automatic flight logging from your club. We will email the organisation with your
@@ -602,7 +734,43 @@ async function retrySubmit(): Promise<void> {
             >
               {{ ORGANIZATION_AUTOMATION_FORM_NOTICE }}
             </p>
-            <label v-if="selectedOrganization" class="mt-3 flex items-start gap-3 text-sm text-slate-700">
+            <label v-if="selectedOrganization" class="mt-4 block text-sm">
+              <span class="font-medium text-slate-700">My flights to import</span>
+              <span class="mt-2 flex gap-1.5 overflow-x-auto" role="radiogroup" aria-label="Import flights">
+                <button
+                  type="button"
+                  class="rounded-full px-3 py-1.5 text-sm font-medium transition"
+                  :class="
+                    automationImportMode === 'all'
+                      ? 'bg-sky-700 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  "
+                  @click="automationImportMode = 'all'"
+                >
+                  All flights
+                </button>
+                <button
+                  type="button"
+                  class="rounded-full px-3 py-1.5 text-sm font-medium transition"
+                  :class="
+                    automationImportMode === 'from_date'
+                      ? 'bg-sky-700 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  "
+                  @click="automationImportMode = 'from_date'"
+                >
+                  From date
+                </button>
+              </span>
+            </label>
+            <label
+              v-if="selectedOrganization && automationImportMode === 'from_date'"
+              class="mt-3 block text-sm"
+            >
+              <span class="font-medium text-slate-700">Import flights from</span>
+              <input v-model="automationImportFromDate" type="date" class="field-control" required />
+            </label>
+            <label v-if="selectedOrganization" class="mt-4 flex items-start gap-3 text-sm text-slate-700">
               <input v-model="clubAutomationConsent" type="checkbox" class="mt-1" />
               <span>
                 I agree that {{ selectedOrganization.name }} may receive access to my logbook
@@ -614,10 +782,11 @@ async function retrySubmit(): Promise<void> {
             </p>
           </template>
         </template>
+        -->
 
         <div class="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
           <ActionButton
-            v-if="step > STEP_SETUP"
+            v-if="step > STEP_PERSONAL"
             type="button"
             variant="secondary"
             :disabled="mutating"
@@ -632,9 +801,10 @@ async function retrySubmit(): Promise<void> {
             :busy="nextBusy"
             :disabled="nextDisabled"
           >
-            {{ step === STEP_CLUB ? 'Save logbook details' : 'Next' }}
+            {{ step === STEP_QUALIFICATIONS ? 'Save logbook details' : 'Next' }}
           </ActionButton>
         </div>
+        </fieldset>
       </form>
     </section>
   </div>
@@ -646,9 +816,4 @@ async function retrySubmit(): Promise<void> {
   scrollbar-width: thin;
 }
 
-:deep(.manual-instruction a) {
-  color: rgb(3 105 161);
-  font-weight: 500;
-  text-decoration: underline;
-}
 </style>

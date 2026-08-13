@@ -1,4 +1,4 @@
-import { readonly, ref } from 'vue'
+import { computed, readonly, ref } from 'vue'
 import * as logbookApi from '@/api/logbook'
 import { isApiError } from '@/api/errors'
 import type { LogbookStatus } from '@/types'
@@ -14,6 +14,7 @@ const loading = ref(false)
 const initialized = ref(false)
 const mutating = ref(false)
 const error = ref<string | null>(null)
+const templateEngine = computed(() => status.value?.template_engine || null)
 const CREATION_JOB_KEY = 'glider-pilot-logbook-creation-job'
 let creationGeneration = 0
 
@@ -166,6 +167,7 @@ export function useLogbook() {
 
   return {
     status: readonly(status),
+    templateEngine: readonly(templateEngine),
     creationJob: readonly(creationJob),
     loading: readonly(loading),
     initialized: readonly(initialized),

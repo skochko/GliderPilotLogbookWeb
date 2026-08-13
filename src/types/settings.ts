@@ -3,10 +3,28 @@ export interface DateFormatOption {
   label: string
 }
 
+export type TemplateEngineKey = 'legacy' | 'v3'
+
 export interface SheetSettingsDateFormatFields {
   date_format: string
   date_format_strftime?: string
   date_format_options?: DateFormatOption[]
+}
+
+export interface SheetSettingsTemplateFields {
+  template_version?: string
+  template_version_name?: string
+  template_version_slug?: string
+  template_version_raw?: string
+  template_engine?: TemplateEngineKey | string
+  capabilities?: SettingsCapabilities
+}
+
+export interface SettingsCapabilities {
+  editable_fields: string[]
+  display_preferences: boolean
+  medical_settings: boolean
+  summary_dates: boolean
 }
 
 export interface SheetDisplaySettings {
@@ -29,9 +47,12 @@ export interface SheetSettingsProfileFields {
   license_authority?: string
   prior_total_time?: string
   prior_pic_time?: string
+  prior_pic_flight_count?: string | number
   prior_p2_time?: string
+  prior_p2_flight_count?: string | number
   prior_instructor_time?: string
-  prior_flight_count?: number
+  prior_instructor_flight_count?: string | number
+  prior_flight_count?: number | string
   prior_kms_flown?: string
   medical_type?: string
   medical_issue_date?: string | null

@@ -7,6 +7,7 @@ import PwaInstallSection from '@/components/PwaInstallSection.vue'
 import { isApiError } from '@/api/errors'
 import { useFlashMessage } from '@/composables/useFlashMessage'
 import { useSettings } from '@/composables/useSettings'
+import { useLogbook } from '@/composables/useLogbook'
 import {
   applySheetSettingsToLogbookProfileForm,
   buildSettingsPatch,
@@ -15,9 +16,15 @@ import {
 import type { LogbookProfileFormState } from '@/lib/logbookProfile'
 import { isBiPrivilege, isFiPrivilege, usePilotPrivileges } from '@/composables/usePilotPrivileges'
 import { useLicenseOptions, withLegacyLookupOption } from '@/composables/useLicenseOptions'
-import type { SheetSettings } from '@/types'
+import type { SheetSettings, SheetSettingsPatch } from '@/types'
+import { resolveSettingsTemplate, type SettingsSection } from '@/features/settings/templates'
 
 const { settings, loading, initialized, mutating, error, fetch, save } = useSettings()
+const {
+  templateEngine,
+  initialized: logbookInitialized,
+  fetchStatus: fetchLogbookStatus,
+} = useLogbook()
 const { show } = useFlashMessage()
 const {
   options: pilotPrivilegeOptions,
@@ -25,6 +32,7 @@ const {
   error: pilotPrivilegesError,
   load: loadPilotPrivileges,
   isInstructorPrivilege,
+  noticeForPrivilege,
 } = usePilotPrivileges()
 const {
   licenseTypes,
@@ -37,21 +45,36 @@ const {
 const form = reactive<LogbookProfileFormState>(emptyLogbookProfileForm())
 const submitError = ref<string | null>(null)
 
+const templateAdapter = computed(() =>
+  settings.value
+    ? resolveSettingsTemplate(settings.value as SheetSettings, templateEngine.value)
+    : null,
+)
 const dateFormatOptions = computed(() => settings.value?.date_format_options ?? [])
-const licenseTypeOptions = computed(() => withLegacyLookupOption(licenseTypes.value, form.license_type))
+const licenseTypeOptions = computed(() =>
+  withLegacyLookupOption(licenseTypes.value, form.license_type),
+)
 const licenseAuthorityOptions = computed(() =>
   withLegacyLookupOption(licenseAuthorities.value, form.license_authority),
 )
 const showInstructorFields = computed(() => isInstructorPrivilege(form.pilot_privilege))
 const showBiRefDate = computed(() => isBiPrivilege(form.pilot_privilege))
 const showFiDates = computed(() => isFiPrivilege(form.pilot_privilege))
+const pilotPrivilegeNotice = computed(() => noticeForPrivilege(form.pilot_privilege))
+const canEdit = (field: keyof SheetSettingsPatch) => templateAdapter.value?.canEdit(field) ?? false
+const shows = (section: SettingsSection) => templateAdapter.value?.shows(section) ?? false
 
 function applySettingsToForm(data: SheetSettings): void {
   applySheetSettingsToLogbookProfileForm(form, data)
 }
 
 onMounted(async () => {
-  await Promise.all([fetch(), loadPilotPrivileges(), loadLicenseOptions()])
+  await Promise.all([
+    fetch(),
+    logbookInitialized.value ? Promise.resolve() : fetchLogbookStatus(),
+    loadPilotPrivileges(),
+    loadLicenseOptions(),
+  ])
   if (settings.value) {
     applySettingsToForm(settings.value as SheetSettings)
   }
@@ -61,13 +84,13 @@ async function onSubmit(): Promise<void> {
   if (mutating.value) return
 
   submitError.value = null
-  if (!form.pilot_name.trim()) {
+  if (canEdit('pilot_name') && !form.pilot_name.trim()) {
     submitError.value = 'Pilot name is required'
     return
   }
 
   try {
-    const updated = await save(buildSettingsPatch(form))
+    const updated = await save(buildSettingsPatch(form, canEdit))
     if (updated) {
       applySettingsToForm(updated as SheetSettings)
     }
@@ -81,8 +104,12 @@ async function onSubmit(): Promise<void> {
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">Settings</h1>
-      <p class="mt-1 text-slate-600">Edit your logbook profile and sheet preferences.</p>
+      <h1 class="text-2xl font-bold text-slate-900">
+        {{ templateAdapter?.title ?? 'Settings' }}
+      </h1>
+      <p class="mt-1 text-slate-600">
+        {{ templateAdapter?.description ?? 'Edit your logbook settings.' }}
+      </p>
     </div>
 
     <LoadingState v-if="!initialized" />
@@ -108,7 +135,7 @@ async function onSubmit(): Promise<void> {
       class="space-y-8 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
       @submit.prevent="onSubmit"
     >
-      <section class="space-y-4">
+      <section v-if="shows('displayPreferences')" class="space-y-4">
         <h2 class="text-lg font-semibold text-slate-900">Sheet behaviour</h2>
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="block text-sm">
@@ -119,6 +146,13 @@ async function onSubmit(): Promise<void> {
               </option>
             </select>
           </label>
+          <p
+            v-if="pilotPrivilegeNotice"
+            class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 sm:col-span-2"
+            role="alert"
+          >
+            {{ pilotPrivilegeNotice }}
+          </p>
 
           <label class="block text-sm">
             <span class="font-medium text-slate-700">Sort direction</span>
@@ -153,36 +187,52 @@ async function onSubmit(): Promise<void> {
       <section class="space-y-4 border-t border-slate-200 pt-6">
         <h2 class="text-lg font-semibold text-slate-900">Personal</h2>
         <div class="grid gap-4 sm:grid-cols-2">
-          <label class="block text-sm sm:col-span-2">
-            <span class="font-medium text-slate-700">Pilot name <span class="text-red-600">*</span></span>
+          <label v-if="canEdit('pilot_name')" class="block text-sm sm:col-span-2">
+            <span class="font-medium text-slate-700"
+              >Pilot name <span class="text-red-600">*</span></span
+            >
             <input v-model="form.pilot_name" type="text" class="field-control" required />
           </label>
 
-          <label class="block text-sm sm:col-span-2">
+          <label v-if="canEdit('pilot_address')" class="block text-sm sm:col-span-2">
             <span class="font-medium text-slate-700">Pilot address</span>
             <input v-model="form.pilot_address" type="text" class="field-control" />
           </label>
 
-          <label class="block text-sm">
+          <label v-if="canEdit('pilot_privilege')" class="block text-sm">
             <span class="font-medium text-slate-700">Pilot privilege</span>
-            <select v-model="form.pilot_privilege" class="field-control" :disabled="pilotPrivilegesLoading">
-              <option v-for="option in pilotPrivilegeOptions" :key="option.code" :value="option.code">
+            <select
+              v-model="form.pilot_privilege"
+              class="field-control"
+              :disabled="pilotPrivilegesLoading"
+            >
+              <option
+                v-for="option in pilotPrivilegeOptions"
+                :key="option.code"
+                :value="option.code"
+              >
                 {{ option.name }}
               </option>
             </select>
           </label>
 
-          <label v-if="showInstructorFields" class="block text-sm">
+          <label
+            v-if="showInstructorFields && canEdit('instructor_from_date')"
+            class="block text-sm"
+          >
             <span class="font-medium text-slate-700">Instructor from date</span>
             <input v-model="form.instructor_from_date" type="date" class="field-control" />
           </label>
 
-          <label v-if="showBiRefDate" class="block text-sm">
+          <label
+            v-if="shows('summaryDates') && showBiRefDate && canEdit('bi_ref_date')"
+            class="block text-sm"
+          >
             <span class="font-medium text-slate-700">BI — refresh training date</span>
             <input v-model="form.bi_ref_date" type="date" class="field-control" />
           </label>
 
-          <template v-if="showFiDates">
+          <template v-if="shows('summaryDates') && showFiDates">
             <label class="block text-sm">
               <span class="font-medium text-slate-700">FI — refresh training date</span>
               <input v-model="form.fi_3year_date" type="date" class="field-control" />
@@ -200,7 +250,11 @@ async function onSubmit(): Promise<void> {
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="block text-sm">
             <span class="font-medium text-slate-700">License type</span>
-            <select v-model="form.license_type" class="field-control" :disabled="licenseOptionsLoading">
+            <select
+              v-model="form.license_type"
+              class="field-control"
+              :disabled="licenseOptionsLoading"
+            >
               <option value="">—</option>
               <option v-for="option in licenseTypeOptions" :key="option.code" :value="option.code">
                 {{ option.name }}
@@ -217,9 +271,17 @@ async function onSubmit(): Promise<void> {
           </label>
           <label class="block text-sm">
             <span class="font-medium text-slate-700">License authority</span>
-            <select v-model="form.license_authority" class="field-control" :disabled="licenseOptionsLoading">
+            <select
+              v-model="form.license_authority"
+              class="field-control"
+              :disabled="licenseOptionsLoading"
+            >
               <option value="">—</option>
-              <option v-for="option in licenseAuthorityOptions" :key="option.code" :value="option.code">
+              <option
+                v-for="option in licenseAuthorityOptions"
+                :key="option.code"
+                :value="option.code"
+              >
                 {{ option.name }}
               </option>
             </select>
@@ -232,15 +294,48 @@ async function onSubmit(): Promise<void> {
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="block text-sm">
             <span class="font-medium text-slate-700">Total time</span>
-            <input v-model="form.prior_total_time" type="text" placeholder="H:MM" class="field-control" />
+            <input
+              v-model="form.prior_total_time"
+              type="text"
+              placeholder="H:MM"
+              class="field-control"
+            />
           </label>
           <label class="block text-sm">
             <span class="font-medium text-slate-700">PIC time</span>
-            <input v-model="form.prior_pic_time" type="text" placeholder="H:MM" class="field-control" />
+            <input
+              v-model="form.prior_pic_time"
+              type="text"
+              placeholder="H:MM"
+              class="field-control"
+            />
+          </label>
+          <label class="block text-sm">
+            <span class="font-medium text-slate-700">PIC flights</span>
+            <input
+              v-model="form.prior_pic_flight_count"
+              type="number"
+              min="0"
+              class="field-control"
+            />
           </label>
           <label class="block text-sm">
             <span class="font-medium text-slate-700">P2 time</span>
-            <input v-model="form.prior_p2_time" type="text" placeholder="H:MM" class="field-control" />
+            <input
+              v-model="form.prior_p2_time"
+              type="text"
+              placeholder="H:MM"
+              class="field-control"
+            />
+          </label>
+          <label class="block text-sm">
+            <span class="font-medium text-slate-700">P2 flights</span>
+            <input
+              v-model="form.prior_p2_flight_count"
+              type="number"
+              min="0"
+              class="field-control"
+            />
           </label>
           <label v-if="showInstructorFields" class="block text-sm">
             <span class="font-medium text-slate-700">Instructor time</span>
@@ -251,8 +346,17 @@ async function onSubmit(): Promise<void> {
               class="field-control"
             />
           </label>
+          <label v-if="showInstructorFields" class="block text-sm">
+            <span class="font-medium text-slate-700">Instructor flights</span>
+            <input
+              v-model="form.prior_instructor_flight_count"
+              type="number"
+              min="0"
+              class="field-control"
+            />
+          </label>
           <label class="block text-sm">
-            <span class="font-medium text-slate-700">Landings</span>
+            <span class="font-medium text-slate-700">Total flights</span>
             <input v-model="form.prior_flight_count" type="number" min="0" class="field-control" />
           </label>
           <label class="block text-sm">
@@ -262,7 +366,7 @@ async function onSubmit(): Promise<void> {
         </div>
       </section>
 
-      <section class="space-y-4 border-t border-slate-200 pt-6">
+      <section v-if="shows('medical')" class="space-y-4 border-t border-slate-200 pt-6">
         <h2 class="text-lg font-semibold text-slate-900">Current medical</h2>
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="block text-sm">
@@ -280,13 +384,13 @@ async function onSubmit(): Promise<void> {
         </div>
       </section>
 
-      <section class="space-y-4 border-t border-slate-200 pt-6">
+      <section v-if="shows('clubImport')" class="space-y-4 border-t border-slate-200 pt-6">
         <div>
           <h2 class="text-lg font-semibold text-slate-900">Club flight import</h2>
           <p class="mt-1 text-sm text-slate-600">
-            When club automation syncs flights into your logbook, only flights on or after this date are
-            imported. Set a date if you do not want older club records loaded; leave empty to include all
-            available history.
+            When club automation syncs flights into your logbook, only flights on or after this date
+            are imported. Set a date if you do not want older club records loaded; leave empty to
+            include all available history.
           </p>
         </div>
         <label class="block max-w-md text-sm">

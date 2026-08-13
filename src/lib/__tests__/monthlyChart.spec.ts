@@ -10,7 +10,6 @@ import {
   chartSparseLabelIndices,
   defaultChartYear,
   formatChartHours,
-  formatMonthChartDetailLabel,
   formatMonthDetailLabel,
   formatMonthRangeDetailLabel,
   formatMonthShortLabel,

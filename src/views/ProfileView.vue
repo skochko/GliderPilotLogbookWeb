@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'

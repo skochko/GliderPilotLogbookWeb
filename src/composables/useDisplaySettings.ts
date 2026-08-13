@@ -24,6 +24,13 @@ export function setDisplaySettings(data: SheetDisplaySettings): void {
 }
 
 export function applyDisplaySettingsFromSheet(settings: SheetSettings): void {
+  if (
+    typeof settings.sort_direction !== 'string' ||
+    typeof settings.zebra_color !== 'string' ||
+    typeof settings.header_color !== 'string'
+  ) {
+    return
+  }
   setDisplaySettings({
     sort_direction: settings.sort_direction,
     zebra_color: settings.zebra_color,

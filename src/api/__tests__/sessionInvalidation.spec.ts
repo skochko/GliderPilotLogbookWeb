@@ -12,7 +12,7 @@ describe('notifyAccountIncomplete', () => {
   })
 
   it('invokes registered handler once', async () => {
-    const handler = vi.fn().mockResolvedValue(undefined)
+    const handler = vi.fn<(message: string) => Promise<void>>().mockResolvedValue(undefined)
     registerAccountIncompleteHandler(handler)
 
     await notifyAccountIncomplete('Please sign in again with Google.')

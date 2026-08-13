@@ -13,10 +13,13 @@ import { isApiError } from '@/api/errors'
 import { useDashboardStatus } from '@/composables/useDashboardStatus'
 import { useDisplaySettings } from '@/composables/useDisplaySettings'
 import { useFlashMessage } from '@/composables/useFlashMessage'
+import { useAuth } from '@/composables/useAuth'
 import { useLogbookSync } from '@/composables/useLogbookSync'
+import { usePilotPrivileges } from '@/composables/usePilotPrivileges'
 import { useStatistics } from '@/composables/useStatistics'
 import type { Flight } from '@/types'
 
+const { user } = useAuth()
 const { statistics, loading: statsLoading, initialized: statsInitialized, error: statsError, fetch: fetchStatistics } =
   useStatistics()
 const {
@@ -27,6 +30,7 @@ const {
   fetch: fetchDashboardStatus,
 } = useDashboardStatus()
 const { displaySettings, ensureLoaded } = useDisplaySettings()
+const { options: pilotPrivilegeOptions, load: loadPilotPrivileges } = usePilotPrivileges()
 const { clear: clearFlashMessage, kind: flashKind } = useFlashMessage()
 const { status: syncStatus, showProgress, syncError, syncCompleteCount, startPolling } = useLogbookSync()
 
@@ -34,8 +38,15 @@ const recentFlights = ref<Flight[]>([])
 const recentFlightsLoading = ref(false)
 const recentFlightsError = ref<string | null>(null)
 const recentFlightsInitialized = ref(false)
+const setupReminderVisible = computed(
+  () => Boolean(user.value?.has_logbook && !user.value.logbook_setup_completed),
+)
 
 const pilotName = computed(() => displaySettings.value?.pilot_name ?? '')
+const pilotPrivilegeNotice = computed(() => {
+  const privilege = dashboardStatus.value?.pilot_privilege
+  return pilotPrivilegeOptions.value.find((option) => option.code === privilege)?.notice ?? ''
+})
 const lastFlight = computed<Flight | null>(() => {
   return (
     [...recentFlights.value]
@@ -76,6 +87,7 @@ async function refreshDashboardData(): Promise<void> {
 
 async function fetchDashboard(): Promise<void> {
   void startPolling()
+  void loadPilotPrivileges()
   await refreshDashboardData()
 }
 
@@ -111,6 +123,27 @@ watch(initialized, (ready) => {
       <p class="mt-0.5 text-sm text-slate-500">Overview of your flying activity.</p>
     </div>
 
+    <section
+      v-if="setupReminderVisible"
+      class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-950 shadow-sm"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="font-semibold">Complete your logbook setup</h2>
+          <p class="mt-1 text-sm text-amber-900">
+            Add your PMD, qualification and previous flight information for full requirements
+            tracking and accurate statistics.
+          </p>
+          <RouterLink
+            to="/logbook/setup"
+            class="mt-3 inline-flex font-medium text-amber-900 underline hover:text-amber-700"
+          >
+            Complete setup
+          </RouterLink>
+        </div>
+      </div>
+    </section>
+
     <LogbookSyncProgress
       v-if="showProgress && syncStatus"
       :loaded="syncStatus.loaded"
@@ -133,6 +166,7 @@ watch(initialized, (ready) => {
         :status="dashboardStatus"
         :pilot-name="pilotName"
         :last-flight="lastFlight"
+        :pilot-privilege-notice="pilotPrivilegeNotice"
       />
 
       <DashboardFlyingTotals :statistics="statistics" />

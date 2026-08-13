@@ -10,8 +10,11 @@ export interface LogbookCreateLicense {
 export interface LogbookCreatePriorTotals {
   total_time?: string
   pic_time?: string
+  pic_flight_count?: number | null
   p2_time?: string
+  p2_flight_count?: number | null
   instructor_time?: string
+  instructor_flight_count?: number | null
   flight_count?: number | null
   kms_flown?: string
 }
@@ -26,6 +29,7 @@ export interface LogbookCreateRequest {
   pilot_name: string
   source?: 'direct' | 'club_link'
   automation_consent?: boolean
+  automation_import_from_date?: string | null
   pilot_address?: string
   pilot_privilege?: PilotPrivilege
   instructor_from_date?: string
@@ -42,6 +46,7 @@ export interface ClubAutomationRequestSummary {
   id: number
   organization_name: string
   status: string
+  automation_supported: boolean
   message: string
 }
 
@@ -50,6 +55,7 @@ export interface LogbookCreateResponse {
   spreadsheet_id: string
   title: string
   sheets: string[]
+  template_engine?: import('./settings').TemplateEngineKey | ''
   template_version?: string
   template_version_name?: string
   template_version_slug?: string
@@ -96,13 +102,17 @@ export interface LogbookCreateFormState {
   license_authority: string
   prior_total_time: string
   prior_pic_time: string
+  prior_pic_flight_count: string
   prior_p2_time: string
+  prior_p2_flight_count: string
   prior_instructor_time: string
+  prior_instructor_flight_count: string
   prior_flight_count: string | number
   prior_kms_flown: string
   medical_type: string
   medical_issue_date: string
   medical_expire_date: string
+  automation_import_from_date: string
 }
 
 export const defaultLogbookCreateForm = (): LogbookCreateFormState => ({
@@ -119,11 +129,15 @@ export const defaultLogbookCreateForm = (): LogbookCreateFormState => ({
   license_authority: '',
   prior_total_time: '',
   prior_pic_time: '',
+  prior_pic_flight_count: '',
   prior_p2_time: '',
+  prior_p2_flight_count: '',
   prior_instructor_time: '',
+  prior_instructor_flight_count: '',
   prior_flight_count: '',
   prior_kms_flown: '',
   medical_type: '',
   medical_issue_date: '',
   medical_expire_date: '',
+  automation_import_from_date: '',
 })

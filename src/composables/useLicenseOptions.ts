@@ -15,7 +15,8 @@ let loadPromise: Promise<void> | null = null
 
 export function withLegacyLookupOption(options: LookupOption[], currentValue: string): LookupOption[] {
   const value = currentValue.trim()
-  if (!value || options.some((option) => option.code === value)) {
+  const normalizedValue = value.toLowerCase()
+  if (!value || options.some((option) => option.code.toLowerCase() === normalizedValue)) {
     return options
   }
   return [...options, { code: value, name: `${value} (from logbook)` }]

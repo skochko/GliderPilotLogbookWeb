@@ -11,7 +11,8 @@ export interface CreateLogbookWizardState {
   skippedMedical: boolean
   skippedClubAutomation: boolean
   selectedOrganizationId: number | null
-  manualConfirmed: boolean
+  automationImportMode?: 'all' | 'from_date'
+  automationImportFromDate?: string
 }
 
 interface LegacyCreateLogbookWizardState extends CreateLogbookWizardState {

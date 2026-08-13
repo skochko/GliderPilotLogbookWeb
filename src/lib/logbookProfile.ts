@@ -18,8 +18,11 @@ export interface LogbookProfileFormState {
   license_authority: string
   prior_total_time: string
   prior_pic_time: string
+  prior_pic_flight_count: string
   prior_p2_time: string
+  prior_p2_flight_count: string
   prior_instructor_time: string
+  prior_instructor_flight_count: string
   prior_flight_count: string | number
   prior_kms_flown: string
   medical_type: string
@@ -47,10 +50,15 @@ export function applySheetSettingsToLogbookProfileForm(
   form.license_authority = data.license_authority ?? ''
   form.prior_total_time = data.prior_total_time ?? ''
   form.prior_pic_time = data.prior_pic_time ?? ''
+  form.prior_pic_flight_count =
+    data.prior_pic_flight_count != null ? String(data.prior_pic_flight_count) : ''
   form.prior_p2_time = data.prior_p2_time ?? ''
+  form.prior_p2_flight_count =
+    data.prior_p2_flight_count != null ? String(data.prior_p2_flight_count) : ''
   form.prior_instructor_time = data.prior_instructor_time ?? ''
-  form.prior_flight_count =
-    data.prior_flight_count != null ? String(data.prior_flight_count) : ''
+  form.prior_instructor_flight_count =
+    data.prior_instructor_flight_count != null ? String(data.prior_instructor_flight_count) : ''
+  form.prior_flight_count = data.prior_flight_count != null ? String(data.prior_flight_count) : ''
   form.prior_kms_flown = data.prior_kms_flown ?? ''
   form.medical_type = data.medical_type ?? ''
   form.medical_issue_date = data.medical_issue_date ?? ''
@@ -75,8 +83,11 @@ export function emptyLogbookProfileForm(): LogbookProfileFormState {
     license_authority: '',
     prior_total_time: '',
     prior_pic_time: '',
+    prior_pic_flight_count: '',
     prior_p2_time: '',
+    prior_p2_flight_count: '',
     prior_instructor_time: '',
+    prior_instructor_flight_count: '',
     prior_flight_count: '',
     prior_kms_flown: '',
     medical_type: '',
@@ -86,7 +97,10 @@ export function emptyLogbookProfileForm(): LogbookProfileFormState {
   }
 }
 
-export function buildSettingsPatch(form: LogbookProfileFormState): SheetSettingsPatch {
+export function buildSettingsPatch(
+  form: LogbookProfileFormState,
+  canEdit: (field: keyof SheetSettingsPatch) => boolean = () => true,
+): SheetSettingsPatch {
   const patch: SheetSettingsPatch = {
     date_format: form.date_format,
     sort_direction: form.sort_direction,
@@ -101,8 +115,12 @@ export function buildSettingsPatch(form: LogbookProfileFormState): SheetSettings
     license_authority: form.license_authority.trim(),
     prior_total_time: form.prior_total_time.trim(),
     prior_pic_time: form.prior_pic_time.trim(),
+    prior_pic_flight_count: parseOptionalFlightCount(form.prior_pic_flight_count) ?? 0,
     prior_p2_time: form.prior_p2_time.trim(),
+    prior_p2_flight_count: parseOptionalFlightCount(form.prior_p2_flight_count) ?? 0,
     prior_instructor_time: form.prior_instructor_time.trim(),
+    prior_instructor_flight_count:
+      parseOptionalFlightCount(form.prior_instructor_flight_count) ?? 0,
     prior_flight_count: parseOptionalFlightCount(form.prior_flight_count) ?? 0,
     prior_kms_flown: form.prior_kms_flown.trim(),
     medical_type: form.medical_type.trim(),
@@ -121,5 +139,7 @@ export function buildSettingsPatch(form: LogbookProfileFormState): SheetSettings
     patch.fi_ref_date = form.fi_ref_date || null
   }
 
-  return patch
+  return Object.fromEntries(
+    Object.entries(patch).filter(([field]) => canEdit(field as keyof SheetSettingsPatch)),
+  ) as SheetSettingsPatch
 }

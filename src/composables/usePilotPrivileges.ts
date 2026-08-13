@@ -38,6 +38,10 @@ export function usePilotPrivileges() {
     return code === 'BI' || code === 'FI'
   }
 
+  function noticeForPrivilege(code: string): string {
+    return options.value.find((option) => option.code === code)?.notice ?? ''
+  }
+
   const defaultCode = computed(
     () =>
       options.value.find((option) => option.code === 'SPL Pilot')?.code ??
@@ -53,6 +57,7 @@ export function usePilotPrivileges() {
     defaultCode,
     load,
     isInstructorPrivilege,
+    noticeForPrivilege,
   }
 }
 

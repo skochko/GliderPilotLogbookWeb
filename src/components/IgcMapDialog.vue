@@ -37,7 +37,6 @@ const selectedIndex = ref<number | null>(null)
 const mapContainer = ref<HTMLElement | null>(null)
 
 let map: L.Map | null = null
-let trackLayer: L.LayerGroup | null = null
 let selectionMarker: L.CircleMarker | null = null
 let trackBounds: L.LatLngBounds | null = null
 
@@ -52,7 +51,6 @@ const selectedPoint = computed(() => {
 
 function destroyMap(): void {
   selectionMarker = null
-  trackLayer = null
   trackBounds = null
   if (map) {
     map.remove()
@@ -185,7 +183,7 @@ function renderTrack(content: string): void {
     }).bindTooltip(`End ${formatIgcTime(end.time)}`, { direction: 'top' }),
   )
 
-  trackLayer = L.layerGroup(layers).addTo(map)
+  L.layerGroup(layers).addTo(map)
   trackBounds = L.latLngBounds(parsed.points.map((point) => [point.lat, point.lng] as [number, number]))
   refreshMapLayout()
 }

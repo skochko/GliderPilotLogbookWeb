@@ -12,20 +12,44 @@ import type {
   DashboardSummaryItem,
 } from './dashboard'
 
-import type { SheetSettingsDateFormatFields, SheetSettingsProfileFields } from './settings'
+import type {
+  SheetSettingsDateFormatFields,
+  SheetSettingsProfileFields,
+  SheetSettingsTemplateFields,
+} from './settings'
 
-export type UserMe = components['schemas']['UserMe']
+export type UserMe = components['schemas']['UserMe'] & {
+  logbook_setup_completed: boolean
+}
 export type Flight = components['schemas']['Flight'] & {
   media?: readonly import('./flightMedia').FlightMediaItem[]
 }
 export type { FlightMediaItem, FlightMediaFolder, FlightMediaUploadResponse } from './flightMedia'
-export type { FlightDatePresetId, FlightFilterOptions, FlightListFilters, FlightListParams, FlightListResponse, FlightPilotRoleFilter, FlightSortBy } from './flights'
+export type {
+  FlightDatePresetId,
+  FlightFilterOptions,
+  FlightListFilters,
+  FlightListParams,
+  FlightListResponse,
+  FlightPilotRoleFilter,
+  FlightSortBy,
+} from './flights'
 export type FlightCreateRequest = components['schemas']['FlightCreateRequest']
 export type FlightPatchRequest = components['schemas']['PatchedFlightPatchRequest']
-export type LogbookStatus = components['schemas']['LogbookStatus']
+export type LogbookStatus = components['schemas']['LogbookStatus'] & {
+  template_engine?: import('./settings').TemplateEngineKey | ''
+  template_version?: string
+  template_version_name?: string
+  template_version_slug?: string
+  template_version_raw?: string
+  template_version_supported?: boolean
+  template_upgrade_available?: string | null
+  public_template_copy_url?: string
+}
 export type SheetSettings = components['schemas']['SheetSettings'] &
   SheetSettingsDateFormatFields &
-  SheetSettingsProfileFields
+  SheetSettingsProfileFields &
+  SheetSettingsTemplateFields
 export type SheetSettingsPatch = components['schemas']['PatchedSheetSettingsPatchRequest'] &
   SheetSettingsProfileFields
 export type Statistics = import('./statistics').Statistics
@@ -35,7 +59,7 @@ export type ProfilePatch = components['schemas']['PatchedProfilePatchRequest']
 export type Page = components['schemas']['Page']
 export type SitePageType = components['schemas']['PageTypeEnum']
 export type { LogbookCreateRequest } from './logbookCreate'
-export type { DateFormatOption, SheetDisplaySettings } from './settings'
+export type { DateFormatOption, SheetDisplaySettings, TemplateEngineKey } from './settings'
 
 export type {
   DashboardLegalityChip,
