@@ -39,7 +39,7 @@ const props = defineProps<{
           {{ props.pilotPrivilegeNotice }}
         </p>
         <DashboardLegalityGroups
-          v-if="status.legality_groups?.length"
+          v-if="!props.pilotPrivilegeNotice && status.legality_groups?.length"
           :groups="status.legality_groups"
         />
         <p v-else-if="!props.pilotPrivilegeNotice" class="text-sm text-slate-500">
