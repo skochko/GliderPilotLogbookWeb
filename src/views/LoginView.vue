@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import GliderLogo from '@/components/GliderLogo.vue'
 import SiteFooter from '@/components/SiteFooter.vue'
 import { useAuth } from '@/composables/useAuth'
@@ -7,6 +7,13 @@ import { useFlashMessage } from '@/composables/useFlashMessage'
 
 const { login } = useAuth()
 const { message, kind, clear } = useFlashMessage()
+const route = useRoute()
+
+function continueWithGoogle(): void {
+  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+  const safeRedirect = redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : ''
+  login(safeRedirect ? `${window.location.origin}${safeRedirect}` : undefined)
+}
 </script>
 
 <template>
@@ -42,7 +49,7 @@ const { message, kind, clear } = useFlashMessage()
         <button
           type="button"
           class="mt-8 rounded-md bg-sky-700 px-6 py-3 text-sm font-medium text-white hover:bg-sky-800"
-          @click="login"
+          @click="continueWithGoogle"
         >
           Continue with Google
         </button>

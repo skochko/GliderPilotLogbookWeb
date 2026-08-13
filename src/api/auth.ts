@@ -10,8 +10,11 @@ export interface GoogleScopeStatus {
   drive_file: boolean
 }
 
-export function loginRedirect(): void {
-  window.location.href = `${API}/auth/google`
+export function loginRedirect(returnTo?: string): void {
+  const params = new URLSearchParams()
+  if (returnTo) params.set('return_to', returnTo)
+  const query = params.toString()
+  window.location.href = `${API}/auth/google${query ? `?${query}` : ''}`
 }
 
 export async function fetchGoogleScopes(): Promise<GoogleScopeStatus> {

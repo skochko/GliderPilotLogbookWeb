@@ -152,8 +152,15 @@ router.beforeEach(async (to) => {
   if (authParam === 'success') {
     await fetchMe()
     show('Signed in successfully.', 'success')
-    const destination = user.value?.has_logbook ? { name: 'dashboard' as const } : { name: 'connect' as const }
-    return { ...destination, replace: true }
+    const redirect = authGuardRedirect(to, user.value)
+    if (redirect !== true) {
+      return typeof redirect === 'string'
+        ? { path: redirect, replace: true }
+        : { ...redirect, replace: true }
+    }
+    const query = { ...to.query }
+    delete query.auth
+    return { path: to.path, query, hash: to.hash, replace: true }
   }
   if (authParam === 'error') {
     clear()

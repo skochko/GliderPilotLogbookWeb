@@ -40,8 +40,8 @@ export function useAuth() {
     return fetchMeInFlight
   }
 
-  function login(): void {
-    authApi.loginRedirect()
+  function login(returnTo?: string): void {
+    authApi.loginRedirect(returnTo)
   }
 
   async function logout(): Promise<void> {
