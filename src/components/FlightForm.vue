@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
+import AirfieldAutocomplete from '@/components/AirfieldAutocomplete.vue'
 import DatalistInput from '@/components/DatalistInput.vue'
 import { collectFlightFieldSuggestions } from '@/lib/flightSuggestions'
 import { launchTypeSelectOptions, normalizeLaunchTypeCode } from '@/lib/launchTypes'
@@ -173,10 +174,10 @@ function onSubmit(): void {
 
       <label class="block text-sm">
         <span class="font-medium text-slate-700">Departure</span>
-        <DatalistInput
+        <AirfieldAutocomplete
           v-model="form.departure_place"
           list-id="flight-departure-options"
-          :options="fieldSuggestions.departure_place"
+          :local-options="fieldSuggestions.departure_place"
         />
         <span v-if="fieldError('departure_place')" class="mt-1 block text-xs text-red-600">{{
           fieldError('departure_place')
@@ -197,10 +198,10 @@ function onSubmit(): void {
 
       <label class="block text-sm">
         <span class="font-medium text-slate-700">Arrival</span>
-        <DatalistInput
+        <AirfieldAutocomplete
           v-model="form.arrival_place"
           list-id="flight-arrival-options"
-          :options="fieldSuggestions.arrival_place"
+          :local-options="fieldSuggestions.arrival_place"
         />
         <span v-if="fieldError('arrival_place')" class="mt-1 block text-xs text-red-600">{{
           fieldError('arrival_place')
