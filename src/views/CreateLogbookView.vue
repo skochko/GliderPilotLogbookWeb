@@ -67,7 +67,7 @@ const stepsNavRef = ref<HTMLElement | null>(null)
 const validationError = ref<string | null>(null)
 const prefillLoading = ref(false)
 const prefillError = ref<string | null>(null)
-const prefillLoaded = ref(false)
+const setupDataLoaded = ref(false)
 const savingQualificationEvents = ref(false)
 
 const skippedLicense = ref(false)
@@ -116,7 +116,7 @@ const licenseAuthorityOptions = computed(() =>
 )
 const logbookConnected = computed(() => Boolean(user.value?.has_logbook))
 const setupDataLoading = computed(
-  () => postCreateSetup.value && (!prefillLoaded.value || prefillLoading.value),
+  () => postCreateSetup.value && (!setupDataLoaded.value || prefillLoading.value),
 )
 const nextDisabled = computed(
   () => setupDataLoading.value || mutating.value || savingQualificationEvents.value,
@@ -192,7 +192,6 @@ async function prefillFormFromConnectedLogbook(): Promise<void> {
     prefillError.value = 'Could not read details from your logbook.'
   } finally {
     prefillLoading.value = false
-    prefillLoaded.value = true
   }
 }
 
@@ -272,14 +271,13 @@ onMounted(async () => {
 
   if (postCreateSetup.value || (user.value?.has_logbook && !form.pilot_name.trim())) {
     await prefillFormFromConnectedLogbook()
-  } else {
-    prefillLoaded.value = true
   }
   if (isV3Template.value) {
     await loadQualificationEvents()
   } else {
     await loadLegacySummary()
   }
+  setupDataLoaded.value = true
 
   if (pendingSubmit) {
     await submit()
@@ -448,17 +446,22 @@ async function retrySubmit(): Promise<void> {
       @retry="loadLicenseOptions"
     />
     <ErrorBanner v-if="prefillError" :message="prefillError" @retry="prefillFormFromConnectedLogbook()" />
-    <div
+    <section
       v-if="setupDataLoading"
-      class="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900"
+      class="rounded-lg border border-sky-200 bg-white p-8 text-center shadow-sm"
       role="status"
+      aria-live="polite"
     >
-      Loading your current logbook data…
-    </div>
+      <LoadingState />
+      <p class="mt-3 text-sm font-medium text-sky-900">Loading your current logbook data…</p>
+      <p class="mt-1 text-xs text-slate-500">
+        The setup fields will be available when your saved information is ready.
+      </p>
+    </section>
 
-    <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <section v-else class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <form class="space-y-4" @submit.prevent="goNext">
-        <fieldset class="space-y-5" :disabled="setupDataLoading">
+        <fieldset class="space-y-5">
         <template v-if="step === STEP_PERSONAL">
           <h2 class="text-lg font-semibold text-slate-900">Personal information</h2>
 
