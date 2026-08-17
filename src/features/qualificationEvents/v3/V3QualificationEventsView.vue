@@ -77,7 +77,11 @@ async function saveEvents(nextEvents: QualificationEvent[]): Promise<void> {
   saving.value = true
   error.value = null
   try {
-    events.value = (await updateQualificationEvents(nextEvents)).events
+    const compatibleEvents = nextEvents.map((event) => ({
+      ...event,
+      date: event.date_completed,
+    }))
+    events.value = (await updateQualificationEvents(compatibleEvents)).events
     show('Qualification events saved.', 'success')
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Could not save qualification events.'
@@ -140,7 +144,7 @@ function formatEventDate(value: string): string {
           <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th class="px-4 py-3">Event type</th>
-              <th class="px-4 py-3">Dates</th>
+              <th class="px-4 py-3">Date completed</th>
               <th class="px-4 py-3">Place</th>
               <th class="px-4 py-3">Notes</th>
               <th class="px-4 py-3"><span class="sr-only">Actions</span></th>
@@ -150,10 +154,7 @@ function formatEventDate(value: string): string {
             <tr v-for="(event, index) in events" :key="event.id ?? index">
               <td class="px-4 py-3 font-medium text-slate-800">{{ event.event_type }}</td>
               <td class="whitespace-nowrap px-4 py-3 text-slate-600">
-                <div>{{ formatEventDate(event.date) }}</div>
-                <div v-if="event.date_completed" class="mt-1 text-xs text-slate-400">
-                  {{ formatEventDate(event.date_completed) }}
-                </div>
+                {{ formatEventDate(event.date_completed) }}
               </td>
               <td class="px-4 py-3 text-slate-600">{{ event.place || '—' }}</td>
               <td class="max-w-xs truncate px-4 py-3 text-slate-600">{{ event.remarks || '—' }}</td>
@@ -230,14 +231,7 @@ function formatEventDate(value: string): string {
               </select>
             </label>
             <label class="block text-sm">
-              <span class="font-medium text-slate-700">Date</span>
-              <input v-model="editingEvent.date" type="date" class="field-control mt-1" />
-            </label>
-            <label class="block text-sm">
               <span class="font-medium text-slate-700">Date completed</span>
-              <span class="mt-1 block text-xs text-slate-500">
-                Optional. Leave blank if the same as Date (e.g. multi-day course sign-off).
-              </span>
               <input v-model="editingEvent.date_completed" type="date" class="field-control mt-1" />
             </label>
             <label class="block text-sm">

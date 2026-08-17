@@ -219,7 +219,11 @@ async function saveQualificationEvents(): Promise<boolean> {
       Object.assign(legacySummary, await updateSummary(legacySummary))
       return true
     }
-    qualificationEvents.value = (await updateQualificationEvents(qualificationEvents.value)).events
+    const compatibleEvents = qualificationEvents.value.map((event) => ({
+      ...event,
+      date: event.date_completed,
+    }))
+    qualificationEvents.value = (await updateQualificationEvents(compatibleEvents)).events
     return true
   } catch (err) {
     validationError.value = err instanceof Error
@@ -672,14 +676,7 @@ async function retrySubmit(): Promise<void> {
                   </select>
                 </label>
                 <label class="block text-sm">
-                  <span class="font-medium text-slate-700">Date</span>
-                  <input v-model="event.date" type="date" class="field-control" />
-                </label>
-                <label class="block text-sm">
                   <span class="font-medium text-slate-700">Date completed</span>
-                  <span class="mt-1 block text-xs text-slate-500">
-                    Optional. Leave blank if the same as Date (e.g. multi-day course sign-off).
-                  </span>
                   <input v-model="event.date_completed" type="date" class="field-control" />
                 </label>
                 <label class="block text-sm">
