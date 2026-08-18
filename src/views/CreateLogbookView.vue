@@ -107,8 +107,12 @@ const stepLabels = [
 const totalSteps = stepLabels.length
 
 const showInstructorFields = computed(() => isInstructorPrivilege(form.pilot_privilege))
-const showBiRefDate = computed(() => isBiPrivilege(form.pilot_privilege))
-const showFiDates = computed(() => isFiPrivilege(form.pilot_privilege))
+const showBiRefDate = computed(
+  () => !isV3Template.value && isBiPrivilege(form.pilot_privilege),
+)
+const showFiDates = computed(
+  () => !isV3Template.value && isFiPrivilege(form.pilot_privilege),
+)
 const showLegacyQualificationDates = computed(() => !isV3Template.value)
 const licenseTypeOptions = computed(() => withLegacyLookupOption(licenseTypes.value, form.license_type))
 const licenseAuthorityOptions = computed(() =>
