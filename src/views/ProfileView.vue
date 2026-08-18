@@ -6,11 +6,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { isApiError } from '@/api/errors'
-import {
-  fetchGoogleScopes,
-  googleReconnectRedirect,
-  type GoogleScopeStatus,
-} from '@/api/auth'
+import { fetchGoogleScopes, googleReconnectRedirect, type GoogleScopeStatus } from '@/api/auth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
 import { useLogbookDisconnect } from '@/composables/useLogbookDisconnect'
 import { useProfile } from '@/composables/useProfile'
@@ -23,7 +19,7 @@ const { disconnectLogbook, disconnecting } = useLogbookDisconnect()
 
 const disconnectOpen = ref(false)
 
-const preferencesJson = ref('{}')
+const preferences = ref<Record<string, unknown>>({})
 const emailNotificationsEnabled = ref(true)
 const language = ref<'' | 'en' | 'ru'>('')
 const submitError = ref<string | null>(null)
@@ -92,7 +88,7 @@ async function handleReconnectQuery(): Promise<void> {
 onMounted(async () => {
   await fetch()
   if (profile.value) {
-    preferencesJson.value = JSON.stringify(profile.value.preferences ?? {}, null, 2)
+    preferences.value = profile.value.preferences ?? {}
     emailNotificationsEnabled.value = profile.value.email_notifications_enabled
     language.value = profile.value.language ?? ''
   }
@@ -112,16 +108,13 @@ async function onSubmit(): Promise<void> {
 
   submitError.value = null
   try {
-    const preferences = JSON.parse(preferencesJson.value) as Record<string, unknown>
     await save({
-      preferences,
+      preferences: preferences.value,
       email_notifications_enabled: emailNotificationsEnabled.value,
       language: language.value,
     })
   } catch (err) {
-    if (err instanceof SyntaxError) {
-      submitError.value = 'Preferences must be valid JSON'
-    } else if (isApiError(err)) {
+    if (isApiError(err)) {
       submitError.value = err.message
     } else {
       submitError.value = 'Failed to save profile'
@@ -183,10 +176,7 @@ async function confirmDisconnect(): Promise<void> {
             </dd>
           </div>
         </dl>
-        <div
-          v-if="hasLogbook"
-          class="mt-6 border-t border-slate-200 pt-6"
-        >
+        <div v-if="hasLogbook" class="mt-6 border-t border-slate-200 pt-6">
           <h3 class="text-sm font-semibold text-slate-900">Disconnect logbook</h3>
           <p class="mt-1 text-sm text-slate-600">
             Remove the link between this app and your spreadsheet. Your data in Google Sheets is not
@@ -221,17 +211,11 @@ async function confirmDisconnect(): Promise<void> {
         <ErrorBanner v-if="googleAccessError" class="mt-4" :message="googleAccessError" />
         <template v-else-if="googleScopes?.available">
           <ul class="mt-4 space-y-3 text-sm">
-            <li
-              v-for="item in googleAccessItems"
-              :key="item.key"
-              class="flex items-start gap-3"
-            >
+            <li v-for="item in googleAccessItems" :key="item.key" class="flex items-start gap-3">
               <span
                 class="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-bold"
                 :class="
-                  item.granted
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-slate-100 text-slate-400'
+                  item.granted ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-400'
                 "
                 :aria-label="item.granted ? 'Granted' : 'Not granted'"
               >
@@ -273,28 +257,6 @@ async function confirmDisconnect(): Promise<void> {
             />
             <span>Send me email reminders</span>
           </label>
-          <div class="mt-4">
-            <label for="language" class="block text-sm font-medium text-slate-700">Email language</label>
-            <select
-              id="language"
-              v-model="language"
-              class="mt-1 rounded-md border border-slate-300 px-3 py-2 text-sm"
-            >
-              <option value="">Default (English)</option>
-              <option value="en">English</option>
-              <option value="ru">Russian</option>
-            </select>
-          </div>
-        </section>
-
-        <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 class="font-semibold text-slate-900">Preferences (JSON)</h2>
-          <p class="mt-1 text-sm text-slate-600">Application-specific preferences stored on the server.</p>
-          <textarea
-            v-model="preferencesJson"
-            rows="8"
-            class="mt-4 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm"
-          />
         </section>
 
         <ActionButton type="submit" :busy="mutating">Save profile</ActionButton>

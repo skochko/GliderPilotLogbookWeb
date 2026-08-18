@@ -141,36 +141,89 @@ function formatEventDate(value: string): string {
         No events recorded yet. Add your first event to get started.
       </div>
       <template v-else>
-        <div class="divide-y divide-slate-100 md:hidden">
-          <article v-for="(event, index) in events" :key="event.id ?? index" class="p-4">
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <h2 class="font-medium text-slate-800">{{ event.event_type }}</h2>
-                <p class="mt-1 text-sm text-slate-600">
+        <div class="md:hidden">
+          <table class="w-full table-fixed text-left text-sm">
+            <thead class="bg-slate-50 text-xs text-slate-600">
+              <tr>
+                <th class="w-[5.75rem] px-2 py-2 font-medium">Date</th>
+                <th class="px-2 py-2 font-medium">Event</th>
+                <th class="px-2 py-2 font-medium">Notes</th>
+                <th class="w-[5rem] px-1 py-2"><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(event, index) in events"
+                :key="event.id ?? index"
+                class="border-t border-slate-100"
+              >
+                <td
+                  class="whitespace-nowrap px-2 py-2 align-top text-xs tabular-nums text-slate-600"
+                >
                   {{ formatEventDate(event.date_completed) }}
-                  <span aria-hidden="true"> · </span>
-                  {{ event.place || '—' }}
-                </p>
-              </div>
-            </div>
-            <p v-if="event.remarks" class="mt-3 text-sm text-slate-600">{{ event.remarks }}</p>
-            <div class="mt-4 flex gap-2">
-              <button
-                type="button"
-                class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50"
-                @click="openEdit(index)"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
-                @click="requestDelete(index)"
-              >
-                Delete
-              </button>
-            </div>
-          </article>
+                </td>
+                <td class="min-w-0 px-2 py-2 align-top">
+                  <p class="truncate font-medium text-slate-800" :title="event.event_type">
+                    {{ event.event_type }}
+                  </p>
+                  <p class="mt-0.5 truncate text-xs text-slate-500" :title="event.place">
+                    {{ event.place || '—' }}
+                  </p>
+                </td>
+                <td class="min-w-0 px-2 py-2 align-top text-slate-600">
+                  <p class="truncate" :title="event.remarks">{{ event.remarks || '—' }}</p>
+                </td>
+                <td class="px-1 py-1.5 align-middle">
+                  <div class="flex items-center justify-end gap-0.5">
+                    <button
+                      type="button"
+                      class="inline-flex items-center justify-center rounded-md p-1.5 text-sky-600 transition hover:bg-sky-50 hover:text-sky-800"
+                      aria-label="Edit event"
+                      title="Edit event"
+                      @click="openEdit(index)"
+                    >
+                      <svg
+                        class="h-6 w-6"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="m16.862 4.487 2.651 2.651M4 20h4l10.5-10.5a1.875 1.875 0 0 0-2.65-2.65L5.35 17.35 4 20Z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="inline-flex items-center justify-center rounded-md p-1.5 text-red-600 transition hover:bg-red-50 hover:text-red-800"
+                      aria-label="Delete event"
+                      title="Delete event"
+                      @click="requestDelete(index)"
+                    >
+                      <svg
+                        class="h-6 w-6"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M6 7h12m-9 0V5h6v2m-8 0 .7 12.2A2 2 0 0 0 9.7 21h4.6a2 2 0 0 0 1.999-1.8L17 7M10 11v6m4-6v6"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
         <div class="hidden overflow-x-auto md:block">
           <table class="w-full min-w-[760px] text-left text-sm">
