@@ -18,6 +18,7 @@ const error = ref<string | null>(null)
 const editingEvent = ref<QualificationEvent | null>(null)
 const editingIndex = ref<number | null>(null)
 const deleteIndex = ref<number | null>(null)
+const actionsMenuIndex = ref<number | null>(null)
 
 onMounted(loadEvents)
 
@@ -49,6 +50,7 @@ function openCreate(): void {
 }
 
 function openEdit(index: number): void {
+  actionsMenuIndex.value = null
   const event = events.value[index]
   if (!event) return
   editingIndex.value = index
@@ -70,11 +72,10 @@ async function saveEvent(): Promise<void> {
   } else {
     next[editingIndex.value] = editingEvent.value
   }
-  await saveEvents(next)
-  if (!error.value) closeEditor()
+  if (await saveEvents(next)) closeEditor()
 }
 
-async function saveEvents(nextEvents: QualificationEvent[]): Promise<void> {
+async function saveEvents(nextEvents: QualificationEvent[]): Promise<boolean> {
   saving.value = true
   error.value = null
   try {
@@ -84,22 +85,29 @@ async function saveEvents(nextEvents: QualificationEvent[]): Promise<void> {
     }))
     events.value = (await updateQualificationEvents(compatibleEvents)).events
     show('Qualification events saved.', 'success')
+    return true
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Could not save qualification events.'
+    return false
   } finally {
     saving.value = false
   }
 }
 
 function requestDelete(index: number): void {
+  actionsMenuIndex.value = null
   deleteIndex.value = index
 }
 
+function toggleActionsMenu(index: number): void {
+  actionsMenuIndex.value = actionsMenuIndex.value === index ? null : index
+}
+
 async function confirmDelete(): Promise<void> {
-  if (deleteIndex.value === null) return
-  const next = events.value.filter((_, index) => index !== deleteIndex.value)
-  deleteIndex.value = null
-  await saveEvents(next)
+  if (deleteIndex.value === null || saving.value) return
+  const indexToDelete = deleteIndex.value
+  const next = events.value.filter((_, index) => index !== indexToDelete)
+  if (await saveEvents(next)) deleteIndex.value = null
 }
 
 function formatEventDate(value: string): string {
@@ -125,7 +133,7 @@ function formatEventDate(value: string): string {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-6" @click="actionsMenuIndex = null">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1 class="text-2xl font-bold text-slate-900">Training &amp; Qualification Events</h1>
@@ -141,14 +149,14 @@ function formatEventDate(value: string): string {
         No events recorded yet. Add your first event to get started.
       </div>
       <template v-else>
-        <div class="md:hidden">
-          <table class="w-full table-fixed text-left text-sm">
+        <div class="overflow-x-auto md:hidden">
+          <table class="w-full min-w-[600px] text-left text-sm">
             <thead class="bg-slate-50 text-xs text-slate-600">
               <tr>
                 <th class="w-[5.75rem] px-2 py-2 font-medium">Date</th>
                 <th class="px-2 py-2 font-medium">Event</th>
                 <th class="px-2 py-2 font-medium">Notes</th>
-                <th class="w-[5rem] px-1 py-2"><span class="sr-only">Actions</span></th>
+                <th class="w-[7rem] px-1 py-2"><span class="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -162,11 +170,9 @@ function formatEventDate(value: string): string {
                 >
                   {{ formatEventDate(event.date_completed) }}
                 </td>
-                <td class="min-w-0 px-2 py-2 align-top">
-                  <p class="truncate font-medium text-slate-800" :title="event.event_type">
-                    {{ event.event_type }}
-                  </p>
-                  <p class="mt-0.5 truncate text-xs text-slate-500" :title="event.place">
+                <td class="min-w-[12rem] px-2 py-2 align-top">
+                  <p class="font-medium text-slate-800">{{ event.event_type }}</p>
+                  <p class="mt-0.5 text-xs text-slate-500">
                     {{ event.place || '—' }}
                   </p>
                 </td>
@@ -174,51 +180,48 @@ function formatEventDate(value: string): string {
                   <p class="truncate" :title="event.remarks">{{ event.remarks || '—' }}</p>
                 </td>
                 <td class="px-1 py-1.5 align-middle">
-                  <div class="flex items-center justify-end gap-0.5">
+                  <div class="flex flex-col items-end" @click.stop>
                     <button
                       type="button"
-                      class="inline-flex items-center justify-center rounded-md p-1.5 text-sky-600 transition hover:bg-sky-50 hover:text-sky-800"
-                      aria-label="Edit event"
-                      title="Edit event"
-                      @click="openEdit(index)"
+                      class="inline-flex items-center justify-center rounded-md p-1.5 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                      aria-label="Event actions"
+                      title="Event actions"
+                      :aria-expanded="actionsMenuIndex === index"
+                      @click="toggleActionsMenu(index)"
                     >
                       <svg
                         class="h-6 w-6"
                         viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
+                        fill="currentColor"
                         aria-hidden="true"
                       >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="m16.862 4.487 2.651 2.651M4 20h4l10.5-10.5a1.875 1.875 0 0 0-2.65-2.65L5.35 17.35 4 20Z"
-                        />
+                        <circle cx="5" cy="12" r="1.75" />
+                        <circle cx="12" cy="12" r="1.75" />
+                        <circle cx="19" cy="12" r="1.75" />
                       </svg>
                     </button>
-                    <button
-                      type="button"
-                      class="inline-flex items-center justify-center rounded-md p-1.5 text-red-600 transition hover:bg-red-50 hover:text-red-800"
-                      aria-label="Delete event"
-                      title="Delete event"
-                      @click="requestDelete(index)"
+                    <div
+                      v-if="actionsMenuIndex === index"
+                      class="mt-1 w-24 overflow-hidden rounded-md border border-slate-200 bg-white py-1 shadow-lg"
+                      role="menu"
                     >
-                      <svg
-                        class="h-6 w-6"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        aria-hidden="true"
+                      <button
+                        type="button"
+                        class="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                        role="menuitem"
+                        @click="openEdit(index)"
                       >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M6 7h12m-9 0V5h6v2m-8 0 .7 12.2A2 2 0 0 0 9.7 21h4.6a2 2 0 0 0 1.999-1.8L17 7M10 11v6m4-6v6"
-                        />
-                      </svg>
-                    </button>
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        class="block w-full px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50"
+                        role="menuitem"
+                        @click="requestDelete(index)"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -247,49 +250,48 @@ function formatEventDate(value: string): string {
                   {{ event.remarks || '—' }}
                 </td>
                 <td class="px-4 py-3">
-                  <div class="flex items-center justify-end gap-1">
+                  <div class="flex flex-col items-end" @click.stop>
                     <button
                       type="button"
-                      class="rounded-md p-2 text-slate-500 hover:bg-sky-50 hover:text-sky-700"
-                      aria-label="Edit event"
-                      title="Edit event"
-                      @click="openEdit(index)"
+                      class="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                      aria-label="Event actions"
+                      title="Event actions"
+                      :aria-expanded="actionsMenuIndex === index"
+                      @click="toggleActionsMenu(index)"
                     >
                       <svg
                         class="h-5 w-5"
                         viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
+                        fill="currentColor"
+                        aria-hidden="true"
                       >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="m16.862 4.487 2.651 2.651M4 20h4l10.5-10.5a1.875 1.875 0 0 0-2.65-2.65L5.35 17.35 4 20Z"
-                        />
+                        <circle cx="5" cy="12" r="1.75" />
+                        <circle cx="12" cy="12" r="1.75" />
+                        <circle cx="19" cy="12" r="1.75" />
                       </svg>
                     </button>
-                    <button
-                      type="button"
-                      class="rounded-md p-2 text-slate-500 hover:bg-red-50 hover:text-red-700"
-                      aria-label="Delete event"
-                      title="Delete event"
-                      @click="requestDelete(index)"
+                    <div
+                      v-if="actionsMenuIndex === index"
+                      class="mt-1 w-24 overflow-hidden rounded-md border border-slate-200 bg-white py-1 shadow-lg"
+                      role="menu"
                     >
-                      <svg
-                        class="h-5 w-5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
+                      <button
+                        type="button"
+                        class="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                        role="menuitem"
+                        @click="openEdit(index)"
                       >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M6 7h12m-9 0V5h6v2m-8 0 .7 12.2A2 2 0 0 0 9.7 21h4.6a2 2 0 0 0 1.999-1.8L17 7M10 11v6m4-6v6"
-                        />
-                      </svg>
-                    </button>
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        class="block w-full px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50"
+                        role="menuitem"
+                        @click="requestDelete(index)"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </td>
               </tr>
