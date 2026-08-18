@@ -126,6 +126,17 @@ body {
   }
 }
 
+/* iOS Safari zooms the page when a form control with text below 16px receives
+   focus. Keep controls at its non-zooming threshold on mobile while preserving
+   normal pinch-to-zoom accessibility. */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 1rem;
+  }
+}
+
 .markdown-content {
   @apply text-slate-700 leading-relaxed;
 }

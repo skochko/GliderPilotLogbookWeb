@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
+import AirfieldAutocomplete from '@/components/AirfieldAutocomplete.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- referenced by the Vue template
 import LoadingState from '@/components/LoadingState.vue'
@@ -688,7 +689,10 @@ async function retrySubmit(): Promise<void> {
                 </label>
                 <label class="block text-sm">
                   <span class="font-medium text-slate-700">Place</span>
-                  <input v-model="event.place" type="text" class="field-control" />
+                  <AirfieldAutocomplete
+                    v-model="event.place"
+                    :list-id="`qualification-event-place-options-${index}`"
+                  />
                 </label>
               </div>
               <label class="block text-sm">

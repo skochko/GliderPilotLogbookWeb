@@ -43,6 +43,10 @@ const setupReminderVisible = computed(
 )
 
 const pilotName = computed(() => displaySettings.value?.pilot_name ?? '')
+const pilotPrivilegeName = computed(() => {
+  const privilege = dashboardStatus.value?.pilot_privilege ?? ''
+  return pilotPrivilegeOptions.value.find((option) => option.code === privilege)?.name ?? privilege
+})
 const pilotPrivilegeNotice = computed(() => {
   const privilege = dashboardStatus.value?.pilot_privilege
   return pilotPrivilegeOptions.value.find((option) => option.code === privilege)?.notice ?? ''
@@ -165,6 +169,7 @@ watch(initialized, (ready) => {
         v-if="dashboardStatus"
         :status="dashboardStatus"
         :pilot-name="pilotName"
+        :pilot-privilege-name="pilotPrivilegeName"
         :last-flight="lastFlight"
         :pilot-privilege-notice="pilotPrivilegeNotice"
       />

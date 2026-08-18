@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
+import AirfieldAutocomplete from '@/components/AirfieldAutocomplete.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import FormSheetLayout from '@/components/FormSheetLayout.vue'
@@ -236,7 +237,10 @@ function formatEventDate(value: string): string {
             </label>
             <label class="block text-sm">
               <span class="font-medium text-slate-700">Place</span>
-              <input v-model="editingEvent.place" type="text" class="field-control mt-1" />
+              <AirfieldAutocomplete
+                v-model="editingEvent.place"
+                list-id="qualification-event-place-options"
+              />
             </label>
             <label class="block text-sm">
               <span class="font-medium text-slate-700">Notes</span>

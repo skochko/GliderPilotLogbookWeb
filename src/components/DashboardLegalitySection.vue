@@ -7,6 +7,7 @@ import type { DashboardStatus, Flight } from '@/types'
 const props = defineProps<{
   status: DeepReadonly<DashboardStatus>
   pilotName: string
+  pilotPrivilegeName: string
   lastFlight: Flight | null
   pilotPrivilegeNotice?: string
 }>()
@@ -17,7 +18,7 @@ const props = defineProps<{
   <section class="space-y-4 md:space-y-5">
     <DashboardPilotOverviewCard
       :pilot-name="props.pilotName"
-      :pilot-privilege="status.pilot_privilege"
+      :pilot-privilege="props.pilotPrivilegeName"
       :last-flight="props.lastFlight"
       :medical="status.medical[0] ?? null"
     />
