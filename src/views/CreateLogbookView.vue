@@ -349,7 +349,11 @@ async function goNext(): Promise<void> {
   if (step.value === STEP_MEDICAL && isMedicalStepEmpty()) {
     skippedMedical.value = true
   }
-  if (step.value === STEP_QUALIFICATIONS && !(await saveQualificationEvents())) {
+  if (
+    step.value === STEP_QUALIFICATIONS &&
+    !isV3Template.value &&
+    !(await saveQualificationEvents())
+  ) {
     return
   }
   if (step.value < totalSteps) {
@@ -379,6 +383,12 @@ async function submit(): Promise<void> {
     organizationId: selectedOrganizationId.value,
     automationConsent: clubAutomationConsent.value,
   })
+  if (isV3Template.value) {
+    payload.qualification_events = qualificationEvents.value.map((event) => ({
+      ...event,
+      date: event.date_completed,
+    }))
+  }
 
   const response = await applyWizard(payload)
 

@@ -39,6 +39,7 @@ export interface LogbookCreateRequest {
   license?: LogbookCreateLicense | null
   prior_totals?: LogbookCreatePriorTotals | null
   medical?: LogbookCreateMedical | null
+  qualification_events?: import('./qualificationEvents').QualificationEvent[]
   organization_id?: number | null
 }
 
