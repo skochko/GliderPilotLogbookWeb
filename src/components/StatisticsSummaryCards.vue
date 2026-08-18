@@ -11,9 +11,18 @@ defineProps<{
 
 <template>
   <DashboardFlyingTotals class="sm:hidden" :statistics="statistics" always-expanded />
+  <article
+    v-if="statistics.total_kms > 0"
+    class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:hidden"
+  >
+    <p class="text-sm font-medium text-slate-500">Distance flown</p>
+    <p class="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
+      {{ statistics.total_kms.toLocaleString() }} km
+    </p>
+  </article>
 
   <!-- Desktop: separate cards -->
-  <section class="hidden gap-3 sm:grid sm:grid-cols-2 xl:grid-cols-5">
+  <section class="hidden gap-3 sm:grid sm:grid-cols-2 xl:grid-cols-6">
     <article class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
       <p class="text-sm font-medium text-slate-500">Flights</p>
       <p class="mt-1 text-2xl font-semibold tabular-nums text-slate-900">{{ statistics.total_flights }}</p>
@@ -36,6 +45,12 @@ defineProps<{
       <p class="text-sm font-medium text-slate-500">Avg flight</p>
       <p class="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
         {{ formatDecimalHours(statistics.avg_flight_hours) }}
+      </p>
+    </article>
+    <article class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <p class="text-sm font-medium text-slate-500">Distance flown</p>
+      <p class="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
+        {{ statistics.total_kms.toLocaleString() }} km
       </p>
     </article>
   </section>

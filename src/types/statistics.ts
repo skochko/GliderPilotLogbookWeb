@@ -25,6 +25,7 @@ export type Statistics = {
   pic_flights: number
   p2_flights: number
   instructor_flights: number
+  total_kms: number
   solo_flights: number
   solo_landings: number
   solo_hours: number

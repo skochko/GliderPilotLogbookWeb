@@ -16,6 +16,7 @@ function baseStatistics(overrides: Partial<Statistics> = {}): Statistics {
     pic_flights: 6,
     p2_flights: 2,
     instructor_flights: 0,
+    total_kms: 0,
     solo_flights: 4,
     solo_landings: 4,
     solo_hours: 2,
