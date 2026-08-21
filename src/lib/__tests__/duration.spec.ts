@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { formatDecimalHours, formatDurationDisplay, formatDurationProse, formatRequirementValue, hasDurationValue, splitDurationDisplay } from '../duration'
+import { formatDecimalHours, formatDurationDisplay, formatDurationProse, formatRequirementValue, hasDurationValue, isHoursMinutesDuration, splitDurationDisplay } from '../duration'
+
+describe('isHoursMinutesDuration', () => {
+  it('accepts only H:MM values with valid minutes', () => {
+    expect(isHoursMinutesDuration('156:13')).toBe(true)
+    expect(isHoursMinutesDuration('13:00')).toBe(true)
+    expect(isHoursMinutesDuration('4:15')).toBe(true)
+    expect(isHoursMinutesDuration('13:60')).toBe(false)
+    expect(isHoursMinutesDuration('1:5')).toBe(false)
+    expect(isHoursMinutesDuration('1:02:03')).toBe(false)
+    expect(isHoursMinutesDuration('13.00')).toBe(false)
+  })
+})
 
 describe('formatDurationDisplay', () => {
   it('formats hour-only durations without leading zeros', () => {

@@ -1,4 +1,9 @@
 const DURATION_PATTERN = /^(\d{1,3}):(\d{2})(?::(\d{2}))?$/
+const HOURS_MINUTES_PATTERN = /^\d+:[0-5]\d$/
+
+export function isHoursMinutesDuration(value: string | null | undefined): boolean {
+  return HOURS_MINUTES_PATTERN.test((value ?? '').trim())
+}
 
 function parseDurationParts(value: string | null | undefined): { hours: number; minutes: number; seconds: number } | null {
   const trimmed = (value ?? '').trim()

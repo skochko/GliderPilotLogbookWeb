@@ -18,6 +18,7 @@ import { isBiPrivilege, isFiPrivilege, usePilotPrivileges } from '@/composables/
 import { useLicenseOptions, withLegacyLookupOption } from '@/composables/useLicenseOptions'
 import type { SheetSettings, SheetSettingsPatch } from '@/types'
 import { resolveSettingsTemplate, type SettingsSection } from '@/features/settings/templates'
+import { isHoursMinutesDuration } from '@/lib/duration'
 
 const { settings, loading, initialized, mutating, error, fetch, save } = useSettings()
 const {
@@ -87,6 +88,20 @@ async function onSubmit(): Promise<void> {
   if (canEdit('pilot_name') && !form.pilot_name.trim()) {
     submitError.value = 'Pilot name is required'
     return
+  }
+
+  const priorTimeFields = [
+    ['prior_total_time', 'Total time'],
+    ['prior_pic_time', 'PIC time'],
+    ['prior_p2_time', 'P2 time'],
+    ['prior_instructor_time', 'Instructor time'],
+  ] as const
+  for (const [field, label] of priorTimeFields) {
+    const value = form[field].trim()
+    if (canEdit(field) && value && !isHoursMinutesDuration(value)) {
+      submitError.value = `${label} must use H:MM format, for example 156:13 or 4:15.`
+      return
+    }
   }
 
   try {
@@ -298,6 +313,8 @@ async function onSubmit(): Promise<void> {
               v-model="form.prior_total_time"
               type="text"
               placeholder="H:MM"
+              pattern="[0-9]+:[0-5][0-9]"
+              title="Enter time as H:MM, for example 156:13"
               class="field-control"
             />
           </label>
@@ -307,6 +324,8 @@ async function onSubmit(): Promise<void> {
               v-model="form.prior_pic_time"
               type="text"
               placeholder="H:MM"
+              pattern="[0-9]+:[0-5][0-9]"
+              title="Enter time as H:MM, for example 13:00"
               class="field-control"
             />
           </label>
@@ -325,6 +344,8 @@ async function onSubmit(): Promise<void> {
               v-model="form.prior_p2_time"
               type="text"
               placeholder="H:MM"
+              pattern="[0-9]+:[0-5][0-9]"
+              title="Enter time as H:MM, for example 4:15"
               class="field-control"
             />
           </label>
@@ -343,6 +364,8 @@ async function onSubmit(): Promise<void> {
               v-model="form.prior_instructor_time"
               type="text"
               placeholder="H:MM"
+              pattern="[0-9]+:[0-5][0-9]"
+              title="Enter time as H:MM, for example 4:15"
               class="field-control"
             />
           </label>
