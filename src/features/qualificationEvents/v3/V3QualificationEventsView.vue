@@ -9,6 +9,7 @@ import LoadingState from '@/components/LoadingState.vue'
 import { getQualificationEvents, updateQualificationEvents } from '@/api/qualificationEvents'
 import { useFlashMessage } from '@/composables/useFlashMessage'
 import { QUALIFICATION_EVENT_TYPES, type QualificationEvent } from '@/types/qualificationEvents'
+import { sortQualificationEventsNewestFirst } from '@/features/qualificationEvents/sort'
 
 const { show } = useFlashMessage()
 const events = ref<QualificationEvent[]>([])
@@ -26,7 +27,7 @@ async function loadEvents(): Promise<void> {
   loading.value = true
   error.value = null
   try {
-    events.value = (await getQualificationEvents()).events
+    events.value = sortQualificationEventsNewestFirst((await getQualificationEvents()).events)
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Could not load qualification events.'
   } finally {
@@ -79,11 +80,13 @@ async function saveEvents(nextEvents: QualificationEvent[]): Promise<boolean> {
   saving.value = true
   error.value = null
   try {
-    const compatibleEvents = nextEvents.map((event) => ({
+    const compatibleEvents = sortQualificationEventsNewestFirst(nextEvents).map((event) => ({
       ...event,
       date: event.date_completed,
     }))
-    events.value = (await updateQualificationEvents(compatibleEvents)).events
+    events.value = sortQualificationEventsNewestFirst(
+      (await updateQualificationEvents(compatibleEvents)).events,
+    )
     show('Qualification events saved.', 'success')
     return true
   } catch (err) {
