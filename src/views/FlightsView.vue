@@ -6,7 +6,6 @@ import FlightListFiltersDialog from '@/components/FlightListFiltersDialog.vue'
 import FlightsTable from '@/components/FlightsTable.vue'
 import FilterIcon from '@/components/icons/FilterIcon.vue'
 import LoadingState from '@/components/LoadingState.vue'
-import LogbookSyncProgress from '@/components/LogbookSyncProgress.vue'
 import SpinnerIcon from '@/components/SpinnerIcon.vue'
 import { useFlights } from '@/composables/useFlights'
 import { useDisplaySettings } from '@/composables/useDisplaySettings'
@@ -172,14 +171,6 @@ watch(
       :loading="loading"
       @close="filtersOpen = false"
       @apply="onFiltersApply"
-    />
-
-    <LogbookSyncProgress
-      v-if="showProgress && status"
-      :loaded="status.loaded"
-      :total="status.total"
-      :percent="status.percent"
-      :flights-loaded="status.flights_loaded"
     />
 
     <ErrorBanner v-if="syncError" :message="syncError" />

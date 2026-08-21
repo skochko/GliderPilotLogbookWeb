@@ -7,7 +7,6 @@ import DashboardMonthlyChart from '@/components/DashboardMonthlyChart.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import FlightsTable from '@/components/FlightsTable.vue'
 import LoadingState from '@/components/LoadingState.vue'
-import LogbookSyncProgress from '@/components/LogbookSyncProgress.vue'
 import { RECENT_FLIGHTS_LIMIT, listFlights } from '@/api/flights'
 import { isApiError } from '@/api/errors'
 import { useDashboardStatus } from '@/composables/useDashboardStatus'
@@ -147,14 +146,6 @@ watch(initialized, (ready) => {
         </div>
       </div>
     </section>
-
-    <LogbookSyncProgress
-      v-if="showProgress && syncStatus"
-      :loaded="syncStatus.loaded"
-      :total="syncStatus.total"
-      :percent="syncStatus.percent"
-      :flights-loaded="syncStatus.flights_loaded"
-    />
 
     <LoadingState v-if="!initialized && !showProgress" />
     <ErrorBanner

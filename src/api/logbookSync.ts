@@ -4,3 +4,7 @@ import type { LogbookSyncStatus } from '@/types/logbookSync'
 export function getLogbookSyncStatus(): Promise<LogbookSyncStatus> {
   return apiJson<LogbookSyncStatus>('/logbook/sync-status')
 }
+
+export function requestLogbookSync(): Promise<LogbookSyncStatus> {
+  return apiJson<LogbookSyncStatus>('/logbook/sync', { method: 'POST' })
+}
