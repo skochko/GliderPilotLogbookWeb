@@ -9,29 +9,8 @@ const outputPath = join(publicDir, 'sitemap.xml')
 const siteOrigin = 'https://gliderpilotlogbook.co.uk'
 
 const jiti = createJiti(import.meta.url)
-const { SITE_PAGE_ROUTES } = jiti('../src/lib/sitePages.ts')
-
-const typeSitemap = {
-  about: { changefreq: 'monthly', priority: 0.8 },
-  contact: { changefreq: 'yearly', priority: 0.5 },
-  faq: { changefreq: 'monthly', priority: 0.8 },
-  privacy: { changefreq: 'yearly', priority: 0.3 },
-  terms: { changefreq: 'yearly', priority: 0.3 },
-  cookies: { changefreq: 'yearly', priority: 0.3 },
-  disclaimer: { changefreq: 'yearly', priority: 0.3 },
-  google_drive_access: { changefreq: 'monthly', priority: 0.6 },
-  club_automation_download: { changefreq: 'monthly', priority: 0.7 },
-  club_automation: { changefreq: 'monthly', priority: 0.7 },
-}
-
-const entries = [
-  { path: '/', changefreq: 'weekly', priority: 1.0 },
-  ...SITE_PAGE_ROUTES.map((page) => ({
-    path: page.path,
-    ...typeSitemap[page.type],
-  })),
-  { path: '/login', changefreq: 'yearly', priority: 0.6 },
-]
+const { getSitemapEntries } = jiti('../src/lib/sitemap.ts')
+const entries = getSitemapEntries()
 
 function sitemapUrl(path) {
   return path === '/' ? `${siteOrigin}/` : `${siteOrigin}${path}`
