@@ -1,5 +1,6 @@
 export const SITE_PAGES = [
   { type: 'about', path: '/about', label: 'About' },
+  { type: 'logbook_template', path: '/logbook-template', label: 'Logbook Template' },
   { type: 'contact', path: '/contact', label: 'Contact' },
   { type: 'faq', path: '/faq', label: 'FAQ' },
   { type: 'privacy', path: '/privacy', label: 'Privacy Policy' },

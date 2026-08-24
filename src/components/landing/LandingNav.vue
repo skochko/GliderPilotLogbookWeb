@@ -21,6 +21,7 @@ const landingSectionLinks = [
 
 const siteLinks = [
   { path: '/about', label: 'About' },
+  { path: '/logbook-template', label: 'Logbook Template' },
   { path: '/faq', label: 'FAQ' },
   { path: '/contact', label: 'Contact' },
 ] as const

@@ -7,6 +7,7 @@ export const SITE_TAGLINE = 'Digital Flight Logbook for Glider Pilots'
 export const PUBLIC_PAGE_TITLES: Record<string, string> = {
   '/': `${SITE_NAME} – ${SITE_TAGLINE}`,
   '/about': `About – ${SITE_NAME}`,
+  '/logbook-template': `Logbook Template – ${SITE_NAME}`,
   '/contact': `Contact – ${SITE_NAME}`,
   '/faq': 'FAQ – Glider Pilot Logbook Questions & Answers',
   '/privacy': `Privacy Policy – ${SITE_NAME}`,
@@ -30,6 +31,8 @@ export const PUBLIC_PAGE_DESCRIPTIONS: Record<string, string> = {
     'Manage your gliding logbook in Google Sheets. Log flights, track currency and medical dates, and view statistics — your spreadsheet stays the official record.',
   '/about':
     'Learn how Glider Pilot Logbook works with Google Sheets — flight logging, dashboards, and optional automatic club flight import for pilots and gliding clubs.',
+  '/logbook-template':
+    'View the current Glider Pilot Logbook Google Sheets template and learn how it stores flights, qualifications, media and IGC tracks in your Google Drive.',
   '/contact':
     'Contact Glider Pilot Logbook support and privacy teams. Get help with your logbook, Google sign-in, club automation, or data protection questions.',
   '/faq':
@@ -56,6 +59,7 @@ export const PUBLIC_PAGE_DESCRIPTIONS: Record<string, string> = {
 
 export const PAGE_TYPE_DESCRIPTIONS: Record<RoutablePageType, string> = {
   about: PUBLIC_PAGE_DESCRIPTIONS['/about']!,
+  logbook_template: PUBLIC_PAGE_DESCRIPTIONS['/logbook-template']!,
   contact: PUBLIC_PAGE_DESCRIPTIONS['/contact']!,
   faq: PUBLIC_PAGE_DESCRIPTIONS['/faq']!,
   privacy: PUBLIC_PAGE_DESCRIPTIONS['/privacy']!,
@@ -112,6 +116,7 @@ export function getDocumentTitle(route: {
 /** @deprecated Use getPublicPageTitle or PUBLIC_PAGE_TITLES — kept for share meta by page type. */
 export const PAGE_TYPE_TITLES: Record<RoutablePageType, string> = {
   about: PUBLIC_PAGE_TITLES['/about']!,
+  logbook_template: PUBLIC_PAGE_TITLES['/logbook-template']!,
   contact: PUBLIC_PAGE_TITLES['/contact']!,
   faq: PUBLIC_PAGE_TITLES['/faq']!,
   privacy: PUBLIC_PAGE_TITLES['/privacy']!,

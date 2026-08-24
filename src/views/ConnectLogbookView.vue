@@ -63,55 +63,7 @@ async function connectByPicker(): Promise<void> {
   <div class="mx-auto max-w-2xl space-y-6 py-8">
     <div>
       <h1 class="text-2xl font-bold text-slate-900">Get started with Glider Pilot Logbook</h1>
-      <p class="mt-2 text-slate-600">
-        This app works with the official Glider Pilot Logbook Google Sheets template — not with a
-        custom spreadsheet you built yourself.
-      </p>
     </div>
-
-    <details
-      ref="compatibilityDetails"
-      class="group rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-slate-700"
-      aria-label="Template compatibility"
-    >
-      <summary
-        class="flex cursor-pointer list-none items-center justify-between gap-3 font-medium text-slate-900 md:cursor-default md:pointer-events-none [&::-webkit-details-marker]:hidden"
-      >
-        <span>Which spreadsheets work?</span>
-        <span
-          class="inline-flex shrink-0 items-center gap-1 text-xs font-normal text-sky-700 md:hidden"
-          aria-hidden="true"
-        >
-          <span class="group-open:hidden">Show</span>
-          <span class="hidden group-open:inline">Hide</span>
-          <svg
-            class="size-4 transition-transform group-open:rotate-180"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-              clip-rule="evenodd"
-            />
-          </svg>
-        </span>
-      </summary>
-      <ul class="mt-2 space-y-1.5">
-        <li>
-          <span class="font-medium text-emerald-800">Compatible:</span>
-          a spreadsheet made from the
-          <RouterLink to="/logbook/create/manual-guide" class="font-medium text-sky-700 hover:text-sky-800">
-            official Glider Pilot Logbook template
-          </RouterLink>
-          (created here or copied in Google Drive).
-        </li>
-        <li>
-          <span class="font-medium text-amber-900">Not compatible:</span>
-          your own logbook layout, club sheets, Excel imports, or other spreadsheet formats.
-        </li>
-      </ul>
-    </details>
 
     <ErrorBanner
       v-if="error"
@@ -146,6 +98,48 @@ async function connectByPicker(): Promise<void> {
         Choose this if you previously copied the official template — on this site or in Google Drive —
         and want to connect that spreadsheet now.
       </p>
+      <details
+        ref="compatibilityDetails"
+        class="group mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-slate-700"
+        aria-label="Template compatibility"
+      >
+        <summary
+          class="flex cursor-pointer list-none items-center justify-between gap-3 font-medium text-slate-900 md:cursor-default md:pointer-events-none [&::-webkit-details-marker]:hidden"
+        >
+          <span>Which spreadsheets can I connect?</span>
+          <span
+            class="inline-flex shrink-0 items-center gap-1 text-xs font-normal text-sky-700 md:hidden"
+            aria-hidden="true"
+          >
+            <span class="group-open:hidden">Show</span>
+            <span class="hidden group-open:inline">Hide</span>
+            <svg
+              class="size-4 transition-transform group-open:rotate-180"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </span>
+        </summary>
+        <p class="mt-2">
+          You can connect a spreadsheet created from the
+          <RouterLink
+            to="/logbook/create/manual-guide"
+            class="font-medium text-sky-700 hover:text-sky-800"
+          >
+            official Glider Pilot Logbook template</RouterLink
+          >, either through this site or by copying it in Google Drive.
+        </p>
+        <p class="mt-2 text-amber-950">
+          Custom logbook layouts, club sheets, Excel imports and other spreadsheet formats cannot
+          be connected directly.
+        </p>
+      </details>
       <p class="mt-3 text-sm font-medium text-slate-800">
         Yes — I already use the official template
       </p>

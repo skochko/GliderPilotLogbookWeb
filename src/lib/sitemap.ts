@@ -14,6 +14,7 @@ export type SitemapEntry = {
 
 const TYPE_SITEMAP: Record<RoutablePageType, Omit<SitemapEntry, 'path'>> = {
   about: { changefreq: 'monthly', priority: 0.8 },
+  logbook_template: { changefreq: 'monthly', priority: 0.8 },
   contact: { changefreq: 'yearly', priority: 0.5 },
   faq: { changefreq: 'monthly', priority: 0.8 },
   privacy: { changefreq: 'yearly', priority: 0.3 },
