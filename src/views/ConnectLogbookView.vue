@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import { useAuth } from '@/composables/useAuth'
@@ -9,6 +9,7 @@ import { useGooglePicker } from '@/composables/useGooglePicker'
 import { useLogbook } from '@/composables/useLogbook'
 
 const router = useRouter()
+const route = useRoute()
 const { fetchMe } = useAuth()
 const { connect, mutating, error } = useLogbook()
 const { pickSpreadsheet } = useGooglePicker()
@@ -16,6 +17,15 @@ const { show } = useFlashMessage()
 
 const pickerError = ref<string | null>(null)
 const pickerBusy = ref(false)
+const organizationSlug = computed(() => {
+  const value = route.query.organization
+  return typeof value === 'string' ? value.trim() : ''
+})
+const createLogbookDestination = computed(() =>
+  organizationSlug.value
+    ? { name: 'logbook-create', params: { organizationSlug: organizationSlug.value } }
+    : { name: 'logbook-create' },
+)
 
 const compatibilityDetails = useTemplateRef<HTMLDetailsElement>('compatibilityDetails')
 const DESKTOP_MEDIA_QUERY = '(min-width: 768px)'
@@ -49,7 +59,11 @@ async function connectByPicker(): Promise<void> {
     if (ok) {
       await fetchMe()
       show('Logbook connected successfully.', 'success')
-      await router.push('/dashboard')
+      await router.push(
+        organizationSlug.value
+          ? { name: 'automation', query: { organization: organizationSlug.value } }
+          : { name: 'dashboard' },
+      )
     }
   } catch (err) {
     pickerError.value = err instanceof Error ? err.message : 'Picker failed'
@@ -85,7 +99,7 @@ async function connectByPicker(): Promise<void> {
         Copy the Glider Pilot Logbook template into your Google Drive and enter your pilot details.
         We’ll guide you through each step.
       </p>
-      <ActionButton class="mt-5" @click="router.push('/logbook/create')">
+      <ActionButton class="mt-5" @click="router.push(createLogbookDestination)">
         Create logbook
       </ActionButton>
     </section>
@@ -95,8 +109,8 @@ async function connectByPicker(): Promise<void> {
         Do you already have a Glider Pilot Logbook spreadsheet?
       </h2>
       <p class="mt-2 text-sm text-slate-600">
-        Choose this if you previously copied the official template — on this site or in Google Drive —
-        and want to connect that spreadsheet now.
+        Choose this if you previously copied the official template — on this site or in Google Drive
+        — and want to connect that spreadsheet now.
       </p>
       <details
         ref="compatibilityDetails"
@@ -136,8 +150,8 @@ async function connectByPicker(): Promise<void> {
           >, either through this site or by copying it in Google Drive.
         </p>
         <p class="mt-2 text-amber-950">
-          Custom logbook layouts, club sheets, Excel imports and other spreadsheet formats cannot
-          be connected directly.
+          Custom logbook layouts, club sheets, Excel imports and other spreadsheet formats cannot be
+          connected directly.
         </p>
       </details>
       <p class="mt-3 text-sm font-medium text-slate-800">
@@ -157,7 +171,10 @@ async function connectByPicker(): Promise<void> {
       </ActionButton>
       <p class="mt-3 text-xs text-slate-500">
         Need the template first?
-        <RouterLink to="/logbook/create" class="font-medium text-sky-700 hover:text-sky-800">
+        <RouterLink
+          :to="createLogbookDestination"
+          class="font-medium text-sky-700 hover:text-sky-800"
+        >
           Create from template
         </RouterLink>
         instead.

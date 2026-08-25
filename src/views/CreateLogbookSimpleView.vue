@@ -32,6 +32,7 @@ const showCreationFormAfterError = ref(false)
 const organizations = ref<OrganizationListItem[]>([])
 const loadingOrganizations = ref(true)
 const validationError = ref<string | null>(null)
+const organizationSlug = computed(() => String(route.params.organizationSlug ?? '').trim())
 const stageLabels: Record<string, string> = {
   queued: 'Waiting to start…',
   preparing: 'Preparing your logbook…',
@@ -61,9 +62,8 @@ onMounted(async () => {
   void resumePreviouslyStartedCreation()
   try {
     organizations.value = await listOrganizations()
-    const organizationSlug = String(route.params.organizationSlug ?? '').trim()
-    if (organizationSlug) {
-      const organization = organizations.value.find((item) => item.slug === organizationSlug)
+    if (organizationSlug.value) {
+      const organization = organizations.value.find((item) => item.slug === organizationSlug.value)
       if (organization) {
         organizationId.value = organization.id
       } else {
@@ -105,7 +105,11 @@ async function submit(): Promise<void> {
     validationError.value = 'Please confirm the club automation consent.'
     return
   }
-  if (organizationId.value !== null && automationImportMode.value === 'from_date' && !automationImportFromDate.value) {
+  if (
+    organizationId.value !== null &&
+    automationImportMode.value === 'from_date' &&
+    !automationImportFromDate.value
+  ) {
     validationError.value = 'Select how far back club flights should be imported.'
     return
   }
@@ -157,16 +161,15 @@ function returnToCreationForm(): void {
 
       <div class="space-y-3">
         <h2 class="text-lg font-semibold text-slate-900">Club automation</h2>
-        <p v-if="creationResult.club_automation_request?.automation_supported" class="text-slate-700">
-          Your request to connect with
-          {{ creationResult.club_automation_request.organization_name }} has been sent.
-          We'll notify you when the club approves the connection and automatic synchronisation is
-          available.
-        </p>
         <p
-          v-else-if="creationResult.club_automation_request"
+          v-if="creationResult.club_automation_request?.automation_supported"
           class="text-slate-700"
         >
+          Your request to connect with
+          {{ creationResult.club_automation_request.organization_name }} has been sent. We'll notify
+          you when the club approves the connection and automatic synchronisation is available.
+        </p>
+        <p v-else-if="creationResult.club_automation_request" class="text-slate-700">
           {{ creationResult.club_automation_request.message }}
         </p>
         <p v-else class="text-slate-700">
@@ -183,13 +186,17 @@ function returnToCreationForm(): void {
         <h3 class="pt-1 font-semibold text-slate-900">Getting started</h3>
         <ul class="space-y-1">
           <li class="flex items-center gap-3 py-1 text-sm text-emerald-900">
-            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs text-white">
+            <span
+              class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs text-white"
+            >
               ✓
             </span>
             <span>Logbook created</span>
           </li>
           <li class="flex items-center gap-3 py-1 text-sm text-emerald-900">
-            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs text-white">
+            <span
+              class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs text-white"
+            >
               ✓
             </span>
             <span>Personal details</span>
@@ -216,7 +223,9 @@ function returnToCreationForm(): void {
         </p>
       </div>
 
-      <div class="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
+      <div
+        class="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end"
+      >
         <ActionButton type="button" variant="secondary" @click="skipSetup">
           Go to dashboard
         </ActionButton>
@@ -227,6 +236,25 @@ function returnToCreationForm(): void {
     <div v-if="!creationResult && !creationInProgress && !creationFailed">
       <h1 class="text-2xl font-bold text-slate-900">Create your logbook</h1>
       <p class="mt-2 text-slate-600">Enter your name, then optionally connect a club automation.</p>
+      <div class="mt-5 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sm text-slate-700">
+        <p class="font-semibold text-slate-900">Already have a Glider Pilot Logbook?</p>
+        <p class="mt-1">
+          Connect your existing official-template spreadsheet instead of creating a new one.
+        </p>
+        <ActionButton
+          type="button"
+          class="mt-3"
+          variant="secondary"
+          @click="
+            router.push({
+              name: 'connect',
+              query: organizationSlug ? { organization: organizationSlug } : {},
+            })
+          "
+        >
+          Connect existing logbook
+        </ActionButton>
+      </div>
     </div>
     <ErrorBanner
       v-if="!creationResult && !creationInProgress && validationError"
@@ -288,7 +316,12 @@ function returnToCreationForm(): void {
           <span class="font-medium text-slate-700">
             Pilot privilege <span class="text-red-600">*</span>
           </span>
-          <select v-model="pilotPrivilege" class="field-control" :disabled="loadingPilotPrivileges" required>
+          <select
+            v-model="pilotPrivilege"
+            class="field-control"
+            :disabled="loadingPilotPrivileges"
+            required
+          >
             <option v-for="option in pilotPrivilegeOptions" :key="option.code" :value="option.code">
               {{ option.name }}
             </option>
@@ -320,7 +353,11 @@ function returnToCreationForm(): void {
         </label>
         <label v-if="organizationId !== null" class="mt-4 block text-sm">
           <span class="font-medium text-slate-700">My flights to import</span>
-          <span class="mt-2 flex gap-1.5 overflow-x-auto" role="radiogroup" aria-label="Import flights">
+          <span
+            class="mt-2 flex gap-1.5 overflow-x-auto"
+            role="radiogroup"
+            aria-label="Import flights"
+          >
             <button
               type="button"
               class="rounded-full px-3 py-1.5 text-sm font-medium transition"
@@ -354,9 +391,14 @@ function returnToCreationForm(): void {
           <span class="font-medium text-slate-700">Import flights from</span>
           <input v-model="automationImportFromDate" type="date" class="field-control" required />
         </label>
-        <label v-if="organizationId !== null" class="mt-4 flex items-start gap-3 text-sm text-slate-700">
+        <label
+          v-if="organizationId !== null"
+          class="mt-4 flex items-start gap-3 text-sm text-slate-700"
+        >
           <input v-model="consent" type="checkbox" class="mt-1" />
-          <span>I agree that this club may receive access to my logbook to add flight records.</span>
+          <span
+            >I agree that this club may receive access to my logbook to add flight records.</span
+          >
         </label>
         <p v-if="organizationId !== null" class="mt-2 text-sm text-slate-500">
           Inactive clubs are recorded as interest only; no spreadsheet access is granted.

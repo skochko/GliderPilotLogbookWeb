@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
@@ -14,6 +15,7 @@ import { formatDateTime } from '@/lib/dates'
 const { requests, loading, initialized, mutating, error, fetch, create } = useAutomation()
 const { displaySettings, ensureLoaded } = useDisplaySettings()
 const { show } = useFlashMessage()
+const route = useRoute()
 
 const organizations = ref<OrganizationListItem[]>([])
 const organizationsLoading = ref(true)
@@ -41,8 +43,8 @@ onMounted(async () => {
   }
 })
 
-const selectedOrganization = computed(() =>
-  organizations.value.find((org) => org.id === selectedOrganizationId.value) ?? null,
+const selectedOrganization = computed(
+  () => organizations.value.find((org) => org.id === selectedOrganizationId.value) ?? null,
 )
 
 async function loadOrganizations(): Promise<void> {
@@ -50,6 +52,12 @@ async function loadOrganizations(): Promise<void> {
   organizationsError.value = null
   try {
     organizations.value = await listOrganizations()
+    const organizationSlug =
+      typeof route.query.organization === 'string' ? route.query.organization.trim() : ''
+    const linkedOrganization = organizations.value.find((org) => org.slug === organizationSlug)
+    if (linkedOrganization && !requestedOrganizationIds.value.has(linkedOrganization.id)) {
+      selectedOrganizationId.value = linkedOrganization.id
+    }
   } catch {
     organizationsError.value = 'Failed to load organisations.'
   } finally {
@@ -86,7 +94,12 @@ async function onSubmit(): Promise<void> {
     </div>
 
     <LoadingState v-if="!initialized" />
-    <ErrorBanner v-else-if="error && !requests.length" :message="error" :retry-busy="loading" @retry="fetch" />
+    <ErrorBanner
+      v-else-if="error && !requests.length"
+      :message="error"
+      :retry-busy="loading"
+      @retry="fetch"
+    />
     <ErrorBanner v-if="submitError" :message="submitError" />
 
     <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
