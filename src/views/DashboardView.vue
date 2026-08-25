@@ -19,8 +19,13 @@ import { useStatistics } from '@/composables/useStatistics'
 import type { Flight } from '@/types'
 
 const { user } = useAuth()
-const { statistics, loading: statsLoading, initialized: statsInitialized, error: statsError, fetch: fetchStatistics } =
-  useStatistics()
+const {
+  statistics,
+  loading: statsLoading,
+  initialized: statsInitialized,
+  error: statsError,
+  fetch: fetchStatistics,
+} = useStatistics()
 const {
   status: dashboardStatus,
   loading: statusLoading,
@@ -31,14 +36,21 @@ const {
 const { displaySettings, ensureLoaded } = useDisplaySettings()
 const { options: pilotPrivilegeOptions, load: loadPilotPrivileges } = usePilotPrivileges()
 const { clear: clearFlashMessage, kind: flashKind } = useFlashMessage()
-const { status: syncStatus, showProgress, syncError, syncCompleteCount, startPolling } = useLogbookSync()
+const {
+  status: syncStatus,
+  showProgress,
+  syncError,
+  syncCompleteCount,
+  requestSync,
+  startPolling,
+} = useLogbookSync()
 
 const recentFlights = ref<Flight[]>([])
 const recentFlightsLoading = ref(false)
 const recentFlightsError = ref<string | null>(null)
 const recentFlightsInitialized = ref(false)
-const setupReminderVisible = computed(
-  () => Boolean(user.value?.has_logbook && !user.value.logbook_setup_completed),
+const setupReminderVisible = computed(() =>
+  Boolean(user.value?.has_logbook && !user.value.logbook_setup_completed),
 )
 
 const pilotName = computed(() => displaySettings.value?.pilot_name ?? '')
@@ -53,16 +65,26 @@ const pilotPrivilegeNotice = computed(() => {
 const lastFlight = computed<Flight | null>(() => {
   return (
     [...recentFlights.value]
-      .sort((a, b) =>
-        `${a.date} ${a.launch_time}`.localeCompare(`${b.date} ${b.launch_time}`),
-      )
+      .sort((a, b) => `${a.date} ${a.launch_time}`.localeCompare(`${b.date} ${b.launch_time}`))
       .at(-1) ?? null
   )
 })
 
-const loading = computed(() => statsLoading.value || statusLoading.value || recentFlightsLoading.value)
-const initialized = computed(() => statsInitialized.value && statusInitialized.value && recentFlightsInitialized.value)
-const error = computed(() => statsError.value || statusError.value || syncError.value)
+const loading = computed(
+  () => statsLoading.value || statusLoading.value || recentFlightsLoading.value,
+)
+const initialized = computed(
+  () => statsInitialized.value && statusInitialized.value && recentFlightsInitialized.value,
+)
+const error = computed(() => statsError.value || statusError.value)
+
+async function retrySync(): Promise<void> {
+  try {
+    await requestSync()
+  } catch {
+    // The shared sync state exposes the API error without replacing dashboard data.
+  }
+}
 
 async function loadRecentFlights(): Promise<void> {
   recentFlightsLoading.value = true
@@ -146,6 +168,13 @@ watch(initialized, (ready) => {
         </div>
       </div>
     </section>
+
+    <ErrorBanner
+      v-if="syncError"
+      :message="syncError"
+      :retry-busy="showProgress"
+      @retry="retrySync"
+    />
 
     <LoadingState v-if="!initialized && !showProgress" />
     <ErrorBanner
