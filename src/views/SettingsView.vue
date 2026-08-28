@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
@@ -44,6 +44,7 @@ const {
 } = useLicenseOptions()
 
 const form = reactive<LogbookProfileFormState>(emptyLogbookProfileForm())
+const formInitialized = ref(false)
 const submitError = ref<string | null>(null)
 
 const templateAdapter = computed(() =>
@@ -67,7 +68,20 @@ const shows = (section: SettingsSection) => templateAdapter.value?.shows(section
 
 function applySettingsToForm(data: SheetSettings): void {
   applySheetSettingsToLogbookProfileForm(form, data)
+  formInitialized.value = true
 }
+
+watch(
+  settings,
+  (data) => {
+    if (data) {
+      applySettingsToForm(data as SheetSettings)
+    } else {
+      formInitialized.value = false
+    }
+  },
+  { immediate: true },
+)
 
 onMounted(async () => {
   await Promise.all([
@@ -76,9 +90,6 @@ onMounted(async () => {
     loadPilotPrivileges(),
     loadLicenseOptions(),
   ])
-  if (settings.value) {
-    applySettingsToForm(settings.value as SheetSettings)
-  }
 })
 
 async function onSubmit(): Promise<void> {
@@ -146,7 +157,7 @@ async function onSubmit(): Promise<void> {
     <PwaInstallSection />
 
     <form
-      v-if="settings"
+      v-if="settings && formInitialized"
       class="space-y-8 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
       @submit.prevent="onSubmit"
     >
