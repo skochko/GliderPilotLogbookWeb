@@ -25,6 +25,7 @@ describe('flightListQuery', () => {
     expect(hasActiveFlightListFilters(emptyFlightListFilters())).toBe(false)
     expect(hasActiveFlightListFilters({ ...emptyFlightListFilters(), glider: 'ASK-21' })).toBe(true)
     expect(hasActiveFlightListFilters({ ...emptyFlightListFilters(), role: 'p1' })).toBe(true)
+    expect(hasActiveFlightListFilters({ ...emptyFlightListFilters(), role: 'solo' })).toBe(true)
     expect(hasActiveFlightListFilters({ ...emptyFlightListFilters(), date_preset: 'this_month' })).toBe(true)
   })
 

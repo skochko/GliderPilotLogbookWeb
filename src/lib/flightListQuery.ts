@@ -46,6 +46,7 @@ export const FLIGHT_ROLE_FILTER_OPTIONS: ReadonlyArray<{
   { value: 'p1', label: 'PIC' },
   { value: 'p2', label: 'P2' },
   { value: 'instructor', label: 'Instructor' },
+  { value: 'solo', label: 'Solo' },
 ]
 
 export function sortPresetFromQuery(sortBy: FlightSortBy, sortDirection: string): FlightListSortPreset {

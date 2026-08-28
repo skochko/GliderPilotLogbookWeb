@@ -10,7 +10,7 @@ export type FlightDatePresetId =
   | 'year_to_date'
   | 'custom'
 
-export type FlightPilotRoleFilter = '' | 'p1' | 'p2' | 'instructor'
+export type FlightPilotRoleFilter = '' | 'p1' | 'p2' | 'instructor' | 'solo'
 
 export interface FlightListFilters {
   glider?: string
