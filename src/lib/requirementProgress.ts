@@ -8,6 +8,7 @@ export interface RequirementProgressInput {
   requirement_type?: string
   lookback_period?: string
   status?: DashboardStatusEnum
+  remaining_days?: number | null
 }
 
 const BOOLEAN_TYPES = new Set(['boolean', 'proficiency_check'])
@@ -71,7 +72,20 @@ function formatCountProgress(input: RequirementProgressInput): string {
     return ''
   }
   const unit = countUnit(input)
-  return `${obtained} of ${required} ${unit} required`
+  const progress = `${obtained} of ${required} ${unit} required`
+  if (input.requirement_type !== 'training_flight' || input.remaining_days == null) {
+    return progress
+  }
+  if (input.remaining_days === 0) {
+    return `${progress} · expires today`
+  }
+  if (input.remaining_days > 0) {
+    const unitLabel = input.remaining_days === 1 ? 'day' : 'days'
+    return `${progress} · ${input.remaining_days} ${unitLabel} remaining`
+  }
+  const elapsed = Math.abs(input.remaining_days)
+  const unitLabel = elapsed === 1 ? 'day' : 'days'
+  return `${progress} · expired ${elapsed} ${unitLabel} ago`
 }
 
 function formatDateProgress(input: RequirementProgressInput): string {

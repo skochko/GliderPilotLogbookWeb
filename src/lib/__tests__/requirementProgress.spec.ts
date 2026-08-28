@@ -34,6 +34,18 @@ describe('formatRequirementProgress', () => {
     ).toBe('1 of 2 training flights required')
   })
 
+  it('includes remaining days for a current training flight requirement', () => {
+    expect(
+      formatRequirementProgress({
+        id: 'training_flights_fi',
+        obtained: '2',
+        required: '2',
+        requirement_type: 'training_flight',
+        remaining_days: 83,
+      }),
+    ).toBe('2 of 2 training flights required · 83 days remaining')
+  })
+
   it('formats launch method chips', () => {
     expect(
       formatRequirementProgress({

@@ -10,6 +10,8 @@ export interface DashboardRequirement {
   requirement_type?: string
   lookback_period?: string
   message?: string | null
+  valid_until?: string
+  remaining_days?: number | null
 }
 
 export interface DashboardSummaryItem {

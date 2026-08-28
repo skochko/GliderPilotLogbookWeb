@@ -34,7 +34,13 @@ function isExpanded(groupId: string, itemId: string): boolean {
 function requirementProgress(
   requirement: Pick<
     DashboardRequirement,
-    'id' | 'obtained' | 'required' | 'requirement_type' | 'lookback_period' | 'status'
+    | 'id'
+    | 'obtained'
+    | 'required'
+    | 'requirement_type'
+    | 'lookback_period'
+    | 'status'
+    | 'remaining_days'
   >,
 ): string {
   return formatRequirementProgress(requirement)
@@ -49,6 +55,7 @@ function rowProgress(row: DeepReadonly<DashboardLegalityRow | DashboardLegalityC
       requirement_type: row.requirement_type,
       lookback_period: row.lookback_period,
       status: row.status,
+      remaining_days: row.requirements.find((item) => item.id === row.id)?.remaining_days,
     })
   }
   const failing = row.requirements.find((item) => item.status !== 'current')
