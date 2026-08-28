@@ -7,8 +7,10 @@ const statistics = ref<Statistics | null>(null)
 const loading = ref(false)
 const initialized = ref(false)
 const error = ref<string | null>(null)
+let latestRequestId = 0
 
 export function resetStatisticsState(): void {
+  latestRequestId += 1
   statistics.value = null
   loading.value = false
   initialized.value = false
@@ -17,18 +19,26 @@ export function resetStatisticsState(): void {
 
 export function useStatistics() {
   async function fetch(query?: StatisticsQuery): Promise<Statistics | null> {
+    const requestId = ++latestRequestId
     loading.value = true
     error.value = null
     try {
-      statistics.value = await statisticsApi.getStatistics(query)
-      return statistics.value
+      const result = await statisticsApi.getStatistics(query)
+      if (requestId === latestRequestId) {
+        statistics.value = result
+      }
+      return result
     } catch (err) {
-      error.value = isApiError(err) ? err.message : 'Failed to load statistics'
-      statistics.value = null
+      if (requestId === latestRequestId) {
+        error.value = isApiError(err) ? err.message : 'Failed to load statistics'
+        statistics.value = null
+      }
       return null
     } finally {
-      loading.value = false
-      initialized.value = true
+      if (requestId === latestRequestId) {
+        loading.value = false
+        initialized.value = true
+      }
     }
   }
 
