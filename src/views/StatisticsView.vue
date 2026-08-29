@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import DashboardFlyingTotals from '@/components/DashboardFlyingTotals.vue'
 import DashboardMonthlyChart from '@/components/DashboardMonthlyChart.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import StatisticsBreakdownTables from '@/components/StatisticsBreakdownTables.vue'
 import StatisticsPeriodControls from '@/components/StatisticsPeriodControls.vue'
-import StatisticsSummaryCards from '@/components/StatisticsSummaryCards.vue'
+import FlyingSummaryCards from '@/components/FlyingSummaryCards.vue'
 import { getProfile } from '@/api/profile'
 import { useStatistics } from '@/composables/useStatistics'
 import { useStatisticsPeriod } from '@/composables/useStatisticsPeriod'
@@ -27,6 +26,7 @@ const hasPeriodData = computed(
   () => (statistics.value?.total_flights ?? 0) > 0 || (statistics.value?.days_flown ?? 0) > 0,
 )
 const periodReady = ref(false)
+const aircraftGrouping = ref<'glider' | 'registration'>('glider')
 
 async function loadStatistics(): Promise<void> {
   if (!canLoadStatistics(preset.value, period.value)) {
@@ -43,6 +43,10 @@ onMounted(async () => {
   try {
     const profile = await getProfile()
     initializeFromPreferences(profile.preferences)
+    const savedAircraftGrouping = profile.preferences.statistics_aircraft_grouping
+    if (savedAircraftGrouping === 'glider' || savedAircraftGrouping === 'registration') {
+      aircraftGrouping.value = savedAircraftGrouping
+    }
   } catch {
     initializeFromPreferences(undefined)
   }
@@ -106,7 +110,7 @@ watch(
       </div>
 
       <template v-else>
-        <StatisticsSummaryCards :statistics="statistics" />
+        <FlyingSummaryCards :statistics="statistics" />
         <DashboardMonthlyChart
           :monthly-data="statistics.flights_by_month ?? []"
           :weekly-data="statistics.flights_by_week ?? []"
@@ -115,8 +119,10 @@ watch(
           :period-from="period.from"
           :period-to="period.to"
         />
-        <DashboardFlyingTotals class="hidden sm:block" :statistics="statistics" />
-        <StatisticsBreakdownTables :statistics="statistics" />
+        <StatisticsBreakdownTables
+          :statistics="statistics"
+          :initial-aircraft-grouping="aircraftGrouping"
+        />
       </template>
     </template>
   </div>

@@ -1222,6 +1222,7 @@ components:
       - pic_time
       - pilot
       - registration
+      - glider
       - remarks
       - row_number
     FlightCreateRequest:
@@ -1281,6 +1282,23 @@ components:
       required:
       - count
       - glider
+      - hours
+    RegistrationStats:
+      type: object
+      properties:
+        registration:
+          type: string
+        glider:
+          type: string
+        count:
+          type: integer
+        hours:
+          type: number
+          format: double
+      required:
+      - registration
+      - glider
+      - count
       - hours
     MonthStats:
       type: object
@@ -1933,6 +1951,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GliderStats'
+        flights_by_registration:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistrationStats'
         flights_by_launch_type:
           type: array
           items:

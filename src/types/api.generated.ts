@@ -379,6 +379,13 @@ export interface components {
             /** Format: double */
             hours: number;
         };
+        RegistrationStats: {
+            registration: string;
+            glider: string;
+            count: number;
+            /** Format: double */
+            hours: number;
+        };
         MonthStats: {
             month: string;
             count: number;
@@ -651,6 +658,7 @@ export interface components {
             flights_by_month: components["schemas"]["MonthStats"][];
             flights_by_week: components["schemas"]["WeekStats"][];
             flights_by_glider: components["schemas"]["GliderStats"][];
+            flights_by_registration?: components["schemas"]["RegistrationStats"][];
             flights_by_launch_type: components["schemas"]["LaunchTypeStats"][];
             recent_activity: components["schemas"]["RecentActivity"][];
         };

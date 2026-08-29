@@ -16,6 +16,13 @@ export interface RecentActivityItem {
   remarks: string
 }
 
+export interface RegistrationFlightStats {
+  registration: string
+  glider: string
+  count: number
+  hours: number
+}
+
 export type Statistics = {
   total_flights: number
   total_flight_hours: number
@@ -35,6 +42,7 @@ export type Statistics = {
   flights_by_month: Array<{ month: string; count: number; hours: number }>
   flights_by_week: Array<{ week: string; count: number; hours: number }>
   flights_by_glider: Array<{ glider: string; count: number; hours: number }>
+  flights_by_registration?: RegistrationFlightStats[]
   flights_by_launch_type: Array<{ launch_type: string; count: number }>
   recent_activity: RecentActivityItem[]
   period?: StatisticsPeriodResponse

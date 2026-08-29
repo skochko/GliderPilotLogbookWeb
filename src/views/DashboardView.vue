@@ -6,6 +6,7 @@ import DashboardLegalitySection from '@/components/DashboardLegalitySection.vue'
 import DashboardMonthlyChart from '@/components/DashboardMonthlyChart.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import FlightsTable from '@/components/FlightsTable.vue'
+import FlyingSummaryCards from '@/components/FlyingSummaryCards.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { RECENT_FLIGHTS_LIMIT, listFlights } from '@/api/flights'
 import { isApiError } from '@/api/errors'
@@ -53,7 +54,14 @@ const setupReminderVisible = computed(() =>
   Boolean(user.value?.has_logbook && !user.value.logbook_setup_completed),
 )
 
-const pilotName = computed(() => displaySettings.value?.pilot_name ?? '')
+const pilotName = computed(() => {
+  const name = (displaySettings.value?.pilot_name ?? '').trim()
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toLocaleUpperCase()}${part.slice(1)}`)
+    .join(' ')
+})
 const pilotPrivilegeName = computed(() => {
   const privilege = dashboardStatus.value?.pilot_privilege ?? ''
   return pilotPrivilegeOptions.value.find((option) => option.code === privilege)?.name ?? privilege
@@ -194,7 +202,8 @@ watch(initialized, (ready) => {
         :pilot-privilege-notice="pilotPrivilegeNotice"
       />
 
-      <DashboardFlyingTotals :statistics="statistics" />
+      <DashboardFlyingTotals class="sm:hidden" :statistics="statistics" />
+      <FlyingSummaryCards :statistics="statistics" :show-mobile="false" />
 
       <DashboardMonthlyChart
         :monthly-data="statistics.flights_by_month ?? []"
