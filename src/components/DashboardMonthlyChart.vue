@@ -91,10 +91,9 @@ const monthlyPeriodSeries = computed((): ChartPeriodStats[] => {
 
 const hideMonthAxisLabels = computed(
   () =>
-    isMobileChart.value
-    && periodMode.value === 'month'
-    && props.fixedPeriod
-    && shouldHideMonthAxisLabels(
+    periodMode.value === 'month' &&
+    props.fixedPeriod &&
+    shouldHideMonthAxisLabels(
       props.periodFrom ?? '',
       props.periodTo ?? '',
       monthlyPeriodSeries.value.length,
@@ -200,6 +199,8 @@ const maxCount = computed(() => niceAxisMax(Math.max(...series.value.map((item) 
 
 const hourTicks = computed(() => axisTicks(maxHours.value))
 const countTicks = computed(() => axisTicks(maxCount.value))
+const yAxisFontSize = computed(() => (isMobileChart.value ? 14 : 9))
+const xAxisFontSize = computed(() => (isMobileChart.value ? 17 : 10))
 
 const sparseMonthLabelIndices = computed(() => {
   if (!hideMonthAxisLabels.value || periodMode.value !== 'month') {
@@ -513,7 +514,7 @@ onUnmounted(() => {
             :x="MARGIN.left - 8"
             :y="MARGIN.top + INNER_HEIGHT - (tick / maxHours) * INNER_HEIGHT + 4"
             text-anchor="end"
-            font-size="14"
+            :font-size="yAxisFontSize"
             class="fill-slate-500"
           >
             {{ formatChartHours(tick) }}
@@ -533,7 +534,7 @@ onUnmounted(() => {
             :x="MARGIN.left + INNER_WIDTH + 8"
             :y="MARGIN.top + INNER_HEIGHT - (tick / maxCount) * INNER_HEIGHT + 4"
             text-anchor="start"
-            font-size="14"
+            :font-size="yAxisFontSize"
             class="fill-slate-500"
           >
             {{ tick }}
@@ -543,7 +544,7 @@ onUnmounted(() => {
         <g
           v-for="bar in bars"
           :key="bar.seriesKey"
-          class="cursor-pointer"
+          class="chart-bar-group cursor-pointer"
           role="button"
           tabindex="0"
           :aria-pressed="selectedBarKey === bar.seriesKey"
@@ -564,6 +565,7 @@ onUnmounted(() => {
             :y="bar.hoursBar.y"
             :width="bar.hoursBar.width"
             :height="bar.hoursBar.height"
+            class="chart-bar"
             :class="selectedBarKey === bar.seriesKey ? 'fill-sky-600' : 'fill-sky-500'"
             rx="2"
           />
@@ -572,6 +574,7 @@ onUnmounted(() => {
             :y="bar.countBar.y"
             :width="bar.countBar.width"
             :height="bar.countBar.height"
+            class="chart-bar"
             :class="selectedBarKey === bar.seriesKey ? 'fill-emerald-600' : 'fill-emerald-500'"
             rx="2"
           />
@@ -585,7 +588,7 @@ onUnmounted(() => {
             :x="bar.labelX"
             :y="CHART_HEIGHT - 10"
             :text-anchor="bar.labelAnchor"
-            font-size="17"
+            :font-size="xAxisFontSize"
             :font-weight="selectedBarKey === bar.seriesKey ? 600 : 500"
             :class="selectedBarKey === bar.seriesKey ? 'fill-slate-900' : 'fill-slate-700'"
           >
@@ -658,3 +661,15 @@ onUnmounted(() => {
     </template>
   </section>
 </template>
+
+<style scoped>
+.chart-bar-group:focus {
+  outline: none;
+}
+
+.chart-bar-group[aria-pressed='true'] .chart-bar,
+.chart-bar-group:focus-visible .chart-bar {
+  stroke: #0284c7;
+  stroke-width: 0.75;
+}
+</style>
