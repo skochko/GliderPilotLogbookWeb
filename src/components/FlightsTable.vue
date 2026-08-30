@@ -154,7 +154,7 @@ function openRemarks(flight: Flight): void {
               <span class="block">Glider</span>
               <span class="block text-xs font-normal text-slate-600">Launch</span>
             </th>
-            <th class="px-2 py-2 text-center font-medium sm:px-3">
+            <th class="min-w-20 px-2 py-2 text-center font-medium sm:px-3">
               <span class="block">Time</span>
               <span class="block text-xs font-normal text-slate-600">Place</span>
             </th>
@@ -165,7 +165,10 @@ function openRemarks(flight: Flight): void {
         <tbody>
           <template v-for="group in flightGroups" :key="group.key">
             <tr class="border-t border-slate-200 bg-slate-100">
-              <td colspan="6" class="px-2 py-1 text-sm font-semibold text-slate-700 sm:px-4 sm:py-1.5">
+              <td
+                colspan="6"
+                class="px-2 py-1 text-sm font-semibold text-slate-700 sm:px-4 sm:py-1.5"
+              >
                 {{ group.label }}
               </td>
             </tr>
@@ -226,7 +229,7 @@ function openRemarks(flight: Flight): void {
                   </span>
                 </div>
               </td>
-              <td class="px-2 py-1.5 text-center tabular-nums sm:px-3">
+              <td class="min-w-20 px-2 py-1.5 text-center tabular-nums sm:px-3">
                 <FlightDurationCell :value="flight.flight_time" />
                 <p
                   v-if="flight.departure_place?.trim()"
@@ -262,11 +265,7 @@ function openRemarks(flight: Flight): void {
       </table>
     </div>
 
-    <FlightDetailDialog
-      :open="detailOpen"
-      :flight="detailFlight"
-      @close="detailOpen = false"
-    />
+    <FlightDetailDialog :open="detailOpen" :flight="detailFlight" @close="detailOpen = false" />
 
     <RemarksDialog
       :open="remarksOpen"
