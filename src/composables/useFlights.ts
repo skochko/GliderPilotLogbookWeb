@@ -19,6 +19,7 @@ import type {
 
 const flights = ref<Flight[]>([])
 const total = ref(0)
+const totalDurationMinutes = ref(0)
 const hasMore = ref(false)
 const loading = ref(false)
 const loadingMore = ref(false)
@@ -37,6 +38,7 @@ let listRequestId = 0
 export function resetFlightsState(): void {
   flights.value = []
   total.value = 0
+  totalDurationMinutes.value = 0
   hasMore.value = false
   loading.value = false
   loadingMore.value = false
@@ -62,9 +64,13 @@ function buildListParams(offset: number) {
   }
 }
 
-function applyListPage(page: Awaited<ReturnType<typeof flightsApi.listFlights>>, append: boolean): void {
+function applyListPage(
+  page: Awaited<ReturnType<typeof flightsApi.listFlights>>,
+  append: boolean,
+): void {
   flights.value = append ? [...flights.value, ...page.results] : page.results
   total.value = page.total
+  totalDurationMinutes.value = page.total_duration_minutes
   hasMore.value = page.has_more
   listSortBy.value = page.sort_by
   listSortDirection.value = page.sort_direction
@@ -105,6 +111,7 @@ export function useFlights() {
       error.value = isApiError(err) ? err.message : 'Failed to load flights'
       flights.value = []
       total.value = 0
+      totalDurationMinutes.value = 0
       hasMore.value = false
       return []
     } finally {
@@ -210,6 +217,7 @@ export function useFlights() {
   return {
     flights: readonly(flights),
     total: readonly(total),
+    totalDurationMinutes: readonly(totalDurationMinutes),
     hasMore: readonly(hasMore),
     loading: readonly(loading),
     loadingMore: readonly(loadingMore),

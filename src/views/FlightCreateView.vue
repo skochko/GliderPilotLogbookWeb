@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import FlightForm from '@/components/FlightForm.vue'
@@ -8,12 +8,15 @@ import FormSheetLayout from '@/components/FormSheetLayout.vue'
 import { isApiError } from '@/api/errors'
 import { useFlights } from '@/composables/useFlights'
 import { useSettings } from '@/composables/useSettings'
+import { safeFlightsReturnTo } from '@/lib/flightListQuery'
 import type { FlightCreateRequest } from '@/types'
 
 const FLIGHT_CREATE_FORM_ID = 'flight-create-form'
 const DESKTOP_MEDIA_QUERY = '(min-width: 640px)'
 
 const router = useRouter()
+const route = useRoute()
+const flightsReturnTo = safeFlightsReturnTo(route.query.returnTo)
 const { create, mutating, error, flights, list } = useFlights()
 const { settings, fetch: fetchSettings } = useSettings()
 
@@ -51,7 +54,7 @@ function onCancel(): void {
   if (mutating.value) {
     return
   }
-  void router.push('/flights')
+  void router.push(flightsReturnTo)
 }
 
 async function onSubmit(payload: Record<string, unknown>): Promise<void> {
@@ -68,7 +71,7 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
     }
     const flight = await create({ ...defaults, ...payload } as FlightCreateRequest)
     if (flight) {
-      await router.push('/flights')
+      await router.push(flightsReturnTo)
     }
   } catch (err) {
     if (isApiError(err)) {

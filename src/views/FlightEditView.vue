@@ -11,6 +11,7 @@ import LoadingState from '@/components/LoadingState.vue'
 import { isApiError } from '@/api/errors'
 import { useFlights } from '@/composables/useFlights'
 import { decodeFlightId } from '@/lib/flightId'
+import { safeFlightsReturnTo } from '@/lib/flightListQuery'
 import type { Flight, FlightPatchRequest } from '@/types'
 
 const FLIGHT_EDIT_FORM_ID = 'flight-edit-form'
@@ -31,6 +32,7 @@ const isDesktop = ref(
 )
 
 const flightId = decodeFlightId(route.params.id as string)
+const flightsReturnTo = safeFlightsReturnTo(route.query.returnTo)
 
 let desktopMediaQuery: MediaQueryList | null = null
 
@@ -81,7 +83,7 @@ function onCancel(): void {
   if (mutating.value || mediaBusy.value) {
     return
   }
-  void router.push('/flights')
+  void router.push(flightsReturnTo)
 }
 
 async function onSubmit(payload: Record<string, unknown>): Promise<void> {
@@ -95,7 +97,7 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
     const updated = await update(flightId, payload as FlightPatchRequest)
     if (updated) {
       flight.value = updated
-      await router.push('/flights')
+      await router.push(flightsReturnTo)
     }
   } catch (err) {
     if (isApiError(err)) {
@@ -115,7 +117,7 @@ async function confirmDelete(): Promise<void> {
   const ok = await remove(flightId)
   if (ok) {
     deleteOpen.value = false
-    await router.push('/flights')
+    await router.push(flightsReturnTo)
   }
 }
 </script>

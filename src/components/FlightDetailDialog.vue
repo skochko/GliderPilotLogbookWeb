@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import IgcMapDialog from '@/components/IgcMapDialog.vue'
 import FlightImageViewerDialog from '@/components/FlightImageViewerDialog.vue'
 import { flightMediaContentUrl } from '@/api/flightMedia'
@@ -8,19 +8,24 @@ import { formatDisplayDate } from '@/lib/dates'
 import { formatDurationProse } from '@/lib/duration'
 import { encodeFlightId } from '@/lib/flightId'
 import { dashboardChipBaseClass } from '@/lib/dashboardChips'
-import {
-  dashboardFieldLabelClass,
-  dashboardPanelClass,
-} from '@/lib/dashboardPanels'
+import { dashboardFieldLabelClass, dashboardPanelClass } from '@/lib/dashboardPanels'
 import { launchTypeBadgeClass, launchTypeChipLabel } from '@/lib/launchTypes'
 import { hasUserRemarks, userRemarksText } from '@/lib/mediaTags'
-import { pilotRoleLabel, pilotRoleStyles, pilotRolesFromFlight, crewMembersFromFlight, flightSummaryBadgeBaseClass, flightSummaryMetaBadgeClass } from '@/lib/pilotRoles'
+import {
+  pilotRoleLabel,
+  pilotRoleStyles,
+  pilotRolesFromFlight,
+  crewMembersFromFlight,
+  flightSummaryBadgeBaseClass,
+  flightSummaryMetaBadgeClass,
+} from '@/lib/pilotRoles'
 import type { Flight, FlightMediaItem } from '@/types'
 
 const props = defineProps<{
   open: boolean
   flight: Flight | null
 }>()
+const route = useRoute()
 
 const emit = defineEmits<{ close: [] }>()
 
@@ -116,16 +121,25 @@ function landingsLabel(count: number): string {
 }
 
 const flight = computed(() => props.flight)
+const flightsReturnTo = computed(() =>
+  route.fullPath === '/flights' || route.fullPath.startsWith('/flights?')
+    ? route.fullPath
+    : '/flights',
+)
+
+function flightEditRoute(hash = ''): { path: string; query: { returnTo: string }; hash: string } {
+  return {
+    path: `/flights/${encodeFlightId(props.flight?.id ?? '')}`,
+    query: { returnTo: flightsReturnTo.value },
+    hash,
+  }
+}
 
 const heroAirfield = computed(() => {
   if (!flight.value) {
     return ''
   }
-  return (
-    flight.value.departure_place?.trim() ||
-    flight.value.arrival_place?.trim() ||
-    ''
-  )
+  return flight.value.departure_place?.trim() || flight.value.arrival_place?.trim() || ''
 })
 
 const heroSubtitle = computed(() => {
@@ -196,9 +210,7 @@ const summaryBadges = computed(() => {
   return badges
 })
 
-const crewMembers = computed(() =>
-  flight.value ? crewMembersFromFlight(flight.value) : [],
-)
+const crewMembers = computed(() => (flight.value ? crewMembersFromFlight(flight.value) : []))
 
 const showRoute = computed(() => {
   if (!flight.value) {
@@ -248,7 +260,10 @@ const mediaItems = computed(() => flight.value?.media ?? [])
               ✕
             </button>
 
-            <h2 id="flight-detail-title" class="clear-both pr-6 text-xl font-bold leading-tight text-slate-900">
+            <h2
+              id="flight-detail-title"
+              class="clear-both pr-6 text-xl font-bold leading-tight text-slate-900"
+            >
               {{ heroAircraftTitle }}
             </h2>
             <p class="mt-0.5 text-xs text-slate-500">{{ heroSubtitle }}</p>
@@ -260,19 +275,12 @@ const mediaItems = computed(() => flight.value?.media ?? [])
           <div class="min-h-0 flex-1 overflow-y-auto bg-slate-50">
             <div class="space-y-3 p-4">
               <div v-if="summaryBadges.length" class="flex flex-wrap gap-1.5">
-              <span
-                v-for="badge in summaryBadges"
-                :key="badge.key"
-                :class="badge.className"
-              >
-                {{ badge.label }}
-              </span>
+                <span v-for="badge in summaryBadges" :key="badge.key" :class="badge.className">
+                  {{ badge.label }}
+                </span>
               </div>
 
-              <article
-                v-if="crewMembers.length"
-                :class="[dashboardPanelClass, 'p-3']"
-              >
+              <article v-if="crewMembers.length" :class="[dashboardPanelClass, 'p-3']">
                 <p :class="[dashboardFieldLabelClass, 'mb-2']">Crew</p>
                 <ul class="space-y-2">
                   <li
@@ -293,141 +301,150 @@ const mediaItems = computed(() => flight.value?.media ?? [])
                 </ul>
               </article>
 
-            <article v-if="showRoute" :class="[dashboardPanelClass, 'p-3']">
-              <p :class="[dashboardFieldLabelClass, 'mb-2']">Flight</p>
-              <div class="space-y-2">
-                <div class="flex justify-between gap-3 text-sm">
-                  <div class="min-w-0">
-                    <p class="text-xs text-slate-600">Departure</p>
-                    <p class="truncate font-semibold text-slate-900">
-                      {{ flight.departure_place?.trim() || '—' }}
-                    </p>
+              <article v-if="showRoute" :class="[dashboardPanelClass, 'p-3']">
+                <p :class="[dashboardFieldLabelClass, 'mb-2']">Flight</p>
+                <div class="space-y-2">
+                  <div class="flex justify-between gap-3 text-sm">
+                    <div class="min-w-0">
+                      <p class="text-xs text-slate-600">Departure</p>
+                      <p class="truncate font-semibold text-slate-900">
+                        {{ flight.departure_place?.trim() || '—' }}
+                      </p>
+                    </div>
+                    <div class="shrink-0 tabular-nums text-slate-600">
+                      {{ flight.launch_time?.trim() || '—' }}
+                    </div>
                   </div>
-                  <div class="shrink-0 tabular-nums text-slate-600">
-                    {{ flight.launch_time?.trim() || '—' }}
+
+                  <div class="text-center text-sm text-slate-400" aria-hidden="true">↓</div>
+
+                  <div class="flex justify-between gap-3 text-sm">
+                    <div class="min-w-0">
+                      <p class="text-xs text-slate-600">Arrival</p>
+                      <p class="truncate font-semibold text-slate-900">
+                        {{ flight.arrival_place?.trim() || '—' }}
+                      </p>
+                    </div>
+                    <div class="shrink-0 tabular-nums text-slate-600">
+                      {{ flight.landing_time?.trim() || '—' }}
+                    </div>
                   </div>
                 </div>
+              </article>
 
-                <div class="text-center text-sm text-slate-400" aria-hidden="true">↓</div>
+              <article v-if="hasUserRemarks(flight.remarks)" :class="[dashboardPanelClass, 'p-3']">
+                <p :class="[dashboardFieldLabelClass, 'mb-2']">Notes</p>
+                <p class="whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
+                  {{ remarks }}
+                </p>
+              </article>
 
-                <div class="flex justify-between gap-3 text-sm">
-                  <div class="min-w-0">
-                    <p class="text-xs text-slate-600">Arrival</p>
-                    <p class="truncate font-semibold text-slate-900">
-                      {{ flight.arrival_place?.trim() || '—' }}
-                    </p>
-                  </div>
-                  <div class="shrink-0 tabular-nums text-slate-600">
-                    {{ flight.landing_time?.trim() || '—' }}
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            <article v-if="hasUserRemarks(flight.remarks)" :class="[dashboardPanelClass, 'p-3']">
-              <p :class="[dashboardFieldLabelClass, 'mb-2']">Notes</p>
-              <p class="whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
-                {{ remarks }}
-              </p>
-            </article>
-
-            <article :class="[dashboardPanelClass, 'p-3']">
-              <p :class="[dashboardFieldLabelClass, 'mb-2']">
-                {{ mediaItems.length === 1 ? 'Attachment' : 'Attachments' }}
-              </p>
-              <div v-if="!mediaItems.length" class="rounded-md border border-dashed border-sky-200 bg-sky-50/60 p-3">
-                <p class="text-sm text-slate-600">No attachments yet.</p>
-                <RouterLink
-                  :to="`/flights/${encodeFlightId(flight.id)}#media-attachments`"
-                  class="mt-2 inline-flex text-sm font-semibold text-sky-700 hover:text-sky-900 hover:underline"
-                  @click="closeDialog"
+              <article :class="[dashboardPanelClass, 'p-3']">
+                <p :class="[dashboardFieldLabelClass, 'mb-2']">
+                  {{ mediaItems.length === 1 ? 'Attachment' : 'Attachments' }}
+                </p>
+                <div
+                  v-if="!mediaItems.length"
+                  class="rounded-md border border-dashed border-sky-200 bg-sky-50/60 p-3"
                 >
-                  Add attachment
-                </RouterLink>
-              </div>
-              <ul v-else class="space-y-2">
-                <li
-                  v-for="item in mediaItems"
-                  :key="`${item.type}:${item.filename}`"
-                  class="flex items-center justify-between gap-3"
-                >
-                  <span class="min-w-0 truncate text-sm font-semibold text-slate-900">
-                    {{ attachmentDisplayName(item) }}
-                  </span>
-                  <button
-                    v-if="canOpenAttachment(item)"
-                    type="button"
-                    class="inline-flex shrink-0 rounded-md p-1 transition"
-                    :class="
-                      item.type === 'igc'
-                        ? 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-800'
-                        : 'text-sky-600 hover:bg-sky-50 hover:text-sky-800'
-                    "
-                    :title="item.type === 'igc' ? 'View on map' : item.type === 'image' ? 'View image' : 'Download'"
-                    :aria-label="
-                      item.type === 'igc'
-                        ? 'View IGC track on map'
-                        : item.type === 'image'
-                          ? 'View image'
-                          : 'Download attachment'
-                    "
-                    @click="openAttachment(item)"
+                  <p class="text-sm text-slate-600">No attachments yet.</p>
+                  <RouterLink
+                    :to="flightEditRoute('#media-attachments')"
+                    class="mt-2 inline-flex text-sm font-semibold text-sky-700 hover:text-sky-900 hover:underline"
+                    @click="closeDialog"
                   >
-                    <svg
-                      v-if="item.type === 'igc'"
-                      class="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
+                    Add attachment
+                  </RouterLink>
+                </div>
+                <ul v-else class="space-y-2">
+                  <li
+                    v-for="item in mediaItems"
+                    :key="`${item.type}:${item.filename}`"
+                    class="flex items-center justify-between gap-3"
+                  >
+                    <span class="min-w-0 truncate text-sm font-semibold text-slate-900">
+                      {{ attachmentDisplayName(item) }}
+                    </span>
+                    <button
+                      v-if="canOpenAttachment(item)"
+                      type="button"
+                      class="inline-flex shrink-0 rounded-md p-1 transition"
+                      :class="
+                        item.type === 'igc'
+                          ? 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-800'
+                          : 'text-sky-600 hover:bg-sky-50 hover:text-sky-800'
+                      "
+                      :title="
+                        item.type === 'igc'
+                          ? 'View on map'
+                          : item.type === 'image'
+                            ? 'View image'
+                            : 'Download'
+                      "
+                      :aria-label="
+                        item.type === 'igc'
+                          ? 'View IGC track on map'
+                          : item.type === 'image'
+                            ? 'View image'
+                            : 'Download attachment'
+                      "
+                      @click="openAttachment(item)"
                     >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-                      />
-                    </svg>
-                    <svg
-                      v-else-if="item.type === 'image'"
-                      class="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="m2.25 15.75 5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21Z"
-                      />
-                    </svg>
-                    <svg
-                      v-else
-                      class="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12M12 16.5V3"
-                      />
-                    </svg>
-                  </button>
-                </li>
-              </ul>
-            </article>
+                      <svg
+                        v-if="item.type === 'igc'"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                        />
+                      </svg>
+                      <svg
+                        v-else-if="item.type === 'image'"
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="m2.25 15.75 5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21Z"
+                        />
+                      </svg>
+                      <svg
+                        v-else
+                        class="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12M12 16.5V3"
+                        />
+                      </svg>
+                    </button>
+                  </li>
+                </ul>
+              </article>
             </div>
           </div>
 
           <div class="shrink-0 border-t border-slate-200 px-4 py-3">
             <RouterLink
-              :to="`/flights/${encodeFlightId(flight.id)}`"
+              :to="flightEditRoute()"
               class="flex w-full items-center justify-center rounded-md bg-sky-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-800"
               @click="closeDialog"
             >

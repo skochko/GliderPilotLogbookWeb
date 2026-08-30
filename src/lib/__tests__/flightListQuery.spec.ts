@@ -3,9 +3,12 @@ import {
   applyFlightDatePreset,
   emptyFlightListFilters,
   flightListFiltersToParams,
+  flightListStateFromQuery,
+  flightListStateToQuery,
   hasActiveFlightListFilters,
   queryFromSortPreset,
   resolveFlightListDateRange,
+  safeFlightsReturnTo,
   sortPresetFromQuery,
 } from '@/lib/flightListQuery'
 
@@ -26,7 +29,9 @@ describe('flightListQuery', () => {
     expect(hasActiveFlightListFilters({ ...emptyFlightListFilters(), glider: 'ASK-21' })).toBe(true)
     expect(hasActiveFlightListFilters({ ...emptyFlightListFilters(), role: 'p1' })).toBe(true)
     expect(hasActiveFlightListFilters({ ...emptyFlightListFilters(), role: 'solo' })).toBe(true)
-    expect(hasActiveFlightListFilters({ ...emptyFlightListFilters(), date_preset: 'this_month' })).toBe(true)
+    expect(
+      hasActiveFlightListFilters({ ...emptyFlightListFilters(), date_preset: 'this_month' }),
+    ).toBe(true)
   })
 
   it('omits empty filter params', () => {
@@ -54,5 +59,36 @@ describe('flightListQuery', () => {
     const range = resolveFlightListDateRange(filters)
     expect(range.from).toMatch(/^\d{4}-01-01$/)
     expect(range.to).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+
+  it('round-trips list filters and sorting through route query', () => {
+    const filters = {
+      ...emptyFlightListFilters(),
+      glider: 'ASK-21',
+      role: 'solo' as const,
+      date_preset: 'custom' as const,
+      date_from: '2026-01-01',
+      date_to: '2026-08-30',
+    }
+    const query = flightListStateToQuery('duration_longest_first', filters)
+
+    expect(query).toEqual({
+      sort: 'duration_longest_first',
+      glider: 'ASK-21',
+      role: 'solo',
+      date_preset: 'custom',
+      from: '2026-01-01',
+      to: '2026-08-30',
+    })
+    expect(flightListStateFromQuery(query)).toEqual({
+      sortPreset: 'duration_longest_first',
+      filters,
+    })
+  })
+
+  it('only accepts internal flights return paths', () => {
+    expect(safeFlightsReturnTo('/flights?role=solo')).toBe('/flights?role=solo')
+    expect(safeFlightsReturnTo('https://example.com')).toBe('/flights')
+    expect(safeFlightsReturnTo('/settings')).toBe('/flights')
   })
 })

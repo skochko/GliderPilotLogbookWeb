@@ -74,10 +74,14 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/flights', label: 'Flights' },
   { to: '/statistics', label: 'Statistics' },
-  { to: '/qualification-events', label: 'Training & Qualification Events' },
-  { to: '/settings', label: 'Settings' },
+  {
+    to: '/qualification-events',
+    label: 'Training & Qualification Events',
+    desktopLabel: 'Training',
+  },
+  { to: '/settings', label: 'Settings', desktopAccountOnly: true },
   { to: '/automation', label: 'Automation' },
-  { to: '/profile', label: 'Profile' },
+  { to: '/profile', label: 'Profile', desktopAccountOnly: true },
 ]
 
 function isActive(path: string): boolean {
@@ -223,8 +227,10 @@ watch(syncCompleteCount, (count, previous) => {
 <template>
   <div class="min-h-screen">
     <header v-if="!hideMobileChrome" class="sticky top-0 z-50 border-b border-slate-200 bg-white">
-      <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <div class="flex min-w-0 items-center gap-3 sm:gap-6">
+      <div
+        class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 lg:h-16 lg:max-w-[1440px] lg:justify-start lg:gap-0 lg:px-8 lg:py-0"
+      >
+        <div class="flex min-w-0 items-center gap-3 sm:gap-6 lg:h-full lg:flex-1 lg:gap-8">
           <button
             v-if="user?.has_logbook"
             type="button"
@@ -243,27 +249,38 @@ watch(syncCompleteCount, (count, previous) => {
               <path v-else stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <RouterLink to="/dashboard" class="flex min-w-0 items-center gap-2 truncate text-lg font-semibold text-sky-800">
+          <RouterLink
+            to="/dashboard"
+            class="flex min-w-0 items-center gap-2 truncate text-lg font-semibold text-sky-800 lg:shrink-0"
+          >
             <GliderLogo size-class="h-8 w-8 shrink-0" />
             <span class="truncate">Glider Pilot Logbook</span>
           </RouterLink>
-          <nav v-if="user?.has_logbook" class="hidden items-center gap-1 sm:flex">
+          <nav
+            v-if="user?.has_logbook"
+            class="hidden items-center gap-1 sm:flex lg:h-full lg:items-stretch lg:gap-5 xl:gap-6"
+          >
             <RouterLink
               v-for="item in navItems"
               :key="item.to"
               :to="item.to"
-              class="rounded-md px-3 py-2 text-sm font-medium transition"
-              :class="
+              class="rounded-md px-3 py-2 text-sm font-medium transition lg:relative lg:flex lg:items-center lg:self-stretch lg:whitespace-nowrap lg:rounded-none lg:px-0 lg:py-0 lg:hover:bg-transparent"
+              :class="[
+                item.desktopAccountOnly ? 'lg:hidden' : '',
                 isActive(item.to)
-                  ? 'bg-sky-100 text-sky-900'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              "
+                  ? 'bg-sky-100 text-sky-900 lg:bg-transparent lg:text-sky-700 lg:after:absolute lg:after:inset-x-0 lg:after:bottom-0 lg:after:h-[3px] lg:after:rounded-t lg:after:bg-current'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 lg:hover:text-slate-900',
+              ]"
             >
-              {{ item.label }}
+              <span :class="item.desktopLabel ? 'lg:hidden' : ''">{{ item.label }}</span>
+              <span v-if="item.desktopLabel" class="hidden lg:inline">{{ item.desktopLabel }}</span>
             </RouterLink>
           </nav>
         </div>
-        <div v-if="user" class="relative flex shrink-0 items-center gap-2 text-sm sm:gap-3">
+        <div
+          v-if="user"
+          class="relative flex shrink-0 items-center gap-2 text-sm sm:gap-3 lg:ml-auto lg:whitespace-nowrap"
+        >
           <button
             v-if="user.has_logbook && !isSyncing"
             type="button"
@@ -352,7 +369,7 @@ watch(syncCompleteCount, (count, previous) => {
         class="border-t border-slate-100 bg-slate-50/80 px-4 py-3"
         aria-label="Google Sheet synchronization"
       >
-        <div class="mx-auto flex max-w-6xl items-center gap-3 sm:gap-6">
+        <div class="mx-auto flex max-w-6xl items-center gap-3 sm:gap-6 lg:max-w-[1440px] lg:px-4">
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2 text-sm">
               <span class="font-semibold text-slate-900">Google Sheet</span>

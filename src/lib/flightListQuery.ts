@@ -1,4 +1,9 @@
-import type { FlightDatePresetId, FlightListFilters, FlightPilotRoleFilter, FlightSortBy } from '@/types'
+import type {
+  FlightDatePresetId,
+  FlightListFilters,
+  FlightPilotRoleFilter,
+  FlightSortBy,
+} from '@/types'
 import { resolveStatisticsPreset } from '@/lib/statisticsPeriod'
 
 export type FlightListSortPreset =
@@ -7,14 +12,36 @@ export type FlightListSortPreset =
   | 'duration_longest_first'
   | 'duration_shortest_first'
 
+type FlightListQueryValue = string | (string | null)[] | null | undefined
+type FlightListRouteQuery = Record<string, FlightListQueryValue>
+
+const FLIGHT_DATE_PRESET_IDS: readonly FlightDatePresetId[] = [
+  'all_time',
+  'this_month',
+  'last_month',
+  'last_90_days',
+  'year_to_date',
+  'custom',
+]
+
 export const FLIGHT_LIST_SORT_OPTIONS: ReadonlyArray<{
   id: FlightListSortPreset
   label: string
   sort_by: FlightSortBy
   sort_direction: string
 }> = [
-  { id: 'date_newest_first', label: 'Date (newest first)', sort_by: 'date', sort_direction: 'newest_first' },
-  { id: 'date_oldest_first', label: 'Date (oldest first)', sort_by: 'date', sort_direction: 'newest_last' },
+  {
+    id: 'date_newest_first',
+    label: 'Date (newest first)',
+    sort_by: 'date',
+    sort_direction: 'newest_first',
+  },
+  {
+    id: 'date_oldest_first',
+    label: 'Date (oldest first)',
+    sort_by: 'date',
+    sort_direction: 'newest_last',
+  },
   {
     id: 'duration_longest_first',
     label: 'Duration (longest first)',
@@ -29,14 +56,15 @@ export const FLIGHT_LIST_SORT_OPTIONS: ReadonlyArray<{
   },
 ]
 
-export const FLIGHT_DATE_PRESET_OPTIONS: ReadonlyArray<{ id: FlightDatePresetId; label: string }> = [
-  { id: 'all_time', label: 'All time' },
-  { id: 'this_month', label: 'This month' },
-  { id: 'last_month', label: 'Last month' },
-  { id: 'last_90_days', label: 'Last 90 days' },
-  { id: 'year_to_date', label: 'Year to date' },
-  { id: 'custom', label: 'Custom' },
-]
+export const FLIGHT_DATE_PRESET_OPTIONS: ReadonlyArray<{ id: FlightDatePresetId; label: string }> =
+  [
+    { id: 'all_time', label: 'All time' },
+    { id: 'this_month', label: 'This month' },
+    { id: 'last_month', label: 'Last month' },
+    { id: 'last_90_days', label: 'Last 90 days' },
+    { id: 'year_to_date', label: 'Year to date' },
+    { id: 'custom', label: 'Custom' },
+  ]
 
 export const FLIGHT_ROLE_FILTER_OPTIONS: ReadonlyArray<{
   value: FlightPilotRoleFilter
@@ -49,7 +77,10 @@ export const FLIGHT_ROLE_FILTER_OPTIONS: ReadonlyArray<{
   { value: 'solo', label: 'Solo' },
 ]
 
-export function sortPresetFromQuery(sortBy: FlightSortBy, sortDirection: string): FlightListSortPreset {
+export function sortPresetFromQuery(
+  sortBy: FlightSortBy,
+  sortDirection: string,
+): FlightListSortPreset {
   const match = FLIGHT_LIST_SORT_OPTIONS.find(
     (option) => option.sort_by === sortBy && option.sort_direction === sortDirection,
   )
@@ -60,7 +91,8 @@ export function queryFromSortPreset(preset: FlightListSortPreset): {
   sort_by: FlightSortBy
   sort_direction: string
 } {
-  const option = FLIGHT_LIST_SORT_OPTIONS.find((item) => item.id === preset) ?? FLIGHT_LIST_SORT_OPTIONS[0]!
+  const option =
+    FLIGHT_LIST_SORT_OPTIONS.find((item) => item.id === preset) ?? FLIGHT_LIST_SORT_OPTIONS[0]!
   return {
     sort_by: option.sort_by,
     sort_direction: option.sort_direction,
@@ -79,15 +111,77 @@ export function emptyFlightListFilters(): FlightListFilters {
   }
 }
 
+function queryString(value: FlightListQueryValue): string {
+  return Array.isArray(value) ? (value.find((item) => item !== null) ?? '') : (value ?? '')
+}
+
+export function flightListStateToQuery(
+  sortPreset: FlightListSortPreset,
+  filters: FlightListFilters,
+): Record<string, string> {
+  const query: Record<string, string> = { sort: sortPreset }
+  const values = {
+    glider: filters.glider,
+    registration: filters.registration,
+    launch_type: filters.launch_type,
+    role: filters.role,
+    date_preset: filters.date_preset,
+    from: filters.date_from,
+    to: filters.date_to,
+  }
+  for (const [key, value] of Object.entries(values)) {
+    if (value && value !== 'all_time') query[key] = value
+  }
+  return query
+}
+
+export function flightListStateFromQuery(query: FlightListRouteQuery): {
+  sortPreset: FlightListSortPreset
+  filters: FlightListFilters
+} {
+  const requestedSort = queryString(query.sort)
+  const sortPreset = FLIGHT_LIST_SORT_OPTIONS.some((option) => option.id === requestedSort)
+    ? (requestedSort as FlightListSortPreset)
+    : 'date_newest_first'
+  const requestedDatePreset = queryString(query.date_preset)
+  const datePreset = FLIGHT_DATE_PRESET_IDS.includes(requestedDatePreset as FlightDatePresetId)
+    ? (requestedDatePreset as FlightDatePresetId)
+    : queryString(query.from) || queryString(query.to)
+      ? 'custom'
+      : 'all_time'
+  const requestedRole = queryString(query.role)
+  const role: FlightPilotRoleFilter = ['', 'p1', 'p2', 'instructor', 'solo'].includes(requestedRole)
+    ? (requestedRole as FlightPilotRoleFilter)
+    : ''
+
+  return {
+    sortPreset,
+    filters: {
+      glider: queryString(query.glider),
+      registration: queryString(query.registration),
+      launch_type: queryString(query.launch_type),
+      role,
+      date_preset: datePreset,
+      date_from: queryString(query.from),
+      date_to: queryString(query.to),
+    },
+  }
+}
+
+export function safeFlightsReturnTo(value: FlightListQueryValue): string {
+  const returnTo = queryString(value)
+  return returnTo === '/flights' || returnTo.startsWith('/flights?') ? returnTo : '/flights'
+}
+
 export function hasActiveFlightListFilters(filters: FlightListFilters): boolean {
   return Boolean(
     filters.glider ||
-      filters.registration ||
-      filters.launch_type ||
-      filters.role ||
-      (filters.date_preset && filters.date_preset !== 'all_time') ||
-      filters.date_from ||
-      filters.date_to,
+    filters.registration ||
+    filters.launch_type ||
+    filters.role ||
+    (filters.date_preset && filters.date_preset !== 'all_time') ||
+    filters.date_from ||
+    filters.date_to,
   )
 }
 
@@ -112,7 +206,9 @@ export function resolveFlightListDateRange(filters: FlightListFilters): {
   }
 }
 
-export function flightListFiltersToParams(filters: FlightListFilters): Pick<
+export function flightListFiltersToParams(
+  filters: FlightListFilters,
+): Pick<
   import('@/types').FlightListParams,
   'glider' | 'registration' | 'launch_type' | 'role' | 'from' | 'to'
 > {

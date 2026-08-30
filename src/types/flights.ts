@@ -31,6 +31,7 @@ export interface FlightFilterOptions {
 export interface FlightListResponse {
   results: Flight[]
   total: number
+  total_duration_minutes: number
   limit: number
   offset: number
   has_more: boolean
