@@ -229,3 +229,15 @@ body {
 .markdown-content th {
   @apply bg-slate-100 font-medium text-slate-900;
 }
+
+.markdown-content .page-image {
+  @apply my-4 h-auto max-w-full rounded-lg;
+}
+
+.markdown-content .page-image--team-portrait {
+  @apply float-left mr-4 mb-4 h-32 w-32 rounded-full object-cover object-center sm:mr-6 sm:h-40 sm:w-40;
+}
+
+.markdown-content .page-image--team-portrait ~ .page-image--team-portrait {
+  @apply clear-left;
+}
