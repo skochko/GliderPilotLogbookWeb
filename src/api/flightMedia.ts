@@ -1,7 +1,12 @@
 import { API, apiJson, apiFetch, getCsrfToken } from './client'
 import { parseApiError } from './errors'
 import { encodeFlightId } from '@/lib/flightId'
-import type { FlightMediaFolder, FlightMediaItem, FlightMediaUploadResponse } from '@/types'
+import type {
+  FlightMediaDeleteResponse,
+  FlightMediaFolder,
+  FlightMediaItem,
+  FlightMediaUploadResponse,
+} from '@/types'
 
 const UPLOAD_TIMEOUT_MS = 15 * 60 * 1000
 
@@ -28,6 +33,15 @@ export function flightMediaContentUrl(flightId: string, filename: string): strin
 
 export function listFlightMedia(flightId: string): Promise<FlightMediaItem[]> {
   return apiJson<FlightMediaItem[]>(`/flights/${encodeFlightId(flightId)}/media`)
+}
+
+export function deleteFlightMedia(
+  flightId: string,
+  filename: string,
+): Promise<FlightMediaDeleteResponse> {
+  return apiJson<FlightMediaDeleteResponse>(flightMediaContentPath(flightId, filename), {
+    method: 'DELETE',
+  })
 }
 
 export function getFlightMediaFolder(flightId: string): Promise<FlightMediaFolder> {
@@ -126,10 +140,13 @@ export function attachFlightMediaFromDrive(
   flightId: string,
   driveFileId: string,
 ): Promise<FlightMediaUploadResponse> {
-  return apiJson<FlightMediaUploadResponse>(`/flights/${encodeFlightId(flightId)}/media/from-drive`, {
-    method: 'POST',
-    body: JSON.stringify({ drive_file_id: driveFileId }),
-  })
+  return apiJson<FlightMediaUploadResponse>(
+    `/flights/${encodeFlightId(flightId)}/media/from-drive`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ drive_file_id: driveFileId }),
+    },
+  )
 }
 
 export async function fetchFlightIgcContent(flightId: string, filename: string): Promise<string> {

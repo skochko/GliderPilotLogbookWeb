@@ -16,10 +16,12 @@ const props = withDefaults(
     saving?: boolean
     formId?: string
     showActions?: boolean
+    showInstructorFlight?: boolean
   }>(),
   {
     formId: 'flight-form',
     showActions: true,
+    showInstructorFlight: false,
   },
 )
 
@@ -43,6 +45,7 @@ const form = reactive({
   launch_type: '',
   landings: 1,
   is_instructor: false,
+  under_instruction: false,
   remarks: '',
 })
 
@@ -66,6 +69,7 @@ watch(
       form.launch_type = ''
       form.landings = 1
       form.is_instructor = false
+      form.under_instruction = false
       form.remarks = ''
       return
     }
@@ -81,6 +85,7 @@ watch(
     form.launch_type = normalizeLaunchTypeCode(flight.launch_type)
     form.landings = flight.landings
     form.is_instructor = flight.is_instructor
+    form.under_instruction = flight.under_instruction
     form.remarks = userRemarksText(flight.remarks)
   },
   { immediate: true },
@@ -91,7 +96,10 @@ function fieldError(name: string): string | undefined {
 }
 
 function onSubmit(): void {
-  emit('submit', { ...form })
+  emit('submit', {
+    ...form,
+    is_instructor: props.showInstructorFlight ? form.is_instructor : false,
+  })
 }
 </script>
 
@@ -233,9 +241,17 @@ function onSubmit(): void {
         }}</span>
       </label>
 
-      <label class="flex items-center gap-2 text-sm sm:col-span-2">
+      <label
+        v-if="showInstructorFlight"
+        class="flex items-center gap-2 text-sm sm:col-span-2"
+      >
         <input v-model="form.is_instructor" type="checkbox" class="rounded border-slate-300" />
         <span class="font-medium text-slate-700">Instructor flight</span>
+      </label>
+
+      <label class="flex items-center gap-2 text-sm sm:col-span-2">
+        <input v-model="form.under_instruction" type="checkbox" class="rounded border-slate-300" />
+        <span class="font-medium text-slate-700">Under instruction</span>
       </label>
 
       <label class="block text-sm sm:col-span-2">

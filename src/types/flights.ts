@@ -10,7 +10,13 @@ export type FlightDatePresetId =
   | 'year_to_date'
   | 'custom'
 
-export type FlightPilotRoleFilter = '' | 'p1' | 'p2' | 'instructor' | 'solo'
+export type FlightPilotRoleFilter =
+  | ''
+  | 'p1'
+  | 'p2'
+  | 'instructor'
+  | 'under_instruction'
+  | 'solo'
 
 export interface FlightListFilters {
   glider?: string
@@ -26,6 +32,7 @@ export interface FlightFilterOptions {
   gliders: readonly string[]
   registrations: readonly string[]
   launch_types: readonly string[]
+  roles: readonly Exclude<FlightPilotRoleFilter, ''>[]
 }
 
 export interface FlightListResponse {

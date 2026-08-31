@@ -41,6 +41,13 @@ describe('mediaTags', () => {
     expect(userRemarksText('[igc:track.igc] Thermal day')).toBe('Thermal day')
   })
 
+  it('hides under-instruction markers from user remarks', () => {
+    expect(userRemarksText('Training note\n[Under instruction]')).toBe('Training note')
+    expect(userRemarksText('Under instruction')).toBe('')
+    expect(userRemarksText('PUI')).toBe('')
+    expect(hasUserRemarks('[Under instruction]')).toBe(false)
+  })
+
   it('picks media list icon by attachment types', () => {
     expect(mediaListIcon({ media: [{ type: 'video', filename: 'a.mp4', label: 'a.mp4' }] })).toBe('video')
     expect(mediaListIcon({ media: [{ type: 'image', filename: 'a.jpg', label: 'a.jpg' }] })).toBe('image')

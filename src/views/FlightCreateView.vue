@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
@@ -7,6 +7,7 @@ import FlightForm from '@/components/FlightForm.vue'
 import FormSheetLayout from '@/components/FormSheetLayout.vue'
 import { isApiError } from '@/api/errors'
 import { useFlights } from '@/composables/useFlights'
+import { usePilotPrivileges } from '@/composables/usePilotPrivileges'
 import { useSettings } from '@/composables/useSettings'
 import { safeFlightsReturnTo } from '@/lib/flightListQuery'
 import type { FlightCreateRequest } from '@/types'
@@ -19,6 +20,11 @@ const route = useRoute()
 const flightsReturnTo = safeFlightsReturnTo(route.query.returnTo)
 const { create, mutating, error, flights, list } = useFlights()
 const { settings, fetch: fetchSettings } = useSettings()
+const { isInstructorPrivilege, load: loadPilotPrivileges } = usePilotPrivileges()
+
+const showInstructorFlight = computed(() =>
+  isInstructorPrivilege(settings.value?.pilot_privilege ?? ''),
+)
 
 const fieldErrors = ref<Record<string, string[]>>({})
 const submitError = ref<string | null>(null)
@@ -41,6 +47,7 @@ onMounted(() => {
   desktopMediaQuery = window.matchMedia(DESKTOP_MEDIA_QUERY)
   onMediaQueryChange()
   desktopMediaQuery.addEventListener('change', onMediaQueryChange)
+  void loadPilotPrivileges()
   void fetchSettings()
   void list()
 })
@@ -67,7 +74,6 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
   try {
     const defaults = {
       pilot: settings.value?.pilot_name ?? '',
-      is_instructor: settings.value?.is_instructor ?? false,
     }
     const flight = await create({ ...defaults, ...payload } as FlightCreateRequest)
     if (flight) {
@@ -110,6 +116,7 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
             :field-errors="fieldErrors"
             :saving="mutating"
             :show-actions="false"
+            :show-instructor-flight="showInstructorFlight"
             @submit="onSubmit"
             @cancel="onCancel"
           />

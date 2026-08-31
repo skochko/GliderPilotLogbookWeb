@@ -1,6 +1,6 @@
 import { parseDurationHours } from '@/lib/duration'
 
-export type PilotRole = 'p1' | 'p2' | 'instructor'
+export type PilotRole = 'p1' | 'p2' | 'instructor' | 'under_instruction'
 
 export type CrewMemberRole = 'p1' | 'p2'
 
@@ -13,12 +13,14 @@ const PILOT_ROLE_LABELS: Record<PilotRole, string> = {
   p1: 'PIC',
   p2: 'P2',
   instructor: 'I',
+  under_instruction: 'UI',
 }
 
 export const pilotRoleStyles: Record<PilotRole, string> = {
   p1: 'bg-sky-100 text-sky-800 ring-sky-200',
   p2: 'bg-violet-100 text-violet-800 ring-violet-200',
   instructor: 'bg-amber-100 text-amber-900 ring-amber-200',
+  under_instruction: 'bg-emerald-100 text-emerald-900 ring-emerald-200',
 }
 
 /** Shared pill styling for flight list and detail badges. */
@@ -43,6 +45,7 @@ export function pilotRolesFromFlight(flight: {
   pic_time?: string | null
   dual_time?: string | null
   instructor_time?: string | null
+  under_instruction?: boolean | null
 }): PilotRole[] {
   const roles: PilotRole[] = []
   if (parseDurationHours(flight.pic_time) > 0) {
@@ -53,6 +56,9 @@ export function pilotRolesFromFlight(flight: {
   }
   if (parseDurationHours(flight.instructor_time) > 0) {
     roles.push('instructor')
+  }
+  if (flight.under_instruction) {
+    roles.push('under_instruction')
   }
   return roles
 }

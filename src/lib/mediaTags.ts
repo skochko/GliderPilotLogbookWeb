@@ -2,6 +2,8 @@ import type { FlightMediaItem } from '@/types'
 
 const MEDIA_TAG_PATTERN = /\[(video|image|audio|file|igc):([^\]]+)\]/g
 const MEDIA_ATTACHMENTS_BLOCK_PATTERN = /(?:^|\n)\[(?:Tracks|Images|Videos|Files|Attachments):[^\n]*\]/g
+const UNDER_INSTRUCTION_PATTERN =
+  /(?:\[\s*(?:under\s+instruction|PUI)\s*\]|(?<!\w)under\s+instruction(?!\w)|(?<!\w)PUI(?!\w))/gi
 
 type FlightWithMedia = {
   media?: readonly FlightMediaItem[] | null
@@ -19,11 +21,11 @@ export function stripMediaTags(remarks: string | null | undefined): string {
 }
 
 export function hasUserRemarks(remarks: string | null | undefined): boolean {
-  return Boolean(stripMediaTags(remarks))
+  return Boolean(userRemarksText(remarks))
 }
 
 export function userRemarksText(remarks: string | null | undefined): string {
-  return stripMediaTags(remarks)
+  return stripMediaTags(remarks).replace(UNDER_INSTRUCTION_PATTERN, ' ').replace(/\s+/g, ' ').trim()
 }
 
 export function hasMediaAttachments(flight: FlightWithMedia): boolean {

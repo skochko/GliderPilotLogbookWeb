@@ -24,5 +24,15 @@ export interface FlightMediaUploadResponse {
   attachment: FlightMediaItem
 }
 
+export interface FlightMediaDeleteResponse {
+  flight: {
+    id: string
+    remarks: string
+    media?: FlightMediaItem[]
+  }
+  media: FlightMediaItem[]
+  deleted: FlightMediaItem
+}
+
 export const FLIGHT_MEDIA_MAX_FILES = 5
 export const FLIGHT_MEDIA_MAX_UPLOAD_BYTES = 200 * 1024 * 1024

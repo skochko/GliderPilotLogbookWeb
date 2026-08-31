@@ -23,6 +23,14 @@ const emit = defineEmits<{
 }>()
 
 const datePreset = computed(() => props.filters.date_preset ?? 'all_time')
+const roleFilterOptions = computed(() =>
+  FLIGHT_ROLE_FILTER_OPTIONS.filter(
+    (option) =>
+      (option.value !== 'instructor' && option.value !== 'under_instruction') ||
+      props.filterOptions.roles.includes(option.value) ||
+      props.filters.role === option.value,
+  ),
+)
 
 function updateFilter<K extends keyof FlightListFilters>(key: K, value: FlightListFilters[K]): void {
   emit('update:filters', { ...props.filters, [key]: value })
@@ -119,7 +127,7 @@ function launchTypeLabel(value: string): string {
           :disabled="loading"
           @change="updateFilter('role', ($event.target as HTMLSelectElement).value as FlightPilotRoleFilter)"
         >
-          <option v-for="option in FLIGHT_ROLE_FILTER_OPTIONS" :key="option.value || 'all'" :value="option.value">
+          <option v-for="option in roleFilterOptions" :key="option.value || 'all'" :value="option.value">
             {{ option.label }}
           </option>
         </select>

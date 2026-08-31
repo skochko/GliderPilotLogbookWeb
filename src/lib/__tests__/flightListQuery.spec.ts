@@ -30,6 +30,9 @@ describe('flightListQuery', () => {
     expect(hasActiveFlightListFilters({ ...emptyFlightListFilters(), role: 'p1' })).toBe(true)
     expect(hasActiveFlightListFilters({ ...emptyFlightListFilters(), role: 'solo' })).toBe(true)
     expect(
+      hasActiveFlightListFilters({ ...emptyFlightListFilters(), role: 'under_instruction' }),
+    ).toBe(true)
+    expect(
       hasActiveFlightListFilters({ ...emptyFlightListFilters(), date_preset: 'this_month' }),
     ).toBe(true)
   })
@@ -90,5 +93,11 @@ describe('flightListQuery', () => {
     expect(safeFlightsReturnTo('/flights?role=solo')).toBe('/flights?role=solo')
     expect(safeFlightsReturnTo('https://example.com')).toBe('/flights')
     expect(safeFlightsReturnTo('/settings')).toBe('/flights')
+  })
+
+  it('restores under-instruction filter from route query', () => {
+    expect(flightListStateFromQuery({ role: 'under_instruction' }).filters.role).toBe(
+      'under_instruction',
+    )
   })
 })

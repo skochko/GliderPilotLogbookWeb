@@ -22,9 +22,15 @@ export type UserMe = components['schemas']['UserMe'] & {
   logbook_setup_completed: boolean
 }
 export type Flight = components['schemas']['Flight'] & {
+  under_instruction: boolean
   media?: readonly import('./flightMedia').FlightMediaItem[]
 }
-export type { FlightMediaItem, FlightMediaFolder, FlightMediaUploadResponse } from './flightMedia'
+export type {
+  FlightMediaDeleteResponse,
+  FlightMediaItem,
+  FlightMediaFolder,
+  FlightMediaUploadResponse,
+} from './flightMedia'
 export type {
   FlightDatePresetId,
   FlightFilterOptions,
@@ -34,8 +40,12 @@ export type {
   FlightPilotRoleFilter,
   FlightSortBy,
 } from './flights'
-export type FlightCreateRequest = components['schemas']['FlightCreateRequest']
-export type FlightPatchRequest = components['schemas']['PatchedFlightPatchRequest']
+export type FlightCreateRequest = components['schemas']['FlightCreateRequest'] & {
+  under_instruction?: boolean
+}
+export type FlightPatchRequest = components['schemas']['PatchedFlightPatchRequest'] & {
+  under_instruction?: boolean
+}
 export type LogbookStatus = components['schemas']['LogbookStatus'] & {
   template_engine?: import('./settings').TemplateEngineKey | ''
   template_version?: string

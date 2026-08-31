@@ -74,6 +74,7 @@ export const FLIGHT_ROLE_FILTER_OPTIONS: ReadonlyArray<{
   { value: 'p1', label: 'PIC' },
   { value: 'p2', label: 'P2' },
   { value: 'instructor', label: 'Instructor' },
+  { value: 'under_instruction', label: 'Under instruction' },
   { value: 'solo', label: 'Solo' },
 ]
 
@@ -150,7 +151,14 @@ export function flightListStateFromQuery(query: FlightListRouteQuery): {
       ? 'custom'
       : 'all_time'
   const requestedRole = queryString(query.role)
-  const role: FlightPilotRoleFilter = ['', 'p1', 'p2', 'instructor', 'solo'].includes(requestedRole)
+  const role: FlightPilotRoleFilter = [
+    '',
+    'p1',
+    'p2',
+    'instructor',
+    'under_instruction',
+    'solo',
+  ].includes(requestedRole)
     ? (requestedRole as FlightPilotRoleFilter)
     : ''
 

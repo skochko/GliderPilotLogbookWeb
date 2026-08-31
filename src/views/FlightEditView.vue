@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -10,6 +10,8 @@ import FormSheetLayout from '@/components/FormSheetLayout.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { isApiError } from '@/api/errors'
 import { useFlights } from '@/composables/useFlights'
+import { usePilotPrivileges } from '@/composables/usePilotPrivileges'
+import { useSettings } from '@/composables/useSettings'
 import { decodeFlightId } from '@/lib/flightId'
 import { safeFlightsReturnTo } from '@/lib/flightListQuery'
 import type { Flight, FlightPatchRequest } from '@/types'
@@ -20,6 +22,8 @@ const DESKTOP_MEDIA_QUERY = '(min-width: 640px)'
 const route = useRoute()
 const router = useRouter()
 const { get, update, remove, mutating, error, flights, list } = useFlights()
+const { settings, fetch: fetchSettings } = useSettings()
+const { isInstructorPrivilege, load: loadPilotPrivileges } = usePilotPrivileges()
 
 const flight = ref<Flight | null>(null)
 const fieldErrors = ref<Record<string, string[]>>({})
@@ -33,6 +37,11 @@ const isDesktop = ref(
 
 const flightId = decodeFlightId(route.params.id as string)
 const flightsReturnTo = safeFlightsReturnTo(route.query.returnTo)
+const showInstructorFlight = computed(
+  () =>
+    flight.value?.is_instructor === true ||
+    isInstructorPrivilege(settings.value?.pilot_privilege ?? ''),
+)
 
 let desktopMediaQuery: MediaQueryList | null = null
 
@@ -64,7 +73,8 @@ onMounted(() => {
   desktopMediaQuery = window.matchMedia(DESKTOP_MEDIA_QUERY)
   onMediaQueryChange()
   desktopMediaQuery.addEventListener('change', onMediaQueryChange)
-  void Promise.all([get(flightId), list()])
+  void loadPilotPrivileges()
+  void Promise.all([get(flightId), list(), fetchSettings()])
     .then(([result]) => {
       flight.value = result
     })
@@ -153,6 +163,7 @@ async function confirmDelete(): Promise<void> {
               :field-errors="fieldErrors"
               :saving="mutating || mediaBusy"
               :show-actions="false"
+              :show-instructor-flight="showInstructorFlight"
               @submit="onSubmit"
               @cancel="onCancel"
             />

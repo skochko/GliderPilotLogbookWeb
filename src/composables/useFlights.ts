@@ -31,7 +31,12 @@ const error = ref<string | null>(null)
 const listSortBy = ref<FlightSortBy>('date')
 const listSortDirection = ref<string | undefined>()
 const listFilters = ref<FlightListFilters>(emptyFlightListFilters())
-const filterOptions = ref<FlightFilterOptions>({ gliders: [], registrations: [], launch_types: [] })
+const filterOptions = ref<FlightFilterOptions>({
+  gliders: [],
+  registrations: [],
+  launch_types: [],
+  roles: [],
+})
 
 let listRequestId = 0
 
@@ -50,7 +55,7 @@ export function resetFlightsState(): void {
   listSortBy.value = 'date'
   listSortDirection.value = undefined
   listFilters.value = emptyFlightListFilters()
-  filterOptions.value = { gliders: [], registrations: [], launch_types: [] }
+  filterOptions.value = { gliders: [], registrations: [], launch_types: [], roles: [] }
   listRequestId = 0
 }
 

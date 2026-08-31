@@ -1,16 +1,36 @@
 import { describe, expect, it } from 'vitest'
-import { crewMembersFromFlight, formatPilotRoles, formatRoleCompanionDisplay, formatRoleCompanionName, pilotRoleLabel, roleCompanionName } from '../pilotRoles'
+import {
+  crewMembersFromFlight,
+  formatPilotRoles,
+  formatRoleCompanionDisplay,
+  formatRoleCompanionName,
+  pilotRoleLabel,
+  pilotRolesFromFlight,
+  roleCompanionName,
+} from '../pilotRoles'
 
 describe('pilotRoles', () => {
   it('maps role codes to labels', () => {
     expect(pilotRoleLabel('p1')).toBe('PIC')
     expect(pilotRoleLabel('p2')).toBe('P2')
     expect(pilotRoleLabel('instructor')).toBe('I')
+    expect(pilotRoleLabel('under_instruction')).toBe('UI')
   })
 
   it('formats multiple roles', () => {
     expect(formatPilotRoles(['p1', 'instructor'])).toBe('PIC, I')
     expect(formatPilotRoles([])).toBe('—')
+  })
+
+  it('adds UI role from the cached under-instruction flag', () => {
+    expect(
+      pilotRolesFromFlight({
+        pic_time: '',
+        dual_time: '1:15',
+        instructor_time: '',
+        under_instruction: true,
+      }),
+    ).toEqual(['p2', 'under_instruction'])
   })
 
   it('picks companion name for role column', () => {
