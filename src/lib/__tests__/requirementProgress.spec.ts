@@ -79,7 +79,33 @@ describe('formatRequirementProgress', () => {
         status: 'current',
         remaining_days: 1517,
       }),
-    ).toBe('Recorded · 4 years remaining')
+    ).toBe('Recorded · 4 years 57 days remaining')
+  })
+
+  it('omits zero residual days for an exact number of years', () => {
+    expect(
+      formatRequirementProgress({
+        id: 'fi_demonstration',
+        obtained: 'yes',
+        required: 'yes',
+        requirement_type: 'boolean',
+        status: 'current',
+        remaining_days: 730,
+      }),
+    ).toBe('Recorded · 2 years remaining')
+  })
+
+  it('uses singular labels for one year and one day', () => {
+    expect(
+      formatRequirementProgress({
+        id: 'instructor_refresher',
+        obtained: 'yes',
+        required: 'yes',
+        requirement_type: 'boolean',
+        status: 'current',
+        remaining_days: 366,
+      }),
+    ).toBe('Recorded · 1 year 1 day remaining')
   })
 
   it('keeps boolean validity in days when one year or less remains', () => {

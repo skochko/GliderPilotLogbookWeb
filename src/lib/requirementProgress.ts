@@ -57,8 +57,14 @@ function formatBooleanProgress(input: RequirementProgressInput): string {
     if (input.remaining_days != null && input.remaining_days > 0) {
       if (input.remaining_days > 365) {
         const years = Math.floor(input.remaining_days / 365)
-        const unitLabel = years === 1 ? 'year' : 'years'
-        return `Recorded · ${years} ${unitLabel} remaining`
+        const remainingDays = input.remaining_days % 365
+        const yearLabel = years === 1 ? 'year' : 'years'
+        const yearPart = `${years} ${yearLabel}`
+        if (remainingDays === 0) {
+          return `Recorded · ${yearPart} remaining`
+        }
+        const dayLabel = remainingDays === 1 ? 'day' : 'days'
+        return `Recorded · ${yearPart} ${remainingDays} ${dayLabel} remaining`
       }
       const unitLabel = input.remaining_days === 1 ? 'day' : 'days'
       return `Recorded · ${input.remaining_days} ${unitLabel} remaining`
