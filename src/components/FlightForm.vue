@@ -95,6 +95,18 @@ function fieldError(name: string): string | undefined {
   return props.fieldErrors?.[name]?.[0]
 }
 
+function onInstructorFlightChange(): void {
+  if (form.is_instructor) {
+    form.under_instruction = false
+  }
+}
+
+function onUnderInstructionChange(): void {
+  if (form.under_instruction) {
+    form.is_instructor = false
+  }
+}
+
 function onSubmit(): void {
   emit('submit', {
     ...form,
@@ -108,12 +120,7 @@ function onSubmit(): void {
     <div class="grid gap-4 sm:grid-cols-2">
       <label class="block text-sm">
         <span class="font-medium text-slate-700">Date</span>
-        <input
-          v-model="form.date"
-          type="date"
-          required
-          :class="fieldClass"
-        />
+        <input v-model="form.date" type="date" required :class="fieldClass" />
         <span v-if="fieldError('date')" class="mt-1 block text-xs text-red-600">{{
           fieldError('date')
         }}</span>
@@ -194,11 +201,7 @@ function onSubmit(): void {
 
       <label class="block text-sm">
         <span class="font-medium text-slate-700">Launch time</span>
-        <input
-          v-model="form.launch_time"
-          type="time"
-          :class="fieldClass"
-        />
+        <input v-model="form.launch_time" type="time" :class="fieldClass" />
         <span v-if="fieldError('launch_time')" class="mt-1 block text-xs text-red-600">{{
           fieldError('launch_time')
         }}</span>
@@ -218,11 +221,7 @@ function onSubmit(): void {
 
       <label class="block text-sm">
         <span class="font-medium text-slate-700">Landing time</span>
-        <input
-          v-model="form.landing_time"
-          type="time"
-          :class="fieldClass"
-        />
+        <input v-model="form.landing_time" type="time" :class="fieldClass" />
         <span v-if="fieldError('landing_time')" class="mt-1 block text-xs text-red-600">{{
           fieldError('landing_time')
         }}</span>
@@ -230,27 +229,29 @@ function onSubmit(): void {
 
       <label class="block text-sm">
         <span class="font-medium text-slate-700">Landings</span>
-        <input
-          v-model.number="form.landings"
-          type="number"
-          min="0"
-          :class="fieldClass"
-        />
+        <input v-model.number="form.landings" type="number" min="0" :class="fieldClass" />
         <span v-if="fieldError('landings')" class="mt-1 block text-xs text-red-600">{{
           fieldError('landings')
         }}</span>
       </label>
 
-      <label
-        v-if="showInstructorFlight"
-        class="flex items-center gap-2 text-sm sm:col-span-2"
-      >
-        <input v-model="form.is_instructor" type="checkbox" class="rounded border-slate-300" />
+      <label v-if="showInstructorFlight" class="flex items-center gap-2 text-sm sm:col-span-2">
+        <input
+          v-model="form.is_instructor"
+          type="checkbox"
+          class="rounded border-slate-300"
+          @change="onInstructorFlightChange"
+        />
         <span class="font-medium text-slate-700">Instructor flight</span>
       </label>
 
       <label class="flex items-center gap-2 text-sm sm:col-span-2">
-        <input v-model="form.under_instruction" type="checkbox" class="rounded border-slate-300" />
+        <input
+          v-model="form.under_instruction"
+          type="checkbox"
+          class="rounded border-slate-300"
+          @change="onUnderInstructionChange"
+        />
         <span class="font-medium text-slate-700">Under instruction</span>
       </label>
 
