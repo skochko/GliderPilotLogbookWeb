@@ -69,6 +69,19 @@ describe('formatRequirementProgress', () => {
     ).toBe('Recorded')
   })
 
+  it('includes remaining days for a current boolean requirement', () => {
+    expect(
+      formatRequirementProgress({
+        id: 'fi_demonstration',
+        obtained: 'yes',
+        required: 'yes',
+        requirement_type: 'boolean',
+        status: 'current',
+        remaining_days: 1517,
+      }),
+    ).toBe('Recorded · 1517 days remaining')
+  })
+
   it('formats boolean requirements as not recorded with lookback', () => {
     expect(
       formatRequirementProgress({

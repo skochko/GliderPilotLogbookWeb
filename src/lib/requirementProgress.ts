@@ -51,6 +51,13 @@ function formatBooleanProgress(input: RequirementProgressInput): string {
   const lookback = formatLookbackSuffix(input.lookback_period)
 
   if (obtained === 'yes' || input.status === 'current') {
+    if (input.remaining_days === 0) {
+      return 'Recorded · expires today'
+    }
+    if (input.remaining_days != null && input.remaining_days > 0) {
+      const unitLabel = input.remaining_days === 1 ? 'day' : 'days'
+      return `Recorded · ${input.remaining_days} ${unitLabel} remaining`
+    }
     return 'Recorded'
   }
   return `Not recorded${lookback}`
