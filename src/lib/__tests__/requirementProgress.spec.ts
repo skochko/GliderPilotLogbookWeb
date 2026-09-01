@@ -79,7 +79,20 @@ describe('formatRequirementProgress', () => {
         status: 'current',
         remaining_days: 1517,
       }),
-    ).toBe('Recorded · 1517 days remaining')
+    ).toBe('Recorded · 4 years remaining')
+  })
+
+  it('keeps boolean validity in days when one year or less remains', () => {
+    expect(
+      formatRequirementProgress({
+        id: 'instructor_refresher',
+        obtained: 'yes',
+        required: 'yes',
+        requirement_type: 'boolean',
+        status: 'current',
+        remaining_days: 365,
+      }),
+    ).toBe('Recorded · 365 days remaining')
   })
 
   it('formats boolean requirements as not recorded with lookback', () => {
