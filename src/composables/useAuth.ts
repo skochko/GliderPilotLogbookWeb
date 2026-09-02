@@ -44,6 +44,20 @@ export function useAuth() {
     authApi.loginRedirect(returnTo)
   }
 
+  async function loginDemo(): Promise<UserMe | null> {
+    mutating.value = true
+    error.value = null
+    try {
+      user.value = await authApi.loginDemo()
+      return user.value
+    } catch (err) {
+      error.value = isApiError(err) ? err.message : 'Demo is currently unavailable'
+      return null
+    } finally {
+      mutating.value = false
+    }
+  }
+
   async function logout(): Promise<void> {
     mutating.value = true
     error.value = null
@@ -65,6 +79,7 @@ export function useAuth() {
     error: readonly(error),
     fetchMe,
     login,
+    loginDemo,
     logout,
   }
 }

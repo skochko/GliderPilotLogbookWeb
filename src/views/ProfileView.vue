@@ -8,12 +8,14 @@ import LoadingState from '@/components/LoadingState.vue'
 import { isApiError } from '@/api/errors'
 import { fetchGoogleScopes, googleReconnectRedirect, type GoogleScopeStatus } from '@/api/auth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
+import { useAuth } from '@/composables/useAuth'
 import { useLogbookDisconnect } from '@/composables/useLogbookDisconnect'
 import { useProfile } from '@/composables/useProfile'
 
 const route = useRoute()
 const router = useRouter()
 const { show } = useFlashMessage()
+const { user } = useAuth()
 const { profile, loading, initialized, mutating, error, fetch, save } = useProfile()
 const { disconnectLogbook, disconnecting } = useLogbookDisconnect()
 
@@ -29,6 +31,7 @@ const scopesError = ref<string | null>(null)
 const googleAccessError = ref<string | null>(null)
 
 const hasLogbook = computed(() => profile.value?.has_logbook ?? false)
+const isDemo = computed(() => user.value?.is_demo ?? false)
 const needsGoogleReconnect = computed(
   () => hasLogbook.value && googleScopes.value !== null && !googleScopes.value.available,
 )
@@ -54,6 +57,15 @@ const googleAccessItems = computed(() => {
 })
 
 async function loadGoogleScopes(): Promise<void> {
+  if (isDemo.value) {
+    googleScopes.value = {
+      available: false,
+      scopes: [],
+      sign_in: false,
+      drive_file: false,
+    }
+    return
+  }
   scopesLoading.value = true
   scopesError.value = null
   try {
@@ -104,7 +116,7 @@ watch(
 )
 
 async function onSubmit(): Promise<void> {
-  if (mutating.value) return
+  if (mutating.value || isDemo.value) return
 
   submitError.value = null
   try {
@@ -123,6 +135,7 @@ async function onSubmit(): Promise<void> {
 }
 
 async function confirmDisconnect(): Promise<void> {
+  if (isDemo.value) return
   const ok = await disconnectLogbook()
   if (ok) {
     disconnectOpen.value = false
@@ -187,6 +200,7 @@ async function confirmDisconnect(): Promise<void> {
             variant="secondary"
             class="mt-4"
             :busy="disconnecting"
+            :disabled="isDemo || disconnecting"
             @click="disconnectOpen = true"
           >
             Disconnect logbook
@@ -237,7 +251,11 @@ async function confirmDisconnect(): Promise<void> {
             Google access is not connected. Sign in with Google again to use your logbook — you only
             need per-file access to your spreadsheet, not full Drive.
           </p>
-          <ActionButton type="button" @click="googleReconnectRedirect('/profile')">
+          <ActionButton
+            type="button"
+            :disabled="isDemo"
+            @click="googleReconnectRedirect('/profile')"
+          >
             Reconnect Google
           </ActionButton>
         </div>
@@ -253,13 +271,16 @@ async function confirmDisconnect(): Promise<void> {
             <input
               v-model="emailNotificationsEnabled"
               type="checkbox"
+              :disabled="isDemo"
               class="size-4 rounded border-slate-300 text-sky-700 focus:ring-sky-600"
             />
             <span>Send me email reminders</span>
           </label>
         </section>
 
-        <ActionButton type="submit" :busy="mutating">Save profile</ActionButton>
+        <ActionButton type="submit" :busy="mutating" :disabled="isDemo || mutating">
+          Save profile
+        </ActionButton>
       </form>
     </div>
 

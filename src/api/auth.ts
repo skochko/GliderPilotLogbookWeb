@@ -49,6 +49,10 @@ export async function fetchMe(): Promise<UserMe | null> {
   return data as UserMe
 }
 
+export async function loginDemo(): Promise<UserMe> {
+  return apiJson<UserMe>('/auth/demo', { method: 'POST' })
+}
+
 export async function logout(): Promise<void> {
   await apiJson<void>('/auth/logout', { method: 'POST' })
 }

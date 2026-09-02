@@ -7,11 +7,14 @@ import ErrorBanner from '@/components/ErrorBanner.vue'
 import FormSheetLayout from '@/components/FormSheetLayout.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { getQualificationEvents, updateQualificationEvents } from '@/api/qualificationEvents'
+import { useAuth } from '@/composables/useAuth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
 import { QUALIFICATION_EVENT_TYPES, type QualificationEvent } from '@/types/qualificationEvents'
 import { sortQualificationEventsNewestFirst } from '@/features/qualificationEvents/sort'
 
 const { show } = useFlashMessage()
+const { user } = useAuth()
+const isDemo = computed(() => user.value?.is_demo ?? false)
 const events = ref<QualificationEvent[]>([])
 const loading = ref(true)
 const saving = ref(false)
@@ -180,7 +183,14 @@ function formatEventDate(value: string): string {
         <h1 class="text-2xl font-bold text-slate-900">Training &amp; Qualification Events</h1>
         <p class="mt-1 text-slate-600">Keep a record of your training and qualification events.</p>
       </div>
-      <ActionButton :disabled="loading" @click="openCreate">Add event</ActionButton>
+      <ActionButton v-if="!isDemo" :disabled="loading" @click="openCreate">Add event</ActionButton>
+    </div>
+
+    <div
+      v-if="isDemo"
+      class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+    >
+      Demo mode — training and qualification events are available for viewing only.
     </div>
 
     <LoadingState v-if="loading" />
@@ -197,15 +207,16 @@ function formatEventDate(value: string): string {
                 <th class="w-20 px-2 py-2 font-medium">Date</th>
                 <th class="w-40 px-2 py-2 font-medium">Event</th>
                 <th class="px-2 py-2 font-medium">Notes</th>
-                <th class="w-10 px-1 py-2"><span class="sr-only">Actions</span></th>
+                <th v-if="!isDemo" class="w-10 px-1 py-2"><span class="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
               <tr
                 v-for="(event, index) in events"
                 :key="event.id ?? index"
-                class="cursor-pointer border-t border-slate-100 transition hover:bg-slate-50/70"
-                @click="openEdit(index)"
+                class="border-t border-slate-100 transition"
+                :class="isDemo ? '' : 'cursor-pointer hover:bg-slate-50/70'"
+                @click="!isDemo && openEdit(index)"
               >
                 <td
                   class="whitespace-nowrap px-2 py-2 align-top text-xs tabular-nums text-slate-600"
@@ -223,7 +234,7 @@ function formatEventDate(value: string): string {
                 <td class="min-w-0 px-2 py-2 align-top text-slate-600">
                   <p class="truncate" :title="event.remarks">{{ event.remarks || '—' }}</p>
                 </td>
-                <td class="px-1 py-1.5 align-middle">
+                <td v-if="!isDemo" class="px-1 py-1.5 align-middle">
                   <div class="flex flex-col items-end" @click.stop>
                     <button
                       type="button"
@@ -280,15 +291,16 @@ function formatEventDate(value: string): string {
                 <th class="px-4 py-3">Date completed</th>
                 <th class="px-4 py-3">Place</th>
                 <th class="px-4 py-3">Notes</th>
-                <th class="px-4 py-3"><span class="sr-only">Actions</span></th>
+                <th v-if="!isDemo" class="px-4 py-3"><span class="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr
                 v-for="(event, index) in events"
                 :key="event.id ?? index"
-                class="cursor-pointer transition hover:bg-slate-50/70"
-                @click="openEdit(index)"
+                class="transition"
+                :class="isDemo ? '' : 'cursor-pointer hover:bg-slate-50/70'"
+                @click="!isDemo && openEdit(index)"
               >
                 <td class="px-4 py-3 font-medium text-slate-800">{{ event.event_type }}</td>
                 <td class="whitespace-nowrap px-4 py-3 text-slate-600">
@@ -298,7 +310,7 @@ function formatEventDate(value: string): string {
                 <td class="max-w-xs truncate px-4 py-3 text-slate-600">
                   {{ event.remarks || '—' }}
                 </td>
-                <td class="px-4 py-3">
+                <td v-if="!isDemo" class="px-4 py-3">
                   <div class="flex flex-col items-end" @click.stop>
                     <button
                       type="button"

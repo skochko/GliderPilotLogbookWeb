@@ -7,6 +7,7 @@ import FlightForm from '@/components/FlightForm.vue'
 import FormSheetLayout from '@/components/FormSheetLayout.vue'
 import { isApiError } from '@/api/errors'
 import { useFlights } from '@/composables/useFlights'
+import { useAuth } from '@/composables/useAuth'
 import { usePilotPrivileges } from '@/composables/usePilotPrivileges'
 import { useSettings } from '@/composables/useSettings'
 import { safeFlightsReturnTo } from '@/lib/flightListQuery'
@@ -19,6 +20,7 @@ const router = useRouter()
 const route = useRoute()
 const flightsReturnTo = safeFlightsReturnTo(route.query.returnTo)
 const { create, mutating, error, flights, list } = useFlights()
+const { user } = useAuth()
 const { settings, fetch: fetchSettings } = useSettings()
 const { isInstructorPrivilege, load: loadPilotPrivileges } = usePilotPrivileges()
 
@@ -71,6 +73,10 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
 
   fieldErrors.value = {}
   submitError.value = null
+  if (user.value?.is_demo) {
+    submitError.value = 'Demo mode: changes are not saved.'
+    return
+  }
   try {
     const defaults = {
       pilot: settings.value?.pilot_name ?? '',

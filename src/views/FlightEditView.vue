@@ -10,6 +10,7 @@ import FormSheetLayout from '@/components/FormSheetLayout.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { isApiError } from '@/api/errors'
 import { useFlights } from '@/composables/useFlights'
+import { useAuth } from '@/composables/useAuth'
 import { usePilotPrivileges } from '@/composables/usePilotPrivileges'
 import { useSettings } from '@/composables/useSettings'
 import { decodeFlightId } from '@/lib/flightId'
@@ -22,6 +23,7 @@ const DESKTOP_MEDIA_QUERY = '(min-width: 640px)'
 const route = useRoute()
 const router = useRouter()
 const { get, update, remove, mutating, error, flights, list } = useFlights()
+const { user } = useAuth()
 const { settings, fetch: fetchSettings } = useSettings()
 const { isInstructorPrivilege, load: loadPilotPrivileges } = usePilotPrivileges()
 
@@ -103,6 +105,10 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
 
   fieldErrors.value = {}
   submitError.value = null
+  if (user.value?.is_demo) {
+    submitError.value = 'Demo mode: changes are not saved.'
+    return
+  }
   try {
     const updated = await update(flightId, payload as FlightPatchRequest)
     if (updated) {
@@ -121,6 +127,12 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
 
 async function confirmDelete(): Promise<void> {
   if (mutating.value || mediaBusy.value) {
+    return
+  }
+
+  if (user.value?.is_demo) {
+    deleteOpen.value = false
+    submitError.value = 'Demo mode: changes are not saved.'
     return
   }
 

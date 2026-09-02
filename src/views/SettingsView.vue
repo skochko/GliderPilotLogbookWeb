@@ -6,6 +6,7 @@ import LoadingState from '@/components/LoadingState.vue'
 import PwaInstallSection from '@/components/PwaInstallSection.vue'
 import { isApiError } from '@/api/errors'
 import { useFlashMessage } from '@/composables/useFlashMessage'
+import { useAuth } from '@/composables/useAuth'
 import { useSettings } from '@/composables/useSettings'
 import { useLogbook } from '@/composables/useLogbook'
 import {
@@ -21,6 +22,7 @@ import { resolveSettingsTemplate, type SettingsSection } from '@/features/settin
 import { isHoursMinutesDuration } from '@/lib/duration'
 
 const { settings, loading, initialized, mutating, error, fetch, save } = useSettings()
+const { user } = useAuth()
 const {
   templateEngine,
   initialized: logbookInitialized,
@@ -46,6 +48,7 @@ const {
 const form = reactive<LogbookProfileFormState>(emptyLogbookProfileForm())
 const formInitialized = ref(false)
 const submitError = ref<string | null>(null)
+const isDemo = computed(() => user.value?.is_demo ?? false)
 
 const templateAdapter = computed(() =>
   settings.value
@@ -93,7 +96,7 @@ onMounted(async () => {
 })
 
 async function onSubmit(): Promise<void> {
-  if (mutating.value) return
+  if (mutating.value || isDemo.value) return
 
   submitError.value = null
   if (canEdit('pilot_name') && !form.pilot_name.trim()) {
@@ -158,9 +161,10 @@ async function onSubmit(): Promise<void> {
 
     <form
       v-if="settings && formInitialized"
-      class="space-y-8 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+      class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
       @submit.prevent="onSubmit"
     >
+      <fieldset :disabled="isDemo" class="min-w-0 space-y-8 border-0 p-0">
       <section v-if="shows('displayPreferences')" class="space-y-4">
         <h2 class="text-lg font-semibold text-slate-900">Sheet behaviour</h2>
         <div class="grid gap-4 sm:grid-cols-2">
@@ -433,7 +437,10 @@ async function onSubmit(): Promise<void> {
         </label>
       </section>
 
-      <ActionButton type="submit" :busy="mutating">Save settings</ActionButton>
+      <ActionButton type="submit" :busy="mutating" :disabled="isDemo || mutating">
+        Save settings
+      </ActionButton>
+      </fieldset>
     </form>
   </div>
 </template>

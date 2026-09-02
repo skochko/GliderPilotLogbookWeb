@@ -20,6 +20,8 @@ import type {
 
 export type UserMe = components['schemas']['UserMe'] & {
   logbook_setup_completed: boolean
+  is_demo: boolean
+  demo_spreadsheet_url: string
 }
 export type Flight = components['schemas']['Flight'] & {
   under_instruction: boolean

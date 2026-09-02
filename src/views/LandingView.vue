@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import LandingNav from '@/components/landing/LandingNav.vue'
 import LandingScreenshotFrame from '@/components/landing/LandingScreenshotFrame.vue'
 import SiteFooter from '@/components/SiteFooter.vue'
 import { useLanding } from '@/composables/useLanding'
+import { useAuth } from '@/composables/useAuth'
+import { useFlashMessage } from '@/composables/useFlashMessage'
 
 const { fetchLanding, screenshotFor } = useLanding()
+const { loginDemo, mutating } = useAuth()
+const { show } = useFlashMessage()
+const router = useRouter()
 
 const badges = ['Google Sheets sync', 'Mobile friendly']
 
@@ -88,11 +93,13 @@ onMounted(() => {
   void fetchLanding()
 })
 
-function scrollToDemo(): void {
-  document.getElementById('landing-preview')?.scrollIntoView({
-    behavior: 'smooth',
-    block: 'start',
-  })
+async function openDemo(): Promise<void> {
+  const demoUser = await loginDemo()
+  if (!demoUser) {
+    show('The demo logbook is currently unavailable.', 'error')
+    return
+  }
+  await router.push({ name: 'dashboard' })
 }
 </script>
 
@@ -167,10 +174,11 @@ function scrollToDemo(): void {
               </RouterLink>
               <button
                 type="button"
-                @click="scrollToDemo"
+                :disabled="mutating"
+                @click="openDemo"
                 class="inline-flex w-full items-center justify-center rounded-lg border border-landing-border bg-landing-card px-5 py-3 text-sm font-medium text-landing-text transition hover:border-landing-primary/30 hover:bg-white sm:w-auto"
               >
-                View demo
+                {{ mutating ? 'Opening demo…' : 'View demo' }}
               </button>
             </div>
 

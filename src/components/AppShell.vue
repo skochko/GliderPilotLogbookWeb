@@ -59,7 +59,7 @@ onMounted(() => {
   clockTimer = setInterval(() => {
     clock.value = Date.now()
   }, 1_000)
-  if (user.value?.has_logbook) {
+  if (user.value?.has_logbook && !user.value.is_demo) {
     void refreshSyncStatus().catch(() => undefined)
   }
 })
@@ -282,7 +282,7 @@ watch(syncCompleteCount, (count, previous) => {
           class="relative flex shrink-0 items-center gap-2 text-sm sm:gap-3 lg:ml-auto lg:whitespace-nowrap"
         >
           <button
-            v-if="user.has_logbook && !isSyncing"
+            v-if="user.has_logbook && !user.is_demo && !isSyncing"
             type="button"
             class="flex items-center gap-1.5 rounded-md px-1 py-1 text-xs font-semibold transition sm:px-2 sm:py-1.5"
             :class="{
@@ -301,7 +301,7 @@ watch(syncCompleteCount, (count, previous) => {
           </button>
 
           <button
-            v-else-if="user.has_logbook"
+            v-else-if="user.has_logbook && !user.is_demo"
             type="button"
             class="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition hover:bg-sky-50"
             :title="`${syncProgress}% synchronized. Open synchronization details.`"
@@ -336,6 +336,13 @@ watch(syncCompleteCount, (count, previous) => {
             </span>
           </button>
 
+          <span
+            v-if="user.is_demo"
+            class="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800"
+          >
+            Demo
+          </span>
+
           <div :class="user.has_logbook ? 'hidden sm:block' : 'block'">
             <button
               type="button"
@@ -356,7 +363,7 @@ watch(syncCompleteCount, (count, previous) => {
               <RouterLink to="/profile" class="block rounded px-3 py-2 hover:bg-slate-100" @click="userMenuOpen = false">Profile</RouterLink>
               <RouterLink to="/settings" class="block rounded px-3 py-2 hover:bg-slate-100" @click="userMenuOpen = false">Settings</RouterLink>
               <button type="button" class="block w-full rounded px-3 py-2 text-left text-red-700 hover:bg-red-50" :disabled="mutating" @click="onLogout">
-                Log out
+                {{ user.is_demo ? 'Exit demo' : 'Log out' }}
               </button>
             </div>
           </div>
@@ -364,7 +371,7 @@ watch(syncCompleteCount, (count, previous) => {
       </div>
 
       <section
-        v-if="syncPanelOpen && user?.has_logbook"
+        v-if="syncPanelOpen && user?.has_logbook && !user.is_demo"
         id="logbook-sync-panel"
         class="border-t border-slate-100 bg-slate-50/80 px-4 py-3"
         aria-label="Google Sheet synchronization"
@@ -452,10 +459,29 @@ watch(syncCompleteCount, (count, previous) => {
           :disabled="mutating"
           @click="onLogout"
         >
-          Log out
+          {{ user?.is_demo ? 'Exit demo' : 'Log out' }}
         </button>
       </nav>
     </header>
+
+    <div
+      v-if="user?.is_demo && !hideMobileChrome"
+      class="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-950"
+      role="status"
+    >
+      <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 lg:max-w-[1440px]">
+        <span><strong>Demo mode.</strong> You can explore the logbook, but changes are disabled.</span>
+        <a
+          v-if="user.demo_spreadsheet_url"
+          :href="user.demo_spreadsheet_url"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="shrink-0 font-semibold text-amber-900 underline underline-offset-2"
+        >
+          Open read-only Google Sheet ↗
+        </a>
+      </div>
+    </div>
 
     <div
       v-if="message && !hideMobileChrome"

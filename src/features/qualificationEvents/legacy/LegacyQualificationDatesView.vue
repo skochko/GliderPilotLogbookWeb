@@ -7,9 +7,12 @@ import { getSettings } from '@/api/settings'
 import { getSummary, updateSummary } from '@/api/summary'
 import { isApiError } from '@/api/errors'
 import { useFlashMessage } from '@/composables/useFlashMessage'
+import { useAuth } from '@/composables/useAuth'
 import type { QualificationSummary, QualificationSummaryPatch } from '@/types/summary'
 
 const { show } = useFlashMessage()
+const { user } = useAuth()
+const isDemo = computed(() => user.value?.is_demo ?? false)
 const pilotPrivilege = ref('SPL Pilot')
 const summary = reactive<QualificationSummary>(emptySummary())
 const loading = ref(true)
@@ -91,8 +94,15 @@ async function save(): Promise<void> {
     <LoadingState v-if="loading" />
     <ErrorBanner v-else-if="error" :message="error" :retry-busy="loading" @retry="load" />
 
+    <div
+      v-if="!loading && !error && isDemo"
+      class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+    >
+      Demo mode — training and qualification dates are available for viewing only.
+    </div>
+
     <form
-      v-else
+      v-if="!loading && !error"
       class="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
       @submit.prevent="save"
     >
@@ -100,40 +110,42 @@ async function save(): Promise<void> {
         Pilot privilege: <span class="font-medium">{{ pilotPrivilege }}</span>
       </div>
 
-      <div v-if="isSpl" class="grid gap-4 sm:grid-cols-2">
-        <label class="block text-sm">
-          <span class="font-medium text-slate-700">Training flight FI(S) — date 1</span>
-          <input v-model="summary.fi_train_date" type="date" class="field-control mt-1" />
-        </label>
-        <label class="block text-sm">
-          <span class="font-medium text-slate-700">Training flight FI(S) — date 2</span>
-          <input v-model="summary.fi_training_date_2" type="date" class="field-control mt-1" />
-        </label>
-      </div>
+      <fieldset :disabled="isDemo" class="min-w-0 space-y-6 border-0 p-0">
+        <div v-if="isSpl" class="grid gap-4 sm:grid-cols-2">
+          <label class="block text-sm">
+            <span class="font-medium text-slate-700">Training flight FI(S) — date 1</span>
+            <input v-model="summary.fi_train_date" type="date" class="field-control mt-1" />
+          </label>
+          <label class="block text-sm">
+            <span class="font-medium text-slate-700">Training flight FI(S) — date 2</span>
+            <input v-model="summary.fi_training_date_2" type="date" class="field-control mt-1" />
+          </label>
+        </div>
 
-      <label v-else-if="isBi" class="block max-w-md text-sm">
-        <span class="font-medium text-slate-700">BI refresher / demonstration date</span>
-        <input v-model="summary.bi_ref_date" type="date" class="field-control mt-1" />
-      </label>
-
-      <div v-else-if="isFi" class="grid gap-4 sm:grid-cols-2">
-        <label class="block text-sm">
-          <span class="font-medium text-slate-700">FI refresher training date</span>
-          <input v-model="summary.fi_3year_date" type="date" class="field-control mt-1" />
+        <label v-else-if="isBi" class="block max-w-md text-sm">
+          <span class="font-medium text-slate-700">BI refresher / demonstration date</span>
+          <input v-model="summary.bi_ref_date" type="date" class="field-control mt-1" />
         </label>
-        <label class="block text-sm">
-          <span class="font-medium text-slate-700">FI demonstration date</span>
-          <input v-model="summary.fi_ref_date" type="date" class="field-control mt-1" />
-        </label>
-      </div>
 
-      <p v-else class="text-sm text-slate-600">
-        No legacy qualification dates are required for this pilot privilege.
-      </p>
+        <div v-else-if="isFi" class="grid gap-4 sm:grid-cols-2">
+          <label class="block text-sm">
+            <span class="font-medium text-slate-700">FI refresher training date</span>
+            <input v-model="summary.fi_3year_date" type="date" class="field-control mt-1" />
+          </label>
+          <label class="block text-sm">
+            <span class="font-medium text-slate-700">FI demonstration date</span>
+            <input v-model="summary.fi_ref_date" type="date" class="field-control mt-1" />
+          </label>
+        </div>
 
-      <ActionButton v-if="hasQualificationDates" type="submit" :busy="saving">
-        Save qualification dates
-      </ActionButton>
+        <p v-else class="text-sm text-slate-600">
+          No legacy qualification dates are required for this pilot privilege.
+        </p>
+
+        <ActionButton v-if="hasQualificationDates" type="submit" :busy="saving" :disabled="isDemo">
+          Save qualification dates
+        </ActionButton>
+      </fieldset>
     </form>
   </div>
 </template>

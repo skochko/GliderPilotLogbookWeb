@@ -21,6 +21,7 @@ import {
 import { formatDurationProse } from '@/lib/duration'
 import type { FlightListFilters } from '@/types'
 
+
 const {
   flights,
   total,
