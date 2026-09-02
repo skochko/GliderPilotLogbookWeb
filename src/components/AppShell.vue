@@ -135,9 +135,7 @@ const lastCheckedLabel = computed(
     'Never',
 )
 
-const lastUpdatedLabel = computed(
-  () => relativeTime(syncStatus.value?.last_synced_at) ?? 'Never',
-)
+const lastUpdatedLabel = computed(() => relativeTime(syncStatus.value?.last_synced_at) ?? 'Never')
 
 const refreshActionLabel = computed(() => {
   if (isSyncing.value) return 'Syncing…'
@@ -151,9 +149,7 @@ const refreshActionLabel = computed(() => {
   return syncStatus.value?.status === 'error' ? 'Try again' : 'Sync now'
 })
 
-const syncProgress = computed(() =>
-  Math.min(100, Math.max(0, syncStatus.value?.percent ?? 0)),
-)
+const syncProgress = computed(() => Math.min(100, Math.max(0, syncStatus.value?.percent ?? 0)))
 
 const syncProgressLabel = computed(() => {
   const loaded = syncStatus.value?.loaded ?? 0
@@ -239,14 +235,25 @@ watch(syncCompleteCount, (count, previous) => {
             :aria-expanded="menuOpen"
             @click="toggleMenu"
           >
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <svg
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
               <path
                 v-if="!menuOpen"
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 d="M4 6h16M4 12h16M4 18h16"
               />
-              <path v-else stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              <path
+                v-else
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
           <RouterLink
@@ -296,7 +303,9 @@ watch(syncCompleteCount, (count, previous) => {
             aria-controls="logbook-sync-panel"
             @click="syncPanelOpen = !syncPanelOpen"
           >
-            <span :class="{ 'animate-spin': isSyncing }" aria-hidden="true">{{ syncPillIcon }}</span>
+            <span :class="{ 'animate-spin': isSyncing }" aria-hidden="true">{{
+              syncPillIcon
+            }}</span>
             <span class="hidden sm:inline">{{ syncPillLabel }}</span>
           </button>
 
@@ -316,7 +325,15 @@ watch(syncCompleteCount, (count, previous) => {
               viewBox="0 0 36 36"
               aria-hidden="true"
             >
-              <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" stroke-width="3" class="text-sky-100" />
+              <circle
+                cx="18"
+                cy="18"
+                r="15"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                class="text-sky-100"
+              />
               <circle
                 cx="18"
                 cy="18"
@@ -331,17 +348,23 @@ watch(syncCompleteCount, (count, previous) => {
                 class="text-sky-700 transition-all duration-300"
               />
             </svg>
-            <span v-if="(syncStatus?.total ?? 0) > 0" class="absolute text-[9px] font-semibold text-sky-800">
+            <span
+              v-if="(syncStatus?.total ?? 0) > 0"
+              class="absolute text-[9px] font-semibold text-sky-800"
+            >
               {{ syncProgress }}
             </span>
           </button>
 
-          <span
+          <button
             v-if="user.is_demo"
-            class="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800"
+            type="button"
+            class="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-900 transition hover:border-amber-400 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="mutating"
+            @click="onLogout"
           >
-            Demo
-          </span>
+            Exit demo
+          </button>
 
           <div :class="user.has_logbook ? 'hidden sm:block' : 'block'">
             <button
@@ -352,7 +375,14 @@ watch(syncCompleteCount, (count, previous) => {
               @click="userMenuOpen = !userMenuOpen"
             >
               <span class="hidden md:inline">{{ user.name }}</span>
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
                 <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
               </svg>
             </button>
@@ -360,9 +390,24 @@ watch(syncCompleteCount, (count, previous) => {
               v-if="userMenuOpen"
               class="absolute right-0 top-full z-10 mt-2 w-40 rounded-md border border-slate-200 bg-white p-1 shadow-lg"
             >
-              <RouterLink to="/profile" class="block rounded px-3 py-2 hover:bg-slate-100" @click="userMenuOpen = false">Profile</RouterLink>
-              <RouterLink to="/settings" class="block rounded px-3 py-2 hover:bg-slate-100" @click="userMenuOpen = false">Settings</RouterLink>
-              <button type="button" class="block w-full rounded px-3 py-2 text-left text-red-700 hover:bg-red-50" :disabled="mutating" @click="onLogout">
+              <RouterLink
+                to="/profile"
+                class="block rounded px-3 py-2 hover:bg-slate-100"
+                @click="userMenuOpen = false"
+                >Profile</RouterLink
+              >
+              <RouterLink
+                to="/settings"
+                class="block rounded px-3 py-2 hover:bg-slate-100"
+                @click="userMenuOpen = false"
+                >Settings</RouterLink
+              >
+              <button
+                type="button"
+                class="block w-full rounded px-3 py-2 text-left text-red-700 hover:bg-red-50"
+                :disabled="mutating"
+                @click="onLogout"
+              >
                 {{ user.is_demo ? 'Exit demo' : 'Log out' }}
               </button>
             </div>
@@ -417,7 +462,10 @@ watch(syncCompleteCount, (count, previous) => {
             <p class="mt-0.5 truncate text-xs text-slate-500">
               Checked {{ lastCheckedLabel }} · Updated {{ lastUpdatedLabel }}
             </p>
-            <p v-if="syncStatus?.status === 'error' && syncStatus.error" class="mt-1 truncate text-xs text-red-700">
+            <p
+              v-if="syncStatus?.status === 'error' && syncStatus.error"
+              class="mt-1 truncate text-xs text-red-700"
+            >
               {{ syncStatus.error }}
             </p>
           </div>
@@ -469,8 +517,12 @@ watch(syncCompleteCount, (count, previous) => {
       class="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-950"
       role="status"
     >
-      <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 lg:max-w-[1440px]">
-        <span><strong>Demo mode.</strong> You can explore the logbook, but changes are disabled.</span>
+      <div
+        class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 lg:max-w-[1440px]"
+      >
+        <span
+          ><strong>Demo mode.</strong> You can explore the logbook, but changes are disabled.</span
+        >
         <a
           v-if="user.demo_spreadsheet_url"
           :href="user.demo_spreadsheet_url"
@@ -498,10 +550,7 @@ watch(syncCompleteCount, (count, previous) => {
       </div>
     </div>
 
-    <main
-      class="mx-auto max-w-6xl"
-      :class="hideMobileChrome ? 'sm:px-4 sm:py-6' : 'px-4 py-6'"
-    >
+    <main class="mx-auto max-w-6xl" :class="hideMobileChrome ? 'sm:px-4 sm:py-6' : 'px-4 py-6'">
       <slot />
     </main>
 
