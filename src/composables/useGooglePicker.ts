@@ -168,7 +168,7 @@ export function useGooglePicker() {
     })
   }
 
-  async function pickDriveFile(parentFolderId?: string): Promise<{ id: string; name: string } | null> {
+  async function pickDriveFile(): Promise<{ id: string; name: string } | null> {
     const apiKey = import.meta.env.VITE_GOOGLE_API_KEY as string
     if (!apiKey) {
       throw new Error('VITE_GOOGLE_API_KEY is not configured')
@@ -199,10 +199,6 @@ export function useGooglePicker() {
 
       const view = new google.picker.DocsView(google.picker.ViewId.DOCS)
       view.setIncludeFolders(false)
-      if (parentFolderId) {
-        view.setParent(parentFolderId)
-      }
-
       const picker = new google.picker.PickerBuilder()
         .setAppId(getAppId())
         .setOrigin(window.location.origin)

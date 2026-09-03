@@ -112,8 +112,7 @@ async function attachFromDrive(): Promise<void> {
   attaching.value = true
   error.value = null
   try {
-    const folder = await getFlightMediaFolder(props.flightId)
-    const picked = await pickDriveFile(folder.folder_id || undefined)
+    const picked = await pickDriveFile()
     if (!picked) {
       return
     }
