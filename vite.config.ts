@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import vueDevTools from 'vite-plugin-vue-devtools'
+import cesium from 'vite-plugin-cesium'
 
 const enableVueDevTools = process.env.NODE_ENV !== 'production' && !process.env.VITEST
 
@@ -12,6 +13,7 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     vue(),
+    cesium(),
     ...(enableVueDevTools ? [vueDevTools()] : []),
     VitePWA({
       registerType: 'autoUpdate',
@@ -54,6 +56,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        globIgnores: ['**/cesium/**'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/robots\.txt$/, /^\/sitemap\.xml$/],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,txt,xml}'],

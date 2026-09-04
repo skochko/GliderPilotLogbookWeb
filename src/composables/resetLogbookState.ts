@@ -3,6 +3,8 @@ import { resetDashboardStatusState } from '@/composables/useDashboardStatus'
 import { resetDisplaySettingsState } from '@/composables/useDisplaySettings'
 import { resetFlightsState } from '@/composables/useFlights'
 import { resetLogbookSyncState } from '@/composables/useLogbookSync'
+import { resetMapLayerPreferenceState } from '@/composables/useMapLayerPreference'
+import { resetMeasurementUnitsState } from '@/composables/useMeasurementUnits'
 import { resetLogbookState as resetLogbookStatus } from '@/composables/useLogbook'
 import { resetProfileState } from '@/composables/useProfile'
 import { resetSettingsState } from '@/composables/useSettings'
@@ -13,6 +15,8 @@ import { resetStatisticsState } from '@/composables/useStatistics'
 export function resetLogbookState(): void {
   resetFlightsState()
   resetLogbookSyncState()
+  resetMapLayerPreferenceState()
+  resetMeasurementUnitsState()
   resetDisplaySettingsState()
   resetSettingsState()
   resetStatisticsState()

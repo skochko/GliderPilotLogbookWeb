@@ -1,3 +1,5 @@
+import { formatAltitudeValue, formatVarioValue, type MeasurementUnits } from './measurementUnits'
+
 export type IgcMetadata = {
   date?: string
   pilot?: string
@@ -102,7 +104,20 @@ function formatIgcDate(raw: string): string | undefined {
   if (Number.isNaN(date.getTime())) {
     return undefined
   }
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ] as const
   return `${day} ${months[month - 1]} ${year}`
 }
 
@@ -235,28 +250,22 @@ export function formatIgcTime(time: string): string {
   return `${time.slice(0, 2)}:${time.slice(2, 4)}:${time.slice(4, 6)}`
 }
 
-export function formatVario(varioMs: number | null | undefined): string {
-  if (varioMs === null || varioMs === undefined || !Number.isFinite(varioMs)) {
-    return '—'
-  }
-  const sign = varioMs > 0 ? '+' : ''
-  return `${sign}${varioMs.toFixed(1)} m/s`
+export function formatVario(
+  varioMs: number | null | undefined,
+  units: MeasurementUnits = 'metric',
+): string {
+  return formatVarioValue(varioMs, units)
 }
 
-export function formatAltitude(altitudeM: number | null | undefined): string {
-  if (altitudeM === null || altitudeM === undefined || !Number.isFinite(altitudeM)) {
-    return '—'
-  }
-  return `${Math.round(altitudeM)} m`
+export function formatAltitude(
+  altitudeM: number | null | undefined,
+  units: MeasurementUnits = 'metric',
+): string {
+  return formatAltitudeValue(altitudeM, units)
 }
 
 export function metadataSummary(metadata: IgcMetadata): string {
-  return [
-    metadata.pilot,
-    metadata.gliderType,
-    metadata.gliderId,
-    metadata.date,
-  ]
+  return [metadata.pilot, metadata.gliderType, metadata.gliderId, metadata.date]
     .filter(Boolean)
     .join(' · ')
 }

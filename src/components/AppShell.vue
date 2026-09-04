@@ -8,10 +8,12 @@ import { useDisplaySettings } from '@/composables/useDisplaySettings'
 import { useFlashMessage } from '@/composables/useFlashMessage'
 import { resetLogbookState } from '@/composables/resetLogbookState'
 import { useLogbookSync } from '@/composables/useLogbookSync'
+import { useMeasurementUnits } from '@/composables/useMeasurementUnits'
 import { isApiError } from '@/api/errors'
 
 const { user, mutating, logout } = useAuth()
 const { ensureLoaded: ensureDisplaySettingsLoaded } = useDisplaySettings()
+const { ensureLoaded: ensureMeasurementUnitsLoaded } = useMeasurementUnits()
 const { message, kind, clear, show } = useFlashMessage()
 const route = useRoute()
 const router = useRouter()
@@ -194,6 +196,14 @@ watch(
     if (hasLogbook) {
       void ensureDisplaySettingsLoaded()
     }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => user.value?.email,
+  (email) => {
+    if (email) void ensureMeasurementUnitsLoaded()
   },
   { immediate: true },
 )

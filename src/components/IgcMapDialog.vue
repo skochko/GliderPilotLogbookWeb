@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import L from 'leaflet'
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import IgcAltitudeChart from '@/components/IgcAltitudeChart.vue'
 import SpinnerIcon from '@/components/SpinnerIcon.vue'
 import { fetchFlightIgcContent } from '@/api/flightMedia'
 import { isApiError } from '@/api/errors'
+import { useAuth } from '@/composables/useAuth'
+import { useMapLayerPreference, type MapLayerPreference } from '@/composables/useMapLayerPreference'
+import { useMeasurementUnits } from '@/composables/useMeasurementUnits'
 import {
   buildColoredTrackSegments,
   formatAltitude,
@@ -18,6 +21,8 @@ import {
   type IgcTrack,
 } from '@/lib/igc'
 import 'leaflet/dist/leaflet.css'
+
+const Igc3DMap = defineAsyncComponent(() => import('@/components/Igc3DMap.vue'))
 
 const props = defineProps<{
   open: boolean
@@ -35,10 +40,32 @@ const error = ref<string | null>(null)
 const track = ref<IgcTrack | null>(null)
 const selectedIndex = ref<number | null>(null)
 const mapContainer = ref<HTMLElement | null>(null)
+const preferenceError = ref<string | null>(null)
+const viewMode = ref<'2d' | '3d'>('2d')
+const map3d = ref<{ fitTrack: () => void; toggleTilt: () => void } | null>(null)
+const {
+  units,
+  saving: unitsSaving,
+  ensureLoaded: ensureUnitsLoaded,
+  setUnits,
+  setUnitsLocally,
+} = useMeasurementUnits()
+const { user } = useAuth()
+const isDemo = computed(() => user.value?.is_demo ?? false)
+const {
+  mapLayer,
+  saving: mapLayerSaving,
+  ensureLoaded: ensureMapLayerLoaded,
+  setMapLayer,
+} = useMapLayerPreference()
 
 let map: L.Map | null = null
 let selectionMarker: L.CircleMarker | null = null
 let trackBounds: L.LatLngBounds | null = null
+let baseTileLayer: L.TileLayer | null = null
+let inspectingTrack = false
+
+const TRACK_HIT_RADIUS_PX = 24
 
 const pointCount = computed(() => track.value?.points.length ?? 0)
 const metadataLine = computed(() => (track.value ? metadataSummary(track.value.metadata) : ''))
@@ -50,12 +77,121 @@ const selectedPoint = computed(() => {
 })
 
 function destroyMap(): void {
+  removeMapPointerListeners()
+  inspectingTrack = false
   selectionMarker = null
+  baseTileLayer = null
   trackBounds = null
   if (map) {
     map.remove()
     map = null
   }
+}
+
+function applyMapLayer(): void {
+  if (!map) return
+  if (baseTileLayer) baseTileLayer.remove()
+
+  baseTileLayer =
+    mapLayer.value === 'satellite'
+      ? L.tileLayer(
+          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          {
+            maxZoom: 19,
+            attribution: 'Tiles &copy; Esri',
+          },
+        )
+      : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          subdomains: 'abc',
+          attribution: '&copy; OpenStreetMap contributors',
+        })
+
+  baseTileLayer.addTo(map)
+  baseTileLayer.bringToBack()
+}
+
+function closestPointIndex(clientX: number, clientY: number, maxDistance?: number): number | null {
+  if (!map || !mapContainer.value || !track.value?.points.length) {
+    return null
+  }
+
+  const rect = mapContainer.value.getBoundingClientRect()
+  const pointer = L.point(clientX - rect.left, clientY - rect.top)
+  let closestIndex: number | null = null
+  let closestDistance = Number.POSITIVE_INFINITY
+
+  track.value.points.forEach((point, index) => {
+    const projected = map!.latLngToContainerPoint([point.lat, point.lng])
+    const distance = pointer.distanceTo(projected)
+    if (distance < closestDistance) {
+      closestDistance = distance
+      closestIndex = index
+    }
+  })
+
+  return maxDistance === undefined || closestDistance <= maxDistance ? closestIndex : null
+}
+
+function onMapPointerDown(event: PointerEvent): void {
+  const index = closestPointIndex(event.clientX, event.clientY, TRACK_HIT_RADIUS_PX)
+  if (index === null || !mapContainer.value) {
+    return
+  }
+
+  inspectingTrack = true
+  selectedIndex.value = index
+  map?.dragging.disable()
+  mapContainer.value.setPointerCapture(event.pointerId)
+  event.preventDefault()
+}
+
+function onMapPointerMove(event: PointerEvent): void {
+  const index = closestPointIndex(
+    event.clientX,
+    event.clientY,
+    inspectingTrack ? undefined : TRACK_HIT_RADIUS_PX,
+  )
+  if (index !== null) {
+    selectedIndex.value = index
+  }
+  if (inspectingTrack) {
+    event.preventDefault()
+  }
+}
+
+function onMapPointerEnd(event: PointerEvent): void {
+  if (!inspectingTrack) {
+    return
+  }
+
+  inspectingTrack = false
+  map?.dragging.enable()
+  if (mapContainer.value?.hasPointerCapture(event.pointerId)) {
+    mapContainer.value.releasePointerCapture(event.pointerId)
+  }
+}
+
+function addMapPointerListeners(): void {
+  const container = mapContainer.value
+  if (!container) {
+    return
+  }
+  container.addEventListener('pointerdown', onMapPointerDown, { capture: true })
+  container.addEventListener('pointermove', onMapPointerMove, { capture: true })
+  container.addEventListener('pointerup', onMapPointerEnd, { capture: true })
+  container.addEventListener('pointercancel', onMapPointerEnd, { capture: true })
+}
+
+function removeMapPointerListeners(): void {
+  const container = mapContainer.value
+  if (!container) {
+    return
+  }
+  container.removeEventListener('pointerdown', onMapPointerDown, { capture: true })
+  container.removeEventListener('pointermove', onMapPointerMove, { capture: true })
+  container.removeEventListener('pointerup', onMapPointerEnd, { capture: true })
+  container.removeEventListener('pointercancel', onMapPointerEnd, { capture: true })
 }
 
 function refreshMapLayout(): void {
@@ -104,8 +240,9 @@ function buildTooltip(point: IgcTrack['points'][number]): string {
   const altitude = pointAltitude(point)
   return [
     `<strong>${formatIgcTime(point.time)}</strong>`,
-    `Alt: ${formatAltitude(altitude)}`,
-    `Vario: ${formatVario(point.varioMs)}`,
+    `Alt: ${formatAltitude(altitude, units.value)}`,
+    `Vario: ${formatVario(point.varioMs, units.value)}`,
+    `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`,
   ].join('<br/>')
 }
 
@@ -133,12 +270,9 @@ function renderTrack(content: string): void {
     attributionControl: true,
     preferCanvas: true,
   })
+  addMapPointerListeners()
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    subdomains: 'abc',
-    attribution: '&copy; OpenStreetMap contributors',
-  }).addTo(map)
+  applyMapLayer()
 
   const layers: L.Layer[] = []
   const stats = getAltitudeStats(parsed.points)
@@ -150,6 +284,7 @@ function renderTrack(content: string): void {
           color: segment.color,
           weight: 3,
           opacity: 0.9,
+          interactive: false,
         }),
       )
     }
@@ -157,7 +292,7 @@ function renderTrack(content: string): void {
     layers.push(
       L.polyline(
         parsed.points.map((point) => [point.lat, point.lng] as [number, number]),
-        { color: '#0369a1', weight: 3, opacity: 0.9 },
+        { color: '#0369a1', weight: 3, opacity: 0.9, interactive: false },
       ),
     )
   }
@@ -184,7 +319,9 @@ function renderTrack(content: string): void {
   )
 
   L.layerGroup(layers).addTo(map)
-  trackBounds = L.latLngBounds(parsed.points.map((point) => [point.lat, point.lng] as [number, number]))
+  trackBounds = L.latLngBounds(
+    parsed.points.map((point) => [point.lat, point.lng] as [number, number]),
+  )
   refreshMapLayout()
 }
 
@@ -223,10 +360,49 @@ watch(selectedIndex, (index) => {
   updateSelectionMarker(index)
 })
 
+watch(units, () => {
+  updateSelectionMarker(selectedIndex.value)
+})
+
+watch(mapLayer, applyMapLayer)
+
+watch(viewMode, async (mode) => {
+  if (mode === '2d') {
+    await nextTick()
+    refreshMapLayout()
+  }
+})
+
+async function selectUnits(next: 'metric' | 'imperial'): Promise<void> {
+  preferenceError.value = null
+  if (isDemo.value) {
+    setUnitsLocally(next)
+    return
+  }
+  try {
+    await setUnits(next)
+  } catch (err) {
+    preferenceError.value = isApiError(err) ? err.message : 'Failed to save measurement units'
+  }
+}
+
+async function selectMapLayer(next: MapLayerPreference): Promise<void> {
+  preferenceError.value = null
+  try {
+    await setMapLayer(next, !isDemo.value)
+  } catch (err) {
+    preferenceError.value = isApiError(err) ? err.message : 'Failed to save map style'
+  }
+}
+
 watch(
   () => props.open,
   (open) => {
     if (open) {
+      if (!isDemo.value) {
+        void ensureUnitsLoaded()
+        void ensureMapLayerLoaded()
+      }
       document.body.style.overflow = 'hidden'
       window.addEventListener('resize', onWindowResize)
     } else {
@@ -246,6 +422,7 @@ watch(
       error.value = null
       track.value = null
       selectedIndex.value = null
+      preferenceError.value = null
       loading.value = false
     }
   },
@@ -260,52 +437,151 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-x-0 bottom-0 top-14 z-[60] flex flex-col bg-white sm:inset-0 sm:top-0 sm:items-center sm:justify-center sm:bg-slate-900/40 sm:p-4"
-      @click.self="emit('close')"
-    >
-      <div
-        class="flex h-full w-full flex-col sm:h-[min(92vh,920px)] sm:max-w-5xl sm:rounded-lg sm:border sm:border-slate-200 sm:bg-white sm:shadow-xl"
-        @click.stop
-      >
+    <div v-if="open" class="fixed inset-0 z-[60] flex h-dvh flex-col bg-white">
+      <div class="flex h-full min-h-0 w-full flex-col bg-white">
         <div
-          class="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-5 sm:py-4"
+          class="flex shrink-0 items-center gap-3 border-b border-slate-200 px-4 pb-3 sm:px-5"
+          style="padding-top: max(0.75rem, env(safe-area-inset-top))"
         >
-          <div class="min-w-0">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:bg-slate-100"
+            aria-label="Go back"
+            @click="emit('close')"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+              <path
+                fill-rule="evenodd"
+                d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <div class="min-w-0 flex-1">
             <h2 class="text-base font-semibold text-slate-900 sm:text-lg">IGC track</h2>
-            <p v-if="label" class="truncate text-xs text-slate-500 sm:text-sm" :title="filename ?? undefined">
+            <p
+              v-if="label"
+              class="truncate text-xs text-slate-500 sm:text-sm"
+              :title="filename ?? undefined"
+            >
               {{ label }}
             </p>
-            <p v-if="metadataLine" class="mt-0.5 truncate text-xs text-slate-500" :title="metadataLine">
+            <p
+              v-if="metadataLine"
+              class="mt-0.5 truncate text-xs text-slate-500"
+              :title="metadataLine"
+            >
               {{ metadataLine }}
             </p>
           </div>
-          <button
-            type="button"
-            class="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-            aria-label="Close"
-            @click="emit('close')"
-          >
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div class="flex shrink-0 rounded-md bg-slate-100 p-0.5 text-xs font-medium">
+            <button
+              v-for="option in [
+                { value: 'metric', label: 'SI' },
+                { value: 'imperial', label: 'Imperial' },
+              ] as const"
+              :key="option.value"
+              type="button"
+              class="rounded px-2.5 py-1.5 transition-colors disabled:opacity-50"
+              :class="units === option.value ? 'bg-white text-sky-800 shadow-sm' : 'text-slate-600'"
+              :disabled="unitsSaving"
+              @click="selectUnits(option.value)"
+            >
+              {{ option.label }}
+            </button>
+          </div>
         </div>
 
         <div class="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 sm:px-5 sm:py-4">
           <ErrorBanner v-if="error" :message="error" :retry-busy="loading" @retry="loadTrack" />
+          <ErrorBanner v-if="preferenceError" :message="preferenceError" />
 
           <div
             v-if="selectedPoint"
             class="flex shrink-0 flex-wrap gap-x-4 gap-y-1 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600 sm:text-sm"
           >
-            <span><span class="text-slate-400">Time</span> {{ formatIgcTime(selectedPoint.time) }}</span>
-            <span><span class="text-slate-400">Alt</span> {{ formatAltitude(pointAltitude(selectedPoint)) }}</span>
-            <span><span class="text-slate-400">Vario</span> {{ formatVario(selectedPoint.varioMs) }}</span>
+            <span
+              ><span class="text-slate-400">Time</span>
+              {{ formatIgcTime(selectedPoint.time) }}</span
+            >
+            <span
+              ><span class="text-slate-400">Alt</span>
+              {{ formatAltitude(pointAltitude(selectedPoint), units) }}</span
+            >
+            <span
+              ><span class="text-slate-400">Vario</span>
+              {{ formatVario(selectedPoint.varioMs, units) }}</span
+            >
+            <span
+              ><span class="text-slate-400">Position</span> {{ selectedPoint.lat.toFixed(5) }},
+              {{ selectedPoint.lng.toFixed(5) }}</span
+            >
           </div>
 
           <div class="relative min-h-0 flex-1">
+            <div
+              v-if="!loading && !error"
+              class="absolute left-1/2 top-3 z-[500] flex -translate-x-1/2 rounded-md border border-slate-300 bg-white p-0.5 text-xs font-medium shadow-md"
+            >
+              <button
+                v-for="option in [
+                  { value: '2d', label: '2D' },
+                  { value: '3d', label: '3D' },
+                ] as const"
+                :key="option.value"
+                type="button"
+                class="rounded px-3 py-1.5 transition-colors"
+                :class="
+                  viewMode === option.value
+                    ? 'bg-sky-700 text-white'
+                    : 'text-slate-700 hover:bg-slate-100'
+                "
+                @click="viewMode = option.value"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+
+            <div
+              v-if="viewMode === '3d' && !loading && !error"
+              class="absolute bottom-3 left-3 z-[500] flex overflow-hidden rounded-md border border-slate-300 bg-white text-xs font-medium text-slate-700 shadow-md"
+            >
+              <button type="button" class="px-3 py-2 hover:bg-slate-50" @click="map3d?.fitTrack()">
+                Fit track
+              </button>
+              <button
+                type="button"
+                class="border-l border-slate-200 px-3 py-2 hover:bg-slate-50"
+                @click="map3d?.toggleTilt()"
+              >
+                Tilt
+              </button>
+            </div>
+
+            <div
+              v-if="!loading && !error"
+              class="absolute right-3 top-3 z-[500] flex rounded-md border border-slate-300 bg-white p-0.5 text-xs font-medium shadow-md"
+            >
+              <button
+                v-for="option in [
+                  { value: 'street', label: 'Map' },
+                  { value: 'satellite', label: 'Satellite' },
+                ] as const"
+                :key="option.value"
+                type="button"
+                class="rounded px-2.5 py-1.5 transition-colors disabled:opacity-50"
+                :class="
+                  mapLayer === option.value
+                    ? 'bg-sky-700 text-white'
+                    : 'text-slate-700 hover:bg-slate-100'
+                "
+                :disabled="mapLayerSaving"
+                @click="selectMapLayer(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+
             <div
               v-if="loading"
               class="absolute inset-0 z-10 flex items-center justify-center gap-2 bg-white text-sm text-slate-500 sm:rounded-md"
@@ -318,6 +594,17 @@ onBeforeUnmount(() => {
               v-show="!error"
               ref="mapContainer"
               class="h-full w-full bg-slate-100 sm:rounded-md sm:border sm:border-slate-200"
+              :class="viewMode === '2d' ? '' : 'invisible absolute inset-0'"
+            />
+
+            <Igc3DMap
+              v-if="viewMode === '3d' && track && !loading && !error"
+              ref="map3d"
+              class="absolute inset-0 size-full overflow-hidden sm:rounded-md sm:border sm:border-slate-200"
+              :points="track.points"
+              :selected-index="selectedIndex"
+              :map-layer="mapLayer"
+              @update:selected-index="selectedIndex = $event"
             />
           </div>
 
@@ -325,12 +612,17 @@ onBeforeUnmount(() => {
             v-if="track && track.points.length > 0 && !loading"
             :points="track.points"
             :selected-index="selectedIndex"
+            :units="units"
             class="shrink-0 px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-0 sm:pb-0"
             @update:selected-index="selectedIndex = $event"
           />
 
-          <p v-if="pointCount > 0 && !loading" class="hidden shrink-0 text-xs text-slate-500 sm:block">
-            {{ pointCount }} GPS points · track colour = altitude · hover chart to inspect
+          <p
+            v-if="pointCount > 0 && !loading"
+            class="hidden shrink-0 text-xs text-slate-500 sm:block"
+          >
+            {{ pointCount }} GPS points · track colour = altitude · point at or drag along the track
+            to inspect
           </p>
         </div>
       </div>

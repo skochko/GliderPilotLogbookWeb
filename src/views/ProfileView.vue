@@ -11,12 +11,15 @@ import { useFlashMessage } from '@/composables/useFlashMessage'
 import { useAuth } from '@/composables/useAuth'
 import { useLogbookDisconnect } from '@/composables/useLogbookDisconnect'
 import { useProfile } from '@/composables/useProfile'
+import { useMeasurementUnits } from '@/composables/useMeasurementUnits'
+import { measurementUnitsFromPreferences, type MeasurementUnits } from '@/lib/measurementUnits'
 
 const route = useRoute()
 const router = useRouter()
 const { show } = useFlashMessage()
 const { user } = useAuth()
 const { profile, loading, initialized, mutating, error, fetch, save } = useProfile()
+const { syncFromProfile: syncMeasurementUnits, setUnitsLocally } = useMeasurementUnits()
 const { disconnectLogbook, disconnecting } = useLogbookDisconnect()
 
 const disconnectOpen = ref(false)
@@ -24,6 +27,7 @@ const disconnectOpen = ref(false)
 const preferences = ref<Record<string, unknown>>({})
 const emailNotificationsEnabled = ref(true)
 const language = ref<'' | 'en' | 'ru'>('')
+const measurementUnits = ref<MeasurementUnits>('metric')
 const submitError = ref<string | null>(null)
 const googleScopes = ref<GoogleScopeStatus | null>(null)
 const scopesLoading = ref(false)
@@ -35,6 +39,10 @@ const isDemo = computed(() => user.value?.is_demo ?? false)
 const needsGoogleReconnect = computed(
   () => hasLogbook.value && googleScopes.value !== null && !googleScopes.value.available,
 )
+
+function onMeasurementUnitsChange(): void {
+  if (isDemo.value) setUnitsLocally(measurementUnits.value)
+}
 
 const googleAccessItems = computed(() => {
   const scopes = googleScopes.value
@@ -103,6 +111,7 @@ onMounted(async () => {
     preferences.value = profile.value.preferences ?? {}
     emailNotificationsEnabled.value = profile.value.email_notifications_enabled
     language.value = profile.value.language ?? ''
+    measurementUnits.value = measurementUnitsFromPreferences(profile.value.preferences)
   }
   await loadGoogleScopes()
   await handleReconnectQuery()
@@ -121,10 +130,11 @@ async function onSubmit(): Promise<void> {
   submitError.value = null
   try {
     await save({
-      preferences: preferences.value,
+      preferences: { ...preferences.value, measurement_units: measurementUnits.value },
       email_notifications_enabled: emailNotificationsEnabled.value,
       language: language.value,
     })
+    syncMeasurementUnits()
   } catch (err) {
     if (isApiError(err)) {
       submitError.value = err.message
@@ -262,6 +272,37 @@ async function confirmDisconnect(): Promise<void> {
       </section>
 
       <form class="space-y-6" @submit.prevent="onSubmit">
+        <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 class="font-semibold text-slate-900">Measurement units</h2>
+          <p class="mt-1 text-sm text-slate-600">
+            Choose how distances, altitudes, and vertical speeds are displayed.
+          </p>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <label
+              v-for="option in [
+                { value: 'metric', label: 'SI (metric)', detail: 'km, m, m/s' },
+                { value: 'imperial', label: 'Imperial', detail: 'mi, ft, ft/min' },
+              ]"
+              :key="option.value"
+              class="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 px-4 py-3 text-sm"
+              :class="measurementUnits === option.value ? 'border-sky-600 bg-sky-50' : ''"
+            >
+              <input
+                v-model="measurementUnits"
+                type="radio"
+                name="measurement-units"
+                :value="option.value"
+                class="size-4 border-slate-300 text-sky-700 focus:ring-sky-600"
+                @change="onMeasurementUnitsChange"
+              />
+              <span>
+                <span class="block font-medium text-slate-900">{{ option.label }}</span>
+                <span class="text-slate-500">{{ option.detail }}</span>
+              </span>
+            </label>
+          </div>
+        </section>
+
         <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 class="font-semibold text-slate-900">Email notifications</h2>
           <p class="mt-1 text-sm text-slate-600">

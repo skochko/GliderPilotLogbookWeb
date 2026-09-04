@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { formatIgcTime, getAltitudeStats, pointAltitude, type IgcPoint } from '@/lib/igc'
+import { altitudeScaleValue, type MeasurementUnits } from '@/lib/measurementUnits'
 
 const props = defineProps<{
   points: readonly IgcPoint[]
   selectedIndex: number | null
+  units: MeasurementUnits
 }>()
 
 const emit = defineEmits<{
@@ -22,7 +24,10 @@ const stats = computed(() => getAltitudeStats(props.points))
 const chartPoints = computed(() =>
   props.points
     .map((point, index) => ({ point, index, altitude: pointAltitude(point) }))
-    .filter((entry): entry is { point: IgcPoint; index: number; altitude: number } => entry.altitude !== null),
+    .filter(
+      (entry): entry is { point: IgcPoint; index: number; altitude: number } =>
+        entry.altitude !== null,
+    ),
 )
 
 const linePath = computed(() => {
@@ -39,7 +44,8 @@ const linePath = computed(() => {
       const x = padding.left + (index / lastIndex) * plotWidth
       const y =
         padding.top +
-        (1 - (altitude - stats.value!.min) / (stats.value!.max - stats.value!.min || 1)) * plotHeight
+        (1 - (altitude - stats.value!.min) / (stats.value!.max - stats.value!.min || 1)) *
+          plotHeight
       return `${pointIndex === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
     })
     .join(' ')
@@ -53,6 +59,23 @@ const selectedX = computed(() => {
   const plotWidth = viewWidth - padding.left - padding.right
   const lastIndex = Math.max(props.points.length - 1, 1)
   return padding.left + (props.selectedIndex / lastIndex) * plotWidth
+})
+
+const selectedY = computed(() => {
+  if (props.selectedIndex === null || !stats.value) {
+    return null
+  }
+  const point = props.points[props.selectedIndex]
+  const altitude = point ? pointAltitude(point) : null
+  if (altitude === null) {
+    return null
+  }
+
+  const plotHeight = viewHeight - padding.top - padding.bottom
+  return (
+    padding.top +
+    (1 - (altitude - stats.value.min) / (stats.value.max - stats.value.min || 1)) * plotHeight
+  )
 })
 
 const yTicks = computed(() => {
@@ -86,17 +109,15 @@ function onPointerMove(event: PointerEvent): void {
   const index = indexFromClientX(event.clientX)
   emit('update:selectedIndex', index)
 }
-
-function onPointerLeave(): void {
-  emit('update:selectedIndex', null)
-}
 </script>
 
 <template>
   <div class="rounded-md border border-slate-200 bg-slate-50 px-2 py-2">
     <div class="mb-1 flex items-center justify-between gap-2 text-[11px] text-slate-500">
       <span>Altitude profile</span>
-      <span v-if="selectedIndex !== null">{{ formatIgcTime(points[selectedIndex]?.time ?? '') }}</span>
+      <span v-if="selectedIndex !== null">{{
+        formatIgcTime(points[selectedIndex]?.time ?? '')
+      }}</span>
     </div>
 
     <svg
@@ -106,7 +127,6 @@ function onPointerLeave(): void {
       role="img"
       aria-label="Altitude profile chart"
       @pointermove="onPointerMove"
-      @pointerleave="onPointerLeave"
       @pointerdown="onPointerMove"
     >
       <line
@@ -126,7 +146,7 @@ function onPointerLeave(): void {
         text-anchor="end"
         class="fill-slate-400 text-[10px]"
       >
-        {{ Math.round(tick.altitude) }}
+        {{ Math.round(altitudeScaleValue(tick.altitude, units)) }}
       </text>
 
       <path
@@ -148,6 +168,15 @@ function onPointerLeave(): void {
         class="stroke-amber-500"
         stroke-width="1.5"
         stroke-dasharray="4 3"
+      />
+
+      <circle
+        v-if="selectedX !== null && selectedY !== null"
+        :cx="selectedX"
+        :cy="selectedY"
+        r="3.5"
+        class="fill-amber-400 stroke-amber-700"
+        stroke-width="1.5"
       />
     </svg>
   </div>
