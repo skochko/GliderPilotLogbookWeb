@@ -80,6 +80,16 @@ docker compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .e
 
 App: `http://localhost:8080` (or `WEB_HTTP_PORT` from env).
 
+Deploy the `stage` branch to the staging server (`192.168.1.224`):
+
+```bash
+./scripts/deploy.stage.sh
+```
+
+The server must have `/home/deploy/stage.gliderpilotlogbook.co.uk/.env` configured
+before the first deploy. Override the source branch or target directory with
+`BRANCH_NAME` and `REMOTE_DIR` if needed.
+
 ### Production
 
 ```bash
