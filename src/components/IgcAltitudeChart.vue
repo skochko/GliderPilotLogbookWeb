@@ -308,22 +308,7 @@ onBeforeUnmount(() => {
         </text>
       </g>
     </svg>
-    <div class="grid grid-cols-4 gap-2">
-      <div
-        v-for="item in [
-          { label: 'Max alt.', value: formatAltitudeValue(maximum, units) },
-          { label: 'Total climb', value: formatAltitudeValue(totalClimb, units) },
-          { label: 'Duration', value: durationText(duration) },
-          { label: 'Distance', value: formatDistanceValue(totalDistance, units) },
-        ]"
-        :key="item.label"
-        class="rounded-xl bg-slate-50 px-2 py-1.5"
-      >
-        <span class="block truncate text-[9px] text-slate-500">{{ item.label }}</span
-        ><strong class="block truncate text-[11px] text-slate-900">{{ item.value }}</strong>
-      </div>
-    </div>
-    <div class="relative mt-2 h-10">
+    <div class="relative h-10">
       <button
         type="button"
         class="absolute left-0 top-0 flex size-9 items-center justify-center rounded-full bg-sky-700 text-xs text-white"
@@ -370,6 +355,21 @@ onBeforeUnmount(() => {
       <span class="absolute right-0 top-7 text-[10px] text-slate-500">
         {{ formatIgcTime(activePoint?.time ?? '') }}
       </span>
+    </div>
+    <div class="mt-2 grid grid-cols-4 gap-2">
+      <div
+        v-for="item in [
+          { label: 'Max alt.', value: formatAltitudeValue(maximum, units) },
+          { label: 'Total climb', value: formatAltitudeValue(totalClimb, units) },
+          { label: 'Duration', value: durationText(duration) },
+          { label: 'Distance', value: formatDistanceValue(totalDistance, units) },
+        ]"
+        :key="item.label"
+        class="rounded-xl bg-slate-50 px-2 py-1.5"
+      >
+        <span class="block truncate text-[9px] text-slate-500">{{ item.label }}</span
+        ><strong class="block truncate text-[11px] text-slate-900">{{ item.value }}</strong>
+      </div>
     </div>
   </section>
 </template>
