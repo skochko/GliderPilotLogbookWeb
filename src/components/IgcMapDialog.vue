@@ -39,6 +39,7 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const track = ref<IgcTrack | null>(null)
 const selectedIndex = ref<number | null>(null)
+const rangeStartIndex = ref(0)
 const mapContainer = ref<HTMLElement | null>(null)
 const preferenceError = ref<string | null>(null)
 const viewMode = ref<'2d' | '3d'>('2d')
@@ -82,6 +83,19 @@ const selectedPoint = computed(() => {
   }
   return track.value.points[selectedIndex.value] ?? null
 })
+
+function selectTrackPoint(index: number | null): void {
+  if (index === null || !track.value?.points.length) {
+    selectedIndex.value = index
+    return
+  }
+
+  const nextIndex = Math.max(0, Math.min(index, track.value.points.length - 1))
+  if (nextIndex < rangeStartIndex.value) {
+    rangeStartIndex.value = nextIndex
+  }
+  selectedIndex.value = nextIndex
+}
 
 function destroyMap(): void {
   removeMapPointerListeners()
@@ -148,7 +162,7 @@ function onMapPointerDown(event: PointerEvent): void {
   }
 
   inspectingTrack = true
-  selectedIndex.value = index
+  selectTrackPoint(index)
   map?.dragging.disable()
   mapContainer.value.setPointerCapture(event.pointerId)
   event.preventDefault()
@@ -161,7 +175,7 @@ function onMapPointerMove(event: PointerEvent): void {
     inspectingTrack ? undefined : TRACK_HIT_RADIUS_PX,
   )
   if (index !== null) {
-    selectedIndex.value = index
+    selectTrackPoint(index)
   }
   if (inspectingTrack) {
     event.preventDefault()
@@ -260,7 +274,8 @@ function update2dTrackProgress(index: number | null): void {
   progressLayer = null
 
   const endIndex = Math.max(0, index ?? 0)
-  const playedPoints = track.value.points.slice(0, endIndex + 1)
+  const startIndex = Math.min(rangeStartIndex.value, endIndex)
+  const playedPoints = track.value.points.slice(startIndex, endIndex + 1)
   if (playedPoints.length < 2) return
   const stats = getAltitudeStats(track.value.points)
   const layers: L.Layer[] = []
@@ -308,6 +323,7 @@ function renderTrack(content: string): void {
   const parsed = parseIgcTrack(content)
   track.value = parsed
   selectedIndex.value = null
+  rangeStartIndex.value = 0
 
   if (parsed.points.length === 0) {
     error.value = 'No GPS track points found in this IGC file.'
@@ -412,6 +428,10 @@ watch(selectedIndex, (index) => {
   updateSelectionMarker(index)
 })
 
+watch(rangeStartIndex, () => {
+  update2dTrackProgress(selectedIndex.value)
+})
+
 watch(units, () => {
   updateSelectionMarker(selectedIndex.value)
 })
@@ -479,6 +499,7 @@ watch(
       error.value = null
       track.value = null
       selectedIndex.value = null
+      rangeStartIndex.value = 0
       preferenceError.value = null
       loading.value = false
     }
@@ -687,8 +708,9 @@ onBeforeUnmount(() => {
               class="absolute inset-0 size-full overflow-hidden"
               :points="track.points"
               :selected-index="selectedIndex"
+              :start-index="rangeStartIndex"
               :map-layer="mapLayer"
-              @update:selected-index="selectedIndex = $event"
+              @update:selected-index="selectTrackPoint"
             />
           </div>
 
@@ -696,9 +718,11 @@ onBeforeUnmount(() => {
             v-if="track && track.points.length > 0 && !loading"
             :points="track.points"
             :selected-index="selectedIndex"
+            :start-index="rangeStartIndex"
             :units="units"
             class="relative z-[600] h-[clamp(200px,30dvh,320px)] shrink-0"
-            @update:selected-index="selectedIndex = $event"
+            @update:selected-index="selectTrackPoint"
+            @update:start-index="rangeStartIndex = $event"
           />
         </div>
       </div>

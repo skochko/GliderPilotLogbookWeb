@@ -34,6 +34,7 @@ import 'cesium/Build/Cesium/Widgets/widgets.css'
 const props = defineProps<{
   points: readonly IgcPoint[]
   selectedIndex: number | null
+  startIndex: number
   mapLayer: MapLayerPreference
 }>()
 const emit = defineEmits<{ 'update:selectedIndex': [number] }>()
@@ -59,24 +60,27 @@ function airbornePositions(
   groundHeights: readonly number[],
   normalizeToTerrain: boolean,
 ): Cartesian3[] {
-  const lastIndex = props.points.length - 1
-  const startCorrection = normalizeToTerrain
-    ? (groundHeights[0] ?? 0) - altitude(props.points[0]!)
-    : 0
-  const endCorrection = normalizeToTerrain
-    ? (groundHeights[lastIndex] ?? 0) - altitude(props.points[lastIndex]!)
-    : 0
+  let altitudeCorrection = 0
+  if (normalizeToTerrain) {
+    const sampleSize = Math.min(30, Math.max(1, Math.floor(props.points.length / 2)))
+    const indexes = new Set<number>()
+    for (let index = 0; index < sampleSize; index += 1) {
+      indexes.add(index)
+      indexes.add(props.points.length - 1 - index)
+    }
+    const corrections = [...indexes]
+      .map((index) => (groundHeights[index] ?? 0) - altitude(props.points[index]!))
+      .sort((a, b) => a - b)
+    const middle = Math.floor(corrections.length / 2)
+    altitudeCorrection =
+      corrections.length % 2
+        ? corrections[middle]!
+        : (corrections[middle - 1]! + corrections[middle]!) / 2
+  }
 
-  return props.points.map((point, index) => {
-    const ratio = index / Math.max(lastIndex, 1)
-    const correction = startCorrection + (endCorrection - startCorrection) * ratio
-    const groundHeight = groundHeights[index] ?? 0
-    const correctedHeight = altitude(point) + correction
-    const visualHeight = normalizeToTerrain
-      ? Math.max(correctedHeight, groundHeight + 1)
-      : correctedHeight
-    return Cartesian3.fromDegrees(point.lng, point.lat, visualHeight)
-  })
+  return props.points.map((point) =>
+    Cartesian3.fromDegrees(point.lng, point.lat, altitude(point) + altitudeCorrection),
+  )
 }
 
 function smoothedVario(index: number): number {
@@ -225,10 +229,14 @@ function updateTrackProgress(): void {
     progressFrame = null
     if (!viewer) return
     const endIndex = Math.max(1, Math.min(props.selectedIndex ?? 0, trackPositions.length - 1))
-    const wallPositions = trackPositions.slice(0, endIndex + 1)
+    const startIndex = Math.max(0, Math.min(props.startIndex, endIndex - 1))
+    const wallPositions = trackPositions.slice(startIndex, endIndex + 1)
     if (playedWallEntity?.wall) {
       playedWallEntity.wall.positions = wallPositions as never
-      playedWallEntity.wall.minimumHeights = trackGroundHeights.slice(0, endIndex + 1) as never
+      playedWallEntity.wall.minimumHeights = trackGroundHeights.slice(
+        startIndex,
+        endIndex + 1,
+      ) as never
     }
     if (playedTrackPrimitive) {
       viewer.scene.primitives.remove(playedTrackPrimitive)
@@ -238,9 +246,11 @@ function updateTrackProgress(): void {
       new Primitive({
         geometryInstances: new GeometryInstance({
           geometry: new PolylineGeometry({
-            positions: trackPositions.slice(0, endIndex + 1),
+            positions: trackPositions.slice(startIndex, endIndex + 1),
             width: 2,
-            colors: props.points.slice(0, endIndex + 1).map((_, index) => colorForVario(index)),
+            colors: props.points
+              .slice(startIndex, endIndex + 1)
+              .map((_, index) => colorForVario(startIndex + index)),
             colorsPerVertex: true,
             arcType: ArcType.NONE,
           }),
@@ -420,6 +430,7 @@ watch(
     updateTrackProgress()
   },
 )
+watch(() => props.startIndex, updateTrackProgress)
 watch(units, updateSelectedPoint)
 
 onBeforeUnmount(() => {

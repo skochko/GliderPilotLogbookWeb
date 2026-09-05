@@ -12,9 +12,13 @@ import {
 const props = defineProps<{
   points: readonly IgcPoint[]
   selectedIndex: number | null
+  startIndex: number
   units: MeasurementUnits
 }>()
-const emit = defineEmits<{ 'update:selectedIndex': [number | null] }>()
+const emit = defineEmits<{
+  'update:selectedIndex': [number | null]
+  'update:startIndex': [number]
+}>()
 type Mode = 'altitude' | 'vario' | 'speed'
 const mode = ref<Mode>('altitude')
 const svgRef = ref<SVGSVGElement | null>(null)
@@ -84,8 +88,17 @@ const area = computed(
     `${line.value} L${width.value - pad.right},${height - pad.bottom} L${pad.left},${height - pad.bottom}Z`,
 )
 const active = computed(() => props.selectedIndex ?? 0)
+const rangeMaximum = computed(() => Math.max(props.points.length - 1, 1))
+const rangeStyle = computed(() => {
+  const start = (props.startIndex / rangeMaximum.value) * 100
+  const end = (active.value / rangeMaximum.value) * 100
+  return {
+    backgroundImage: `linear-gradient(to right, #cbd5e1 ${start}%, #0284c7 ${start}%, #0284c7 ${end}%, #cbd5e1 ${end}%)`,
+  }
+})
 const activePoint = computed(() => props.points[active.value])
 const marker = computed(() => xy(active.value, values.value[active.value] ?? 0))
+const startMarker = computed(() => xy(props.startIndex, values.value[props.startIndex] ?? 0))
 const totalDistance = computed(() =>
   props.points.slice(1).reduce((sum, point, i) => sum + distanceKm(props.points[i]!, point), 0),
 )
@@ -142,6 +155,14 @@ function togglePlay(): void {
       togglePlay()
     } else emit('update:selectedIndex', next)
   }, 60)
+}
+function updateStart(value: number): void {
+  const start = Math.max(0, Math.min(value, rangeMaximum.value))
+  emit('update:startIndex', start)
+  if (active.value < start) emit('update:selectedIndex', start)
+}
+function updateEnd(value: number): void {
+  emit('update:selectedIndex', Math.max(props.startIndex, value))
 }
 let resizeObserver: ResizeObserver | null = null
 onMounted(() => {
@@ -208,6 +229,24 @@ onBeforeUnmount(() => {
       <path :d="area" fill="url(#profile-fill)" />
       <path :d="line" fill="none" class="stroke-sky-500" stroke-width="2" />
       <line
+        v-if="startIndex > 0"
+        :x1="startMarker[0]"
+        :x2="startMarker[0]"
+        :y1="pad.top"
+        :y2="height - pad.bottom"
+        class="stroke-sky-700"
+        stroke-width="1.5"
+        stroke-dasharray="3 3"
+      />
+      <circle
+        v-if="startIndex > 0"
+        :cx="startMarker[0]"
+        :cy="startMarker[1]"
+        r="4"
+        class="fill-white stroke-sky-700"
+        stroke-width="2"
+      />
+      <line
         :x1="marker[0]"
         :x2="marker[0]"
         :y1="pad.top"
@@ -256,23 +295,97 @@ onBeforeUnmount(() => {
         ><strong class="block truncate text-[11px] text-slate-900">{{ item.value }}</strong>
       </div>
     </div>
-    <div class="mt-2 flex items-center gap-3">
+    <div class="relative mt-2 h-10">
       <button
         type="button"
-        class="flex size-9 shrink-0 items-center justify-center rounded-full bg-sky-700 text-xs text-white"
+        class="absolute left-0 top-0 flex size-9 items-center justify-center rounded-full bg-sky-700 text-xs text-white"
         @click="togglePlay"
       >
-        {{ playing ? 'Ⅱ' : '▶' }}</button
-      ><input
-        type="range"
-        class="min-w-0 flex-1 accent-sky-600"
-        min="0"
-        :max="Math.max(points.length - 1, 0)"
-        :value="active"
-        @input="emit('update:selectedIndex', Number(($event.target as HTMLInputElement).value))"
-      /><span class="shrink-0 text-[11px] text-slate-500">{{
-        formatIgcTime(activePoint?.time ?? '')
-      }}</span>
+        {{ playing ? 'Ⅱ' : '▶' }}
+      </button>
+      <div
+        class="range-slider absolute top-1.5 h-6"
+        :style="[
+          {
+            left: `${(pad.left * 105) / height}px`,
+            right: `${(pad.right * 105) / height}px`,
+          },
+          rangeStyle,
+        ]"
+      >
+        <input
+          aria-label="Track range start"
+          type="range"
+          min="0"
+          :max="rangeMaximum"
+          :value="startIndex"
+          @input="updateStart(Number(($event.target as HTMLInputElement).value))"
+        />
+        <input
+          aria-label="Track range end"
+          type="range"
+          min="0"
+          :max="rangeMaximum"
+          :value="active"
+          @input="updateEnd(Number(($event.target as HTMLInputElement).value))"
+        />
+      </div>
+      <span class="absolute right-0 top-7 text-[10px] text-slate-500">
+        {{ formatIgcTime(activePoint?.time ?? '') }}
+      </span>
     </div>
   </section>
 </template>
+
+<style scoped>
+.range-slider {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 4px;
+  border-radius: 9999px;
+}
+
+.range-slider input {
+  appearance: none;
+  background: transparent;
+  height: 24px;
+  left: -9px;
+  margin: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: calc(100% + 18px);
+}
+
+.range-slider input::-webkit-slider-runnable-track {
+  background: transparent;
+  height: 4px;
+}
+
+.range-slider input::-webkit-slider-thumb {
+  appearance: none;
+  background: #0284c7;
+  border: 2px solid white;
+  border-radius: 9999px;
+  box-shadow: 0 1px 4px rgb(15 23 42 / 35%);
+  height: 18px;
+  margin-top: -7px;
+  pointer-events: auto;
+  width: 18px;
+}
+
+.range-slider input::-moz-range-thumb {
+  background: #0284c7;
+  border: 2px solid white;
+  border-radius: 9999px;
+  box-shadow: 0 1px 4px rgb(15 23 42 / 35%);
+  height: 14px;
+  pointer-events: auto;
+  width: 14px;
+}
+
+.range-slider input::-moz-range-track {
+  background: transparent;
+  height: 4px;
+}
+</style>
