@@ -35,6 +35,7 @@ const props = defineProps<{
   points: readonly IgcPoint[]
   selectedIndex: number | null
   startIndex: number
+  endIndex: number
   mapLayer: MapLayerPreference
 }>()
 const emit = defineEmits<{ 'update:selectedIndex': [number] }>()
@@ -44,7 +45,11 @@ const sceneReady = ref(false)
 let viewer: Viewer | null = null
 let trackEntity: Entity | null = null
 let selectedEntity: Entity | null = null
-let playedWallEntity: Entity | null = null
+let projectionEntity: Entity | null = null
+let groundPointEntity: Entity | null = null
+let rangeStartEntity: Entity | null = null
+let rangeEndEntity: Entity | null = null
+let selectedRangePrimitive: Primitive | null = null
 let playedTrackPrimitive: Primitive | null = null
 let trackPositions: Cartesian3[] = []
 let trackGroundHeights: number[] = []
@@ -166,7 +171,11 @@ function updateSelectedPoint(): void {
   if (!selectedEntity) return
   const point = props.selectedIndex === null ? null : props.points[props.selectedIndex]
   selectedEntity.show = Boolean(point)
-  if (!point) return
+  if (!point) {
+    if (projectionEntity) projectionEntity.show = false
+    if (groundPointEntity) groundPointEntity.show = false
+    return
+  }
   const speedKmh = pointSpeedKmh(props.selectedIndex!)
   const speed =
     speedKmh === null
@@ -175,6 +184,22 @@ function updateSelectedPoint(): void {
         ? `${Math.round(speedKmh * 0.539956803)} kt`
         : `${Math.round(speedKmh)} km/h`
   selectedEntity.position = trackPositions[props.selectedIndex!] as never
+  const groundPosition = Cartesian3.fromDegrees(
+    point.lng,
+    point.lat,
+    trackGroundHeights[props.selectedIndex!] ?? 0,
+  )
+  if (projectionEntity?.polyline) {
+    projectionEntity.show = true
+    projectionEntity.polyline.positions = [
+      groundPosition,
+      trackPositions[props.selectedIndex!]!,
+    ] as never
+  }
+  if (groundPointEntity) {
+    groundPointEntity.show = true
+    groundPointEntity.position = groundPosition as never
+  }
   if (selectedEntity.label) {
     selectedEntity.label.text = [
       formatIgcTime(point.time),
@@ -183,6 +208,14 @@ function updateSelectedPoint(): void {
       speed,
     ].join('\n') as never
   }
+}
+
+function updateRangeBoundaryMarkers(): void {
+  const start = props.points[props.startIndex]
+  const end = props.points[props.endIndex]
+  if (rangeStartEntity && start)
+    rangeStartEntity.position = trackPositions[props.startIndex] as never
+  if (rangeEndEntity && end) rangeEndEntity.position = trackPositions[props.endIndex] as never
 }
 
 function closestPointIndex(position: Cartesian2, maxDistance = 28): number | null {
@@ -228,28 +261,44 @@ function updateTrackProgress(): void {
   progressFrame = requestAnimationFrame(() => {
     progressFrame = null
     if (!viewer) return
-    const endIndex = Math.max(1, Math.min(props.selectedIndex ?? 0, trackPositions.length - 1))
-    const startIndex = Math.max(0, Math.min(props.startIndex, endIndex - 1))
-    const wallPositions = trackPositions.slice(startIndex, endIndex + 1)
-    if (playedWallEntity?.wall) {
-      playedWallEntity.wall.positions = wallPositions as never
-      playedWallEntity.wall.minimumHeights = trackGroundHeights.slice(
-        startIndex,
-        endIndex + 1,
-      ) as never
+    const endIndex = Math.max(props.startIndex, props.endIndex)
+    const startIndex = Math.max(0, Math.min(props.startIndex, endIndex))
+    const currentIndex = Math.max(startIndex, Math.min(props.selectedIndex ?? startIndex, endIndex))
+    if (selectedRangePrimitive) {
+      viewer.scene.primitives.remove(selectedRangePrimitive)
+      selectedRangePrimitive = null
     }
     if (playedTrackPrimitive) {
       viewer.scene.primitives.remove(playedTrackPrimitive)
       playedTrackPrimitive = null
     }
-    playedTrackPrimitive = viewer.scene.primitives.add(
+    if (endIndex === startIndex) return
+    selectedRangePrimitive = viewer.scene.primitives.add(
       new Primitive({
         geometryInstances: new GeometryInstance({
           geometry: new PolylineGeometry({
             positions: trackPositions.slice(startIndex, endIndex + 1),
-            width: 2,
+            width: 1,
             colors: props.points
               .slice(startIndex, endIndex + 1)
+              .map((_, index) => colorForVario(startIndex + index).withAlpha(0.45)),
+            colorsPerVertex: true,
+            arcType: ArcType.NONE,
+          }),
+        }),
+        appearance: new PolylineColorAppearance({ translucent: true }),
+        asynchronous: false,
+      }),
+    )
+    if (currentIndex === startIndex) return
+    playedTrackPrimitive = viewer.scene.primitives.add(
+      new Primitive({
+        geometryInstances: new GeometryInstance({
+          geometry: new PolylineGeometry({
+            positions: trackPositions.slice(startIndex, currentIndex + 1),
+            width: 2,
+            colors: props.points
+              .slice(startIndex, currentIndex + 1)
               .map((_, index) => colorForVario(startIndex + index)),
             colorsPerVertex: true,
             arcType: ArcType.NONE,
@@ -318,37 +367,6 @@ onMounted(async () => {
   trackGroundHeights = groundHeights
   viewer.camera.viewBoundingSphere(BoundingSphere.fromPoints(positions), cameraOffset(true))
   viewer.camera.lookAtTransform(Matrix4.IDENTITY)
-  viewer.entities.add({
-    wall: {
-      positions,
-      minimumHeights: groundHeights,
-      granularity: CesiumMath.PI,
-      material: Color.fromCssColorString('#f59e0b').withAlpha(0.025),
-    },
-  })
-  playedWallEntity = viewer.entities.add({
-    wall: {
-      positions: positions.slice(0, 2),
-      minimumHeights: groundHeights.slice(0, 2),
-      granularity: CesiumMath.PI,
-      material: Color.fromCssColorString('#f59e0b').withAlpha(0.11),
-    },
-  })
-  const guideStride = Math.max(1, Math.ceil(props.points.length / 52))
-  for (let index = 0; index < props.points.length; index += guideStride) {
-    const point = props.points[index]!
-    viewer.entities.add({
-      polyline: {
-        positions: [
-          Cartesian3.fromDegrees(point.lng, point.lat, groundHeights[index] ?? 0),
-          positions[index]!,
-        ],
-        width: 0.6,
-        material: colorForVario(index).withAlpha(0.2),
-        arcType: ArcType.NONE,
-      },
-    })
-  }
   trackEntity = viewer.entities.add({
     polyline: { positions, width: 1, material: Color.TRANSPARENT, arcType: ArcType.NONE },
   })
@@ -386,12 +404,12 @@ onMounted(async () => {
 
   const start = props.points[0]!
   const end = props.points[props.points.length - 1]!
-  viewer.entities.add({
-    position: Cartesian3.fromDegrees(start.lng, start.lat, groundHeights[0] ?? 0),
+  rangeStartEntity = viewer.entities.add({
+    position: positions[props.startIndex],
     point: { pixelSize: 8, color: Color.LIME, outlineColor: Color.WHITE, outlineWidth: 2 },
   })
-  viewer.entities.add({
-    position: Cartesian3.fromDegrees(end.lng, end.lat, groundHeights.at(-1) ?? 0),
+  rangeEndEntity = viewer.entities.add({
+    position: positions[props.endIndex],
     point: { pixelSize: 8, color: Color.RED, outlineColor: Color.WHITE, outlineWidth: 2 },
   })
   selectedEntity = viewer.entities.add({
@@ -408,6 +426,29 @@ onMounted(async () => {
       pixelOffset: new Cartesian2(0, -36),
     },
   })
+  projectionEntity = viewer.entities.add({
+    show: false,
+    polyline: {
+      positions: [
+        positions[0]!,
+        Cartesian3.fromDegrees(start.lng, start.lat, groundHeights[0] ?? 0),
+      ],
+      width: 1,
+      material: Color.fromCssColorString('#64748b').withAlpha(0.75),
+      arcType: ArcType.NONE,
+    },
+  })
+  groundPointEntity = viewer.entities.add({
+    show: false,
+    position: Cartesian3.fromDegrees(start.lng, start.lat, groundHeights[0] ?? 0),
+    point: {
+      pixelSize: 8,
+      color: Color.fromCssColorString('#64748b'),
+      outlineColor: Color.WHITE,
+      outlineWidth: 1,
+    },
+  })
+  updateSelectedPoint()
 
   inputHandler = new ScreenSpaceEventHandler(viewer.scene.canvas)
   inputHandler.setInputAction(
@@ -430,7 +471,20 @@ watch(
     updateTrackProgress()
   },
 )
-watch(() => props.startIndex, updateTrackProgress)
+watch(
+  () => props.startIndex,
+  () => {
+    updateTrackProgress()
+    updateRangeBoundaryMarkers()
+  },
+)
+watch(
+  () => props.endIndex,
+  () => {
+    updateTrackProgress()
+    updateRangeBoundaryMarkers()
+  },
+)
 watch(units, updateSelectedPoint)
 
 onBeforeUnmount(() => {
@@ -445,7 +499,11 @@ onBeforeUnmount(() => {
   loadingFallbackTimer = null
   inputHandler = null
   selectedEntity = null
-  playedWallEntity = null
+  projectionEntity = null
+  groundPointEntity = null
+  rangeStartEntity = null
+  rangeEndEntity = null
+  selectedRangePrimitive = null
   playedTrackPrimitive = null
   trackPositions = []
   trackGroundHeights = []

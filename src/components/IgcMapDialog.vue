@@ -40,6 +40,9 @@ const error = ref<string | null>(null)
 const track = ref<IgcTrack | null>(null)
 const selectedIndex = ref<number | null>(null)
 const rangeStartIndex = ref(0)
+const rangeEndIndex = ref(0)
+const visualViewportHeight = ref<number | null>(null)
+const visualViewportOffsetTop = ref(0)
 const mapContainer = ref<HTMLElement | null>(null)
 const preferenceError = ref<string | null>(null)
 const viewMode = ref<'2d' | '3d'>('2d')
@@ -69,6 +72,7 @@ const {
 let map: L.Map | null = null
 let selectionMarker: L.CircleMarker | null = null
 let progressLayer: L.LayerGroup | null = null
+let rangeBoundaryLayer: L.LayerGroup | null = null
 let trackBounds: L.LatLngBounds | null = null
 let baseTileLayer: L.TileLayer | null = null
 let inspectingTrack = false
@@ -90,11 +94,19 @@ function selectTrackPoint(index: number | null): void {
     return
   }
 
-  const nextIndex = Math.max(0, Math.min(index, track.value.points.length - 1))
-  if (nextIndex < rangeStartIndex.value) {
-    rangeStartIndex.value = nextIndex
-  }
+  const nextIndex = Math.max(rangeStartIndex.value, Math.min(index, rangeEndIndex.value))
   selectedIndex.value = nextIndex
+}
+
+function updateRangeStart(index: number): void {
+  rangeStartIndex.value = Math.min(index, rangeEndIndex.value)
+  if ((selectedIndex.value ?? 0) < rangeStartIndex.value)
+    selectedIndex.value = rangeStartIndex.value
+}
+
+function updateRangeEnd(index: number): void {
+  rangeEndIndex.value = Math.max(index, rangeStartIndex.value)
+  if ((selectedIndex.value ?? 0) > rangeEndIndex.value) selectedIndex.value = rangeEndIndex.value
 }
 
 function destroyMap(): void {
@@ -102,6 +114,7 @@ function destroyMap(): void {
   inspectingTrack = false
   selectionMarker = null
   progressLayer = null
+  rangeBoundaryLayer = null
   baseTileLayer = null
   trackBounds = null
   if (map) {
@@ -268,18 +281,54 @@ function updateSelectionMarker(index: number | null): void {
     .openTooltip()
 }
 
-function update2dTrackProgress(index: number | null): void {
+function updateRangeBoundaryMarkers(): void {
+  if (!map || !track.value?.points.length) return
+  rangeBoundaryLayer?.remove()
+  const start = track.value.points[rangeStartIndex.value]
+  const end = track.value.points[rangeEndIndex.value]
+  if (!start || !end) return
+  rangeBoundaryLayer = L.layerGroup([
+    L.circleMarker([start.lat, start.lng], {
+      radius: 6,
+      color: '#15803d',
+      fillColor: '#22c55e',
+      fillOpacity: 1,
+      weight: 2,
+    }).bindTooltip(`Range start ${formatIgcTime(start.time)}`, { direction: 'top' }),
+    L.circleMarker([end.lat, end.lng], {
+      radius: 6,
+      color: '#b91c1c',
+      fillColor: '#ef4444',
+      fillOpacity: 1,
+      weight: 2,
+    }).bindTooltip(`Range end ${formatIgcTime(end.time)}`, { direction: 'top' }),
+  ]).addTo(map)
+}
+
+function update2dTrackProgress(): void {
   if (!map || !track.value) return
   progressLayer?.remove()
   progressLayer = null
 
-  const endIndex = Math.max(0, index ?? 0)
+  const endIndex = rangeEndIndex.value
   const startIndex = Math.min(rangeStartIndex.value, endIndex)
-  const playedPoints = track.value.points.slice(startIndex, endIndex + 1)
-  if (playedPoints.length < 2) return
+  const currentIndex = Math.max(startIndex, Math.min(selectedIndex.value ?? startIndex, endIndex))
+  const rangePoints = track.value.points.slice(startIndex, endIndex + 1)
+  const playedPoints = track.value.points.slice(startIndex, currentIndex + 1)
+  if (rangePoints.length < 2) return
   const stats = getAltitudeStats(track.value.points)
   const layers: L.Layer[] = []
   if (stats) {
+    for (const segment of buildColoredTrackSegments(rangePoints, stats)) {
+      layers.push(
+        L.polyline(segment.latlngs, {
+          color: segment.color,
+          weight: 1,
+          opacity: 0.45,
+          interactive: false,
+        }),
+      )
+    }
     for (const segment of buildColoredTrackSegments(playedPoints, stats)) {
       layers.push(
         L.polyline(segment.latlngs, {
@@ -293,10 +342,17 @@ function update2dTrackProgress(index: number | null): void {
   } else {
     layers.push(
       L.polyline(
-        playedPoints.map((point) => [point.lat, point.lng] as [number, number]),
-        { color: '#0369a1', weight: 3, opacity: 0.95, interactive: false },
+        rangePoints.map((point) => [point.lat, point.lng] as [number, number]),
+        { color: '#0369a1', weight: 1, opacity: 0.45, interactive: false },
       ),
     )
+    if (playedPoints.length > 1)
+      layers.push(
+        L.polyline(
+          playedPoints.map((point) => [point.lat, point.lng] as [number, number]),
+          { color: '#0369a1', weight: 3, opacity: 0.95, interactive: false },
+        ),
+      )
   }
   progressLayer = L.layerGroup(layers).addTo(map)
 }
@@ -312,7 +368,18 @@ function buildTooltip(point: IgcTrack['points'][number]): string {
 }
 
 function onWindowResize(): void {
+  updateVisualViewport()
   refreshMapLayout()
+}
+
+function updateVisualViewport(): void {
+  visualViewportHeight.value = window.visualViewport?.height ?? window.innerHeight
+  visualViewportOffsetTop.value = window.visualViewport?.offsetTop ?? 0
+}
+
+function onVisualViewportChange(): void {
+  updateVisualViewport()
+  void nextTick(() => map?.invalidateSize())
 }
 
 function renderTrack(content: string): void {
@@ -322,8 +389,9 @@ function renderTrack(content: string): void {
 
   const parsed = parseIgcTrack(content)
   track.value = parsed
-  selectedIndex.value = null
+  selectedIndex.value = parsed.points.length ? 0 : null
   rangeStartIndex.value = 0
+  rangeEndIndex.value = Math.max(0, parsed.points.length - 1)
 
   if (parsed.points.length === 0) {
     error.value = 'No GPS track points found in this IGC file.'
@@ -363,33 +431,13 @@ function renderTrack(content: string): void {
     )
   }
 
-  const start = parsed.points[0]!
-  const end = parsed.points[parsed.points.length - 1]!
-  layers.push(
-    L.circleMarker([start.lat, start.lng], {
-      radius: 6,
-      color: '#15803d',
-      fillColor: '#22c55e',
-      fillOpacity: 1,
-      weight: 2,
-    }).bindTooltip(`Start ${formatIgcTime(start.time)}`, { direction: 'top' }),
-  )
-  layers.push(
-    L.circleMarker([end.lat, end.lng], {
-      radius: 6,
-      color: '#b91c1c',
-      fillColor: '#ef4444',
-      fillOpacity: 1,
-      weight: 2,
-    }).bindTooltip(`End ${formatIgcTime(end.time)}`, { direction: 'top' }),
-  )
-
   L.layerGroup(layers).addTo(map)
   trackBounds = L.latLngBounds(
     parsed.points.map((point) => [point.lat, point.lng] as [number, number]),
   )
   refreshMapLayout()
-  update2dTrackProgress(selectedIndex.value)
+  updateRangeBoundaryMarkers()
+  update2dTrackProgress()
 }
 
 async function waitForVisibleMapContainer(): Promise<void> {
@@ -424,12 +472,18 @@ async function loadTrack(): Promise<void> {
 }
 
 watch(selectedIndex, (index) => {
-  update2dTrackProgress(index)
+  update2dTrackProgress()
   updateSelectionMarker(index)
 })
 
 watch(rangeStartIndex, () => {
-  update2dTrackProgress(selectedIndex.value)
+  update2dTrackProgress()
+  updateRangeBoundaryMarkers()
+})
+
+watch(rangeEndIndex, () => {
+  update2dTrackProgress()
+  updateRangeBoundaryMarkers()
 })
 
 watch(units, () => {
@@ -476,15 +530,20 @@ watch(
   () => props.open,
   (open) => {
     if (open) {
+      updateVisualViewport()
       if (!isDemo.value) {
         void ensureUnitsLoaded()
         void ensureMapLayerLoaded()
       }
       document.body.style.overflow = 'hidden'
       window.addEventListener('resize', onWindowResize)
+      window.visualViewport?.addEventListener('resize', onVisualViewportChange)
+      window.visualViewport?.addEventListener('scroll', onVisualViewportChange)
     } else {
       document.body.style.overflow = ''
       window.removeEventListener('resize', onWindowResize)
+      window.visualViewport?.removeEventListener('resize', onVisualViewportChange)
+      window.visualViewport?.removeEventListener('scroll', onVisualViewportChange)
     }
   },
 )
@@ -500,6 +559,7 @@ watch(
       track.value = null
       selectedIndex.value = null
       rangeStartIndex.value = 0
+      rangeEndIndex.value = 0
       preferenceError.value = null
       loading.value = false
     }
@@ -509,13 +569,22 @@ watch(
 onBeforeUnmount(() => {
   document.body.style.overflow = ''
   window.removeEventListener('resize', onWindowResize)
+  window.visualViewport?.removeEventListener('resize', onVisualViewportChange)
+  window.visualViewport?.removeEventListener('scroll', onVisualViewportChange)
   destroyMap()
 })
 </script>
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="fixed inset-0 z-[60] flex h-dvh flex-col bg-white">
+    <div
+      v-if="open"
+      class="fixed inset-x-0 z-[60] flex flex-col bg-white"
+      :style="{
+        top: `${visualViewportOffsetTop}px`,
+        height: visualViewportHeight ? `${visualViewportHeight}px` : '100dvh',
+      }"
+    >
       <div class="flex h-full min-h-0 w-full flex-col bg-white">
         <div
           class="flex shrink-0 items-center gap-3 border-b border-slate-200 px-4 pb-3 sm:px-6"
@@ -709,6 +778,7 @@ onBeforeUnmount(() => {
               :points="track.points"
               :selected-index="selectedIndex"
               :start-index="rangeStartIndex"
+              :end-index="rangeEndIndex"
               :map-layer="mapLayer"
               @update:selected-index="selectTrackPoint"
             />
@@ -719,10 +789,12 @@ onBeforeUnmount(() => {
             :points="track.points"
             :selected-index="selectedIndex"
             :start-index="rangeStartIndex"
+            :end-index="rangeEndIndex"
             :units="units"
             class="relative z-[600] h-[clamp(200px,30dvh,320px)] shrink-0"
             @update:selected-index="selectTrackPoint"
-            @update:start-index="rangeStartIndex = $event"
+            @update:start-index="updateRangeStart"
+            @update:end-index="updateRangeEnd"
           />
         </div>
       </div>

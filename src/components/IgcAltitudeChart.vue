@@ -13,11 +13,13 @@ const props = defineProps<{
   points: readonly IgcPoint[]
   selectedIndex: number | null
   startIndex: number
+  endIndex: number
   units: MeasurementUnits
 }>()
 const emit = defineEmits<{
   'update:selectedIndex': [number | null]
   'update:startIndex': [number]
+  'update:endIndex': [number]
 }>()
 type Mode = 'altitude' | 'vario' | 'speed'
 const mode = ref<Mode>('altitude')
@@ -87,18 +89,20 @@ const area = computed(
   () =>
     `${line.value} L${width.value - pad.right},${height - pad.bottom} L${pad.left},${height - pad.bottom}Z`,
 )
-const active = computed(() => props.selectedIndex ?? 0)
+const active = computed(() => props.selectedIndex ?? props.startIndex)
 const rangeMaximum = computed(() => Math.max(props.points.length - 1, 1))
 const rangeStyle = computed(() => {
   const start = (props.startIndex / rangeMaximum.value) * 100
-  const end = (active.value / rangeMaximum.value) * 100
+  const current = (active.value / rangeMaximum.value) * 100
+  const end = (props.endIndex / rangeMaximum.value) * 100
   return {
-    backgroundImage: `linear-gradient(to right, #cbd5e1 ${start}%, #0284c7 ${start}%, #0284c7 ${end}%, #cbd5e1 ${end}%)`,
+    backgroundImage: `linear-gradient(to right, #cbd5e1 ${start}%, #0284c7 ${start}%, #0284c7 ${current}%, #94a3b8 ${current}%, #94a3b8 ${end}%, #cbd5e1 ${end}%)`,
   }
 })
 const activePoint = computed(() => props.points[active.value])
 const marker = computed(() => xy(active.value, values.value[active.value] ?? 0))
 const startMarker = computed(() => xy(props.startIndex, values.value[props.startIndex] ?? 0))
+const endMarker = computed(() => xy(props.endIndex, values.value[props.endIndex] ?? 0))
 const totalDistance = computed(() =>
   props.points.slice(1).reduce((sum, point, i) => sum + distanceKm(props.points[i]!, point), 0),
 )
@@ -138,7 +142,8 @@ function selectAt(clientX: number): void {
   const rect = svgRef.value.getBoundingClientRect()
   const chartX = ((clientX - rect.left) / rect.width) * width.value
   const ratio = Math.max(0, Math.min(1, (chartX - pad.left) / (width.value - pad.left - pad.right)))
-  emit('update:selectedIndex', Math.round(ratio * (props.points.length - 1)))
+  const index = Math.round(ratio * (props.points.length - 1))
+  emit('update:selectedIndex', Math.max(props.startIndex, Math.min(index, props.endIndex)))
 }
 function togglePlay(): void {
   if (timer) {
@@ -150,19 +155,24 @@ function togglePlay(): void {
   playing.value = true
   timer = setInterval(() => {
     const next = active.value + Math.max(1, Math.ceil(props.points.length / 400))
-    if (next >= props.points.length) {
-      emit('update:selectedIndex', 0)
+    if (next > props.endIndex) {
+      emit('update:selectedIndex', props.startIndex)
       togglePlay()
     } else emit('update:selectedIndex', next)
-  }, 60)
+  }, 120)
 }
 function updateStart(value: number): void {
-  const start = Math.max(0, Math.min(value, rangeMaximum.value))
+  const start = Math.max(0, Math.min(value, props.endIndex))
   emit('update:startIndex', start)
   if (active.value < start) emit('update:selectedIndex', start)
 }
 function updateEnd(value: number): void {
-  emit('update:selectedIndex', Math.max(props.startIndex, value))
+  const end = Math.max(props.startIndex, Math.min(value, rangeMaximum.value))
+  emit('update:endIndex', end)
+  if (active.value > end) emit('update:selectedIndex', end)
+}
+function updateCurrent(value: number): void {
+  emit('update:selectedIndex', Math.max(props.startIndex, Math.min(value, props.endIndex)))
 }
 let resizeObserver: ResizeObserver | null = null
 onMounted(() => {
@@ -247,6 +257,24 @@ onBeforeUnmount(() => {
         stroke-width="2"
       />
       <line
+        v-if="endIndex < rangeMaximum"
+        :x1="endMarker[0]"
+        :x2="endMarker[0]"
+        :y1="pad.top"
+        :y2="height - pad.bottom"
+        class="stroke-slate-600"
+        stroke-width="1.5"
+        stroke-dasharray="3 3"
+      />
+      <circle
+        v-if="endIndex < rangeMaximum"
+        :cx="endMarker[0]"
+        :cy="endMarker[1]"
+        r="4"
+        class="fill-white stroke-slate-600"
+        stroke-width="2"
+      />
+      <line
         :x1="marker[0]"
         :x2="marker[0]"
         :y1="pad.top"
@@ -326,8 +354,17 @@ onBeforeUnmount(() => {
           type="range"
           min="0"
           :max="rangeMaximum"
-          :value="active"
+          :value="endIndex"
           @input="updateEnd(Number(($event.target as HTMLInputElement).value))"
+        />
+        <input
+          class="current-position"
+          aria-label="Current track position"
+          type="range"
+          min="0"
+          :max="rangeMaximum"
+          :value="active"
+          @input="updateCurrent(Number(($event.target as HTMLInputElement).value))"
         />
       </div>
       <span class="absolute right-0 top-7 text-[10px] text-slate-500">
@@ -387,5 +424,41 @@ onBeforeUnmount(() => {
 .range-slider input::-moz-range-track {
   background: transparent;
   height: 4px;
+}
+
+.range-slider input:first-of-type::-webkit-slider-thumb {
+  background: #22c55e;
+}
+
+.range-slider input:first-of-type,
+.range-slider input:nth-of-type(2) {
+  z-index: 2;
+}
+
+.range-slider input:first-of-type::-moz-range-thumb {
+  background: #22c55e;
+}
+
+.range-slider input:nth-of-type(2)::-webkit-slider-thumb {
+  background: #ef4444;
+}
+
+.range-slider input:nth-of-type(2)::-moz-range-thumb {
+  background: #ef4444;
+}
+
+.range-slider input.current-position::-webkit-slider-thumb {
+  background: #f59e0b;
+  border-color: #fff;
+  height: 16px;
+  margin-top: -6px;
+  width: 16px;
+}
+
+.range-slider input.current-position::-moz-range-thumb {
+  background: #f59e0b;
+  border-color: #fff;
+  height: 12px;
+  width: 12px;
 }
 </style>
