@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { formatIgcTime, pointAltitude, type IgcPoint } from '@/lib/igc'
 import {
   altitudeScaleValue,
@@ -20,7 +20,7 @@ const mode = ref<Mode>('altitude')
 const svgRef = ref<SVGSVGElement | null>(null)
 const playing = ref(false)
 let timer: ReturnType<typeof setInterval> | null = null
-const width = 600
+const width = ref(600)
 const height = 118
 const pad = { left: 42, right: 8, top: 12, bottom: 20 }
 
@@ -64,7 +64,8 @@ const bounds = computed(() => {
 })
 function xy(index: number, value: number): [number, number] {
   return [
-    pad.left + (index / Math.max(props.points.length - 1, 1)) * (width - pad.left - pad.right),
+    pad.left +
+      (index / Math.max(props.points.length - 1, 1)) * (width.value - pad.left - pad.right),
     pad.top +
       (1 - (value - bounds.value.min) / (bounds.value.max - bounds.value.min || 1)) *
         (height - pad.top - pad.bottom),
@@ -80,7 +81,7 @@ const line = computed(() =>
 )
 const area = computed(
   () =>
-    `${line.value} L${width - pad.right},${height - pad.bottom} L${pad.left},${height - pad.bottom}Z`,
+    `${line.value} L${width.value - pad.right},${height - pad.bottom} L${pad.left},${height - pad.bottom}Z`,
 )
 const active = computed(() => props.selectedIndex ?? 0)
 const activePoint = computed(() => props.points[active.value])
@@ -122,8 +123,8 @@ function activeValue(): string {
 function selectAt(clientX: number): void {
   if (!svgRef.value) return
   const rect = svgRef.value.getBoundingClientRect()
-  const chartX = ((clientX - rect.left) / rect.width) * width
-  const ratio = Math.max(0, Math.min(1, (chartX - pad.left) / (width - pad.left - pad.right)))
+  const chartX = ((clientX - rect.left) / rect.width) * width.value
+  const ratio = Math.max(0, Math.min(1, (chartX - pad.left) / (width.value - pad.left - pad.right)))
   emit('update:selectedIndex', Math.round(ratio * (props.points.length - 1)))
 }
 function togglePlay(): void {
@@ -142,7 +143,17 @@ function togglePlay(): void {
     } else emit('update:selectedIndex', next)
   }, 60)
 }
+let resizeObserver: ResizeObserver | null = null
+onMounted(() => {
+  if (!svgRef.value) return
+  resizeObserver = new ResizeObserver(([entry]) => {
+    const rect = entry?.contentRect
+    if (rect?.width && rect.height) width.value = Math.max(320, (rect.width / rect.height) * height)
+  })
+  resizeObserver.observe(svgRef.value)
+})
 onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
   if (timer) clearInterval(timer)
 })
 </script>
@@ -174,7 +185,7 @@ onBeforeUnmount(() => {
     </div>
     <svg
       ref="svgRef"
-      viewBox="0 0 600 118"
+      :viewBox="`0 0 ${width} ${height}`"
       class="h-[105px] w-full touch-none"
       @pointermove="selectAt($event.clientX)"
       @pointerdown="selectAt($event.clientX)"

@@ -30,12 +30,12 @@ App: `http://localhost:5173`
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Vite dev server |
-| `npm run build` | Production build |
-| `npm run type-check` | Vue/TS type check |
-| `npm test` | Vitest unit tests |
+| Command                  | Description                                 |
+| ------------------------ | ------------------------------------------- |
+| `npm run dev`            | Vite dev server                             |
+| `npm run build`          | Production build                            |
+| `npm run type-check`     | Vue/TS type check                           |
+| `npm test`               | Vitest unit tests                           |
 | `npm run generate:types` | Regenerate types from `openapi/schema.yaml` |
 
 Export OpenAPI schema from a running backend:
@@ -55,11 +55,12 @@ See [`.cursor/rules/`](.cursor/rules/) for full project conventions.
 
 ## Environment variables
 
-| Variable | Description |
-|----------|-------------|
-| `VITE_API_URL` | Backend API base (e.g. `http://localhost:8000/api`) |
-| `VITE_GOOGLE_CLIENT_ID` | Same OAuth client ID as backend (for Picker) |
-| `VITE_GOOGLE_API_KEY` | Google Cloud API key (`AIza…`) with Picker + Drive APIs enabled |
+| Variable                | Description                                                         |
+| ----------------------- | ------------------------------------------------------------------- |
+| `VITE_API_URL`          | Backend API base (e.g. `http://localhost:8000/api`)                 |
+| `VITE_GOOGLE_CLIENT_ID` | Same OAuth client ID as backend (for Picker)                        |
+| `VITE_GOOGLE_API_KEY`   | Google Cloud API key (`AIza…`) with Picker + Drive APIs enabled     |
+| `VITE_CESIUM_ION_TOKEN` | Public URL- and asset-restricted Cesium ion token for World Terrain |
 
 **Picker error "The API developer key is invalid"?** See [docs/google-picker-setup.md](docs/google-picker-setup.md).
 

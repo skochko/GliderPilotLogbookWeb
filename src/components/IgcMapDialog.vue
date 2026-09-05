@@ -67,6 +67,7 @@ const {
 
 let map: L.Map | null = null
 let selectionMarker: L.CircleMarker | null = null
+let progressLayer: L.LayerGroup | null = null
 let trackBounds: L.LatLngBounds | null = null
 let baseTileLayer: L.TileLayer | null = null
 let inspectingTrack = false
@@ -86,6 +87,7 @@ function destroyMap(): void {
   removeMapPointerListeners()
   inspectingTrack = false
   selectionMarker = null
+  progressLayer = null
   baseTileLayer = null
   trackBounds = null
   if (map) {
@@ -252,6 +254,38 @@ function updateSelectionMarker(index: number | null): void {
     .openTooltip()
 }
 
+function update2dTrackProgress(index: number | null): void {
+  if (!map || !track.value) return
+  progressLayer?.remove()
+  progressLayer = null
+
+  const endIndex = Math.max(0, index ?? 0)
+  const playedPoints = track.value.points.slice(0, endIndex + 1)
+  if (playedPoints.length < 2) return
+  const stats = getAltitudeStats(track.value.points)
+  const layers: L.Layer[] = []
+  if (stats) {
+    for (const segment of buildColoredTrackSegments(playedPoints, stats)) {
+      layers.push(
+        L.polyline(segment.latlngs, {
+          color: segment.color,
+          weight: 3,
+          opacity: 0.95,
+          interactive: false,
+        }),
+      )
+    }
+  } else {
+    layers.push(
+      L.polyline(
+        playedPoints.map((point) => [point.lat, point.lng] as [number, number]),
+        { color: '#0369a1', weight: 3, opacity: 0.95, interactive: false },
+      ),
+    )
+  }
+  progressLayer = L.layerGroup(layers).addTo(map)
+}
+
 function buildTooltip(point: IgcTrack['points'][number]): string {
   const altitude = pointAltitude(point)
   return [
@@ -299,7 +333,7 @@ function renderTrack(content: string): void {
         L.polyline(segment.latlngs, {
           color: segment.color,
           weight: 3,
-          opacity: 0.9,
+          opacity: 0.25,
           interactive: false,
         }),
       )
@@ -308,7 +342,7 @@ function renderTrack(content: string): void {
     layers.push(
       L.polyline(
         parsed.points.map((point) => [point.lat, point.lng] as [number, number]),
-        { color: '#0369a1', weight: 3, opacity: 0.9, interactive: false },
+        { color: '#0369a1', weight: 3, opacity: 0.25, interactive: false },
       ),
     )
   }
@@ -339,6 +373,7 @@ function renderTrack(content: string): void {
     parsed.points.map((point) => [point.lat, point.lng] as [number, number]),
   )
   refreshMapLayout()
+  update2dTrackProgress(selectedIndex.value)
 }
 
 async function waitForVisibleMapContainer(): Promise<void> {
@@ -373,6 +408,7 @@ async function loadTrack(): Promise<void> {
 }
 
 watch(selectedIndex, (index) => {
+  update2dTrackProgress(index)
   updateSelectionMarker(index)
 })
 

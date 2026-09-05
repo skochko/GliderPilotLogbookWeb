@@ -5,11 +5,14 @@ import {
   BoundingSphere,
   Cartesian2,
   Cartesian3,
+  Cartographic,
   Color,
+  createWorldTerrainAsync,
   Entity,
   GeometryInstance,
   HeadingPitchRange,
   ImageryLayer,
+  Ion,
   Math as CesiumMath,
   Matrix4,
   PolylineColorAppearance,
@@ -18,9 +21,11 @@ import {
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
   SceneTransforms,
+  sampleTerrainMostDetailed,
   UrlTemplateImageryProvider,
   Viewer,
 } from 'cesium'
+import type { TerrainProvider } from 'cesium'
 import type { MapLayerPreference } from '@/composables/useMapLayerPreference'
 import { useMeasurementUnits } from '@/composables/useMeasurementUnits'
 import { formatAltitude, formatIgcTime, formatVario, pointAltitude, type IgcPoint } from '@/lib/igc'
@@ -38,6 +43,11 @@ const sceneReady = ref(false)
 let viewer: Viewer | null = null
 let trackEntity: Entity | null = null
 let selectedEntity: Entity | null = null
+let playedWallEntity: Entity | null = null
+let playedTrackPrimitive: Primitive | null = null
+let trackPositions: Cartesian3[] = []
+let trackGroundHeights: number[] = []
+let progressFrame: number | null = null
 let inputHandler: ScreenSpaceEventHandler | null = null
 let resizeObserver: ResizeObserver | null = null
 let removePostRenderListener: (() => void) | null = null
@@ -187,8 +197,53 @@ function selectNear(position: Cartesian2): void {
   if (index !== null) emit('update:selectedIndex', index)
 }
 
-onMounted(() => {
+function updateTrackProgress(): void {
+  if (!viewer || trackPositions.length < 2) return
+  if (progressFrame !== null) cancelAnimationFrame(progressFrame)
+  progressFrame = requestAnimationFrame(() => {
+    progressFrame = null
+    if (!viewer) return
+    const endIndex = Math.max(1, Math.min(props.selectedIndex ?? 0, trackPositions.length - 1))
+    const wallPositions = trackPositions.slice(0, endIndex + 1)
+    if (playedWallEntity?.wall) {
+      playedWallEntity.wall.positions = wallPositions as never
+      playedWallEntity.wall.minimumHeights = trackGroundHeights.slice(0, endIndex + 1) as never
+    }
+    if (playedTrackPrimitive) {
+      viewer.scene.primitives.remove(playedTrackPrimitive)
+      playedTrackPrimitive = null
+    }
+    playedTrackPrimitive = viewer.scene.primitives.add(
+      new Primitive({
+        geometryInstances: new GeometryInstance({
+          geometry: new PolylineGeometry({
+            positions: trackPositions.slice(0, endIndex + 1),
+            width: 2,
+            colors: props.points.slice(0, endIndex + 1).map((_, index) => colorForVario(index)),
+            colorsPerVertex: true,
+            arcType: ArcType.NONE,
+          }),
+        }),
+        appearance: new PolylineColorAppearance({ translucent: false }),
+        asynchronous: false,
+      }),
+    )
+  })
+}
+
+onMounted(async () => {
   if (!container.value || props.points.length < 2) return
+  const ionToken = import.meta.env.VITE_CESIUM_ION_TOKEN?.trim()
+  let terrainProvider: TerrainProvider | null = null
+  if (ionToken) {
+    Ion.defaultAccessToken = ionToken
+    try {
+      terrainProvider = await createWorldTerrainAsync()
+    } catch {
+      terrainProvider = null
+    }
+  }
+  if (!container.value) return
   viewer = new Viewer(container.value, {
     animation: false,
     baseLayer: false,
@@ -203,20 +258,44 @@ onMounted(() => {
     timeline: false,
     useBrowserRecommendedResolution: false,
     contextOptions: { webgl: { antialias: true } },
+    ...(terrainProvider ? { terrainProvider } : {}),
   })
   viewer.resolutionScale = Math.min(window.devicePixelRatio || 1, 2)
   viewer.scene.globe.depthTestAgainstTerrain = false
   setImagery()
 
   const positions = airbornePositions()
+  trackPositions = positions
+  let groundHeights = props.points.map(() => 0)
+  if (terrainProvider) {
+    try {
+      const terrainPoints = props.points.map((point) =>
+        Cartographic.fromDegrees(point.lng, point.lat),
+      )
+      await sampleTerrainMostDetailed(terrainProvider, terrainPoints)
+      groundHeights = terrainPoints.map((point) => point.height ?? 0)
+    } catch {
+      groundHeights = props.points.map(() => 0)
+    }
+  }
+  if (!viewer || viewer.isDestroyed()) return
+  trackGroundHeights = groundHeights
   viewer.camera.viewBoundingSphere(BoundingSphere.fromPoints(positions), cameraOffset(true))
   viewer.camera.lookAtTransform(Matrix4.IDENTITY)
   viewer.entities.add({
     wall: {
       positions,
-      minimumHeights: props.points.map(() => 0),
+      minimumHeights: groundHeights,
       granularity: CesiumMath.PI,
-      material: Color.fromCssColorString('#f59e0b').withAlpha(0.1),
+      material: Color.fromCssColorString('#f59e0b').withAlpha(0.025),
+    },
+  })
+  playedWallEntity = viewer.entities.add({
+    wall: {
+      positions: positions.slice(0, 2),
+      minimumHeights: groundHeights.slice(0, 2),
+      granularity: CesiumMath.PI,
+      material: Color.fromCssColorString('#f59e0b').withAlpha(0.11),
     },
   })
   const guideStride = Math.max(1, Math.ceil(props.points.length / 52))
@@ -224,7 +303,10 @@ onMounted(() => {
     const point = props.points[index]!
     viewer.entities.add({
       polyline: {
-        positions: [Cartesian3.fromDegrees(point.lng, point.lat, 0), positions[index]!],
+        positions: [
+          Cartesian3.fromDegrees(point.lng, point.lat, groundHeights[index] ?? 0),
+          positions[index]!,
+        ],
         width: 0.6,
         material: colorForVario(index).withAlpha(0.2),
         arcType: ArcType.NONE,
@@ -240,12 +322,12 @@ onMounted(() => {
         geometry: new PolylineGeometry({
           positions,
           width: 2,
-          colors: props.points.map((_, index) => colorForVario(index)),
+          colors: props.points.map((_, index) => colorForVario(index).withAlpha(0.22)),
           colorsPerVertex: true,
           arcType: ArcType.NONE,
         }),
       }),
-      appearance: new PolylineColorAppearance({ translucent: false }),
+      appearance: new PolylineColorAppearance({ translucent: true }),
       asynchronous: true,
     }),
   )
@@ -264,15 +346,16 @@ onMounted(() => {
     removePostRenderListener = null
     loadingFallbackTimer = null
   }, 12_000)
+  updateTrackProgress()
 
   const start = props.points[0]!
   const end = props.points[props.points.length - 1]!
   viewer.entities.add({
-    position: Cartesian3.fromDegrees(start.lng, start.lat, altitude(start)),
+    position: Cartesian3.fromDegrees(start.lng, start.lat, groundHeights[0] ?? 0),
     point: { pixelSize: 8, color: Color.LIME, outlineColor: Color.WHITE, outlineWidth: 2 },
   })
   viewer.entities.add({
-    position: Cartesian3.fromDegrees(end.lng, end.lat, altitude(end)),
+    position: Cartesian3.fromDegrees(end.lng, end.lat, groundHeights.at(-1) ?? 0),
     point: { pixelSize: 8, color: Color.RED, outlineColor: Color.WHITE, outlineWidth: 2 },
   })
   selectedEntity = viewer.entities.add({
@@ -304,10 +387,17 @@ onMounted(() => {
 })
 
 watch(() => props.mapLayer, setImagery)
-watch(() => props.selectedIndex, updateSelectedPoint)
+watch(
+  () => props.selectedIndex,
+  () => {
+    updateSelectedPoint()
+    updateTrackProgress()
+  },
+)
 watch(units, updateSelectedPoint)
 
 onBeforeUnmount(() => {
+  if (progressFrame !== null) cancelAnimationFrame(progressFrame)
   removePostRenderListener?.()
   if (loadingFallbackTimer) clearTimeout(loadingFallbackTimer)
   resizeObserver?.disconnect()
@@ -318,6 +408,11 @@ onBeforeUnmount(() => {
   loadingFallbackTimer = null
   inputHandler = null
   selectedEntity = null
+  playedWallEntity = null
+  playedTrackPrimitive = null
+  trackPositions = []
+  trackGroundHeights = []
+  progressFrame = null
   trackEntity = null
   viewer = null
 })
