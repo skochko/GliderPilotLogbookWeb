@@ -2,7 +2,7 @@ export type MeasurementUnits = 'metric' | 'imperial'
 
 const METRES_TO_FEET = 3.280839895
 const KILOMETRES_TO_MILES = 0.621371192
-const METRES_PER_SECOND_TO_FEET_PER_MINUTE = 196.850394
+const METRES_PER_SECOND_TO_KNOTS = 1.943844492
 
 export function measurementUnitsFromPreferences(
   preferences: Record<string, unknown> | null | undefined,
@@ -25,11 +25,9 @@ export function formatVarioValue(
   units: MeasurementUnits,
 ): string {
   if (varioMs === null || varioMs === undefined || !Number.isFinite(varioMs)) return '—'
-  const value = units === 'imperial' ? varioMs * METRES_PER_SECOND_TO_FEET_PER_MINUTE : varioMs
+  const value = units === 'imperial' ? varioMs * METRES_PER_SECOND_TO_KNOTS : varioMs
   const sign = value > 0 ? '+' : ''
-  return units === 'imperial'
-    ? `${sign}${Math.round(value)} ft/min`
-    : `${sign}${value.toFixed(1)} m/s`
+  return units === 'imperial' ? `${sign}${value.toFixed(1)} kt` : `${sign}${value.toFixed(1)} m/s`
 }
 
 export function formatDistanceValue(kilometres: number, units: MeasurementUnits): string {

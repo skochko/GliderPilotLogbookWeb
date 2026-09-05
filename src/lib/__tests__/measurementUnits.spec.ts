@@ -22,7 +22,7 @@ describe('measurement units', () => {
 
   it('converts values to imperial units', () => {
     expect(formatAltitudeValue(1000, 'imperial')).toBe('3,281 ft')
-    expect(formatVarioValue(1, 'imperial')).toBe('+197 ft/min')
+    expect(formatVarioValue(1, 'imperial')).toBe('+1.9 kt')
     expect(formatDistanceValue(100, 'imperial')).toBe('62 mi')
     expect(altitudeScaleValue(1000, 'imperial')).toBeCloseTo(3280.84, 2)
   })

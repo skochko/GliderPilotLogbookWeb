@@ -100,20 +100,53 @@ function toggleTilt(): void {
   void viewer.zoomTo(trackEntity, cameraOffset(tilted))
 }
 
-defineExpose({ fitTrack, toggleTilt })
+function zoom(factor: number): void {
+  if (!viewer) return
+  const amount = Math.max(viewer.camera.positionCartographic.height * 0.22, 100)
+  if (factor > 0) viewer.camera.zoomIn(amount)
+  else viewer.camera.zoomOut(amount)
+}
+
+defineExpose({ fitTrack, toggleTilt, zoomIn: () => zoom(1), zoomOut: () => zoom(-1) })
+
+function pointSpeedKmh(index: number): number | null {
+  const point = props.points[index]
+  const previous = props.points[index - 1]
+  if (!point || !previous) return null
+  const toSeconds = (time: string) =>
+    Number(time.slice(0, 2)) * 3600 + Number(time.slice(2, 4)) * 60 + Number(time.slice(4, 6))
+  let duration = toSeconds(point.time) - toSeconds(previous.time)
+  if (duration < 0) duration += 86400
+  if (!duration) return null
+  const radians = Math.PI / 180
+  const dLat = (point.lat - previous.lat) * radians
+  const dLng = (point.lng - previous.lng) * radians
+  const value =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(previous.lat * radians) * Math.cos(point.lat * radians) * Math.sin(dLng / 2) ** 2
+  return (12742 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value)) * 3600) / duration
+}
 
 function updateSelectedPoint(): void {
   if (!selectedEntity) return
   const point = props.selectedIndex === null ? null : props.points[props.selectedIndex]
   selectedEntity.show = Boolean(point)
   if (!point) return
+  const speedKmh = pointSpeedKmh(props.selectedIndex!)
+  const speed =
+    speedKmh === null
+      ? '—'
+      : units.value === 'imperial'
+        ? `${Math.round(speedKmh * 0.539956803)} kt`
+        : `${Math.round(speedKmh)} km/h`
   selectedEntity.position = Cartesian3.fromDegrees(point.lng, point.lat, altitude(point)) as never
   if (selectedEntity.label) {
     selectedEntity.label.text = [
       formatIgcTime(point.time),
       formatAltitude(altitude(point), units.value),
       formatVario(point.varioMs, units.value),
-    ].join(' · ') as never
+      speed,
+    ].join('\n') as never
   }
 }
 
@@ -176,25 +209,28 @@ onMounted(() => {
   setImagery()
 
   const positions = airbornePositions()
-  const heights = props.points.map(altitude)
   viewer.camera.viewBoundingSphere(BoundingSphere.fromPoints(positions), cameraOffset(true))
   viewer.camera.lookAtTransform(Matrix4.IDENTITY)
   viewer.entities.add({
-    polyline: {
-      positions: props.points.map((point) => Cartesian3.fromDegrees(point.lng, point.lat, 0)),
-      width: 1,
-      material: Color.WHITE.withAlpha(0.35),
-      arcType: ArcType.NONE,
-    },
-  })
-  viewer.entities.add({
     wall: {
-      positions: props.points.map((point) => Cartesian3.fromDegrees(point.lng, point.lat)),
+      positions,
       minimumHeights: props.points.map(() => 0),
-      maximumHeights: heights,
-      material: Color.ORANGE.withAlpha(0.08),
+      granularity: CesiumMath.PI,
+      material: Color.fromCssColorString('#f59e0b').withAlpha(0.1),
     },
   })
+  const guideStride = Math.max(1, Math.ceil(props.points.length / 52))
+  for (let index = 0; index < props.points.length; index += guideStride) {
+    const point = props.points[index]!
+    viewer.entities.add({
+      polyline: {
+        positions: [Cartesian3.fromDegrees(point.lng, point.lat, 0), positions[index]!],
+        width: 0.6,
+        material: colorForVario(index).withAlpha(0.2),
+        arcType: ArcType.NONE,
+      },
+    })
+  }
   trackEntity = viewer.entities.add({
     polyline: { positions, width: 1, material: Color.TRANSPARENT, arcType: ArcType.NONE },
   })
@@ -203,7 +239,7 @@ onMounted(() => {
       geometryInstances: new GeometryInstance({
         geometry: new PolylineGeometry({
           positions,
-          width: 3,
+          width: 2,
           colors: props.points.map((_, index) => colorForVario(index)),
           colorsPerVertex: true,
           arcType: ArcType.NONE,
@@ -246,10 +282,11 @@ onMounted(() => {
     label: {
       text: '',
       font: '12px sans-serif',
-      fillColor: Color.WHITE,
+      fillColor: Color.fromCssColorString('#0f172a'),
       showBackground: true,
-      backgroundColor: Color.BLACK.withAlpha(0.75),
-      pixelOffset: new Cartesian2(0, -28),
+      backgroundColor: Color.WHITE.withAlpha(0.96),
+      backgroundPadding: new Cartesian2(10, 7),
+      pixelOffset: new Cartesian2(0, -36),
     },
   })
 

@@ -42,7 +42,13 @@ const selectedIndex = ref<number | null>(null)
 const mapContainer = ref<HTMLElement | null>(null)
 const preferenceError = ref<string | null>(null)
 const viewMode = ref<'2d' | '3d'>('2d')
-const map3d = ref<{ fitTrack: () => void; toggleTilt: () => void } | null>(null)
+const layersOpen = ref(false)
+const map3d = ref<{
+  fitTrack: () => void
+  toggleTilt: () => void
+  zoomIn: () => void
+  zoomOut: () => void
+} | null>(null)
 const {
   units,
   saving: unitsSaving,
@@ -205,6 +211,16 @@ function refreshMapLayout(): void {
   }
 }
 
+function zoomIn(): void {
+  if (viewMode.value === '3d') map3d.value?.zoomIn()
+  else map?.zoomIn()
+}
+
+function zoomOut(): void {
+  if (viewMode.value === '3d') map3d.value?.zoomOut()
+  else map?.zoomOut()
+}
+
 function updateSelectionMarker(index: number | null): void {
   if (!map || !track.value) {
     return
@@ -266,7 +282,7 @@ function renderTrack(content: string): void {
 
   destroyMap()
   map = L.map(mapContainer.value, {
-    zoomControl: true,
+    zoomControl: false,
     attributionControl: true,
     preferCanvas: true,
   })
@@ -368,7 +384,7 @@ watch(mapLayer, applyMapLayer)
 
 watch(viewMode, async (mode) => {
   if (mode === '2d') {
-    await nextTick()
+    await waitForVisibleMapContainer()
     refreshMapLayout()
   }
 })
@@ -393,6 +409,11 @@ async function selectMapLayer(next: MapLayerPreference): Promise<void> {
   } catch (err) {
     preferenceError.value = isApiError(err) ? err.message : 'Failed to save map style'
   }
+}
+
+function chooseMapLayer(next: MapLayerPreference): void {
+  layersOpen.value = false
+  void selectMapLayer(next)
 }
 
 watch(
@@ -440,7 +461,7 @@ onBeforeUnmount(() => {
     <div v-if="open" class="fixed inset-0 z-[60] flex h-dvh flex-col bg-white">
       <div class="flex h-full min-h-0 w-full flex-col bg-white">
         <div
-          class="flex shrink-0 items-center gap-3 border-b border-slate-200 px-4 pb-3 sm:px-5"
+          class="flex shrink-0 items-center gap-3 border-b border-slate-200 px-4 pb-3 sm:px-6"
           style="padding-top: max(0.75rem, env(safe-area-inset-top))"
         >
           <button
@@ -490,38 +511,23 @@ onBeforeUnmount(() => {
               {{ option.label }}
             </button>
           </div>
+          <button
+            type="button"
+            class="px-1 text-2xl leading-none text-slate-600"
+            aria-label="More options"
+          >
+            ⋮
+          </button>
         </div>
 
-        <div class="flex min-h-0 flex-1 flex-col gap-2 sm:gap-3 sm:px-5 sm:py-4">
+        <div class="flex min-h-0 flex-1 flex-col">
           <ErrorBanner v-if="error" :message="error" :retry-busy="loading" @retry="loadTrack" />
           <ErrorBanner v-if="preferenceError" :message="preferenceError" />
 
-          <div
-            v-if="selectedPoint"
-            class="flex shrink-0 flex-wrap gap-x-4 gap-y-1 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600 sm:text-sm"
-          >
-            <span
-              ><span class="text-slate-400">Time</span>
-              {{ formatIgcTime(selectedPoint.time) }}</span
-            >
-            <span
-              ><span class="text-slate-400">Alt</span>
-              {{ formatAltitude(pointAltitude(selectedPoint), units) }}</span
-            >
-            <span
-              ><span class="text-slate-400">Vario</span>
-              {{ formatVario(selectedPoint.varioMs, units) }}</span
-            >
-            <span
-              ><span class="text-slate-400">Position</span> {{ selectedPoint.lat.toFixed(5) }},
-              {{ selectedPoint.lng.toFixed(5) }}</span
-            >
-          </div>
-
-          <div class="relative min-h-0 flex-1">
+          <div class="relative min-h-[180px] basis-0 flex-1">
             <div
               v-if="!loading && !error"
-              class="absolute left-1/2 top-3 z-[500] flex -translate-x-1/2 rounded-md border border-slate-300 bg-white p-0.5 text-xs font-medium shadow-md"
+              class="absolute left-3 top-3 z-[500] flex rounded-lg border border-slate-200 bg-white p-0.5 text-xs font-medium shadow-md"
             >
               <button
                 v-for="option in [
@@ -530,7 +536,7 @@ onBeforeUnmount(() => {
                 ] as const"
                 :key="option.value"
                 type="button"
-                class="rounded px-3 py-1.5 transition-colors"
+                class="rounded-md px-3 py-1.5 transition-colors"
                 :class="
                   viewMode === option.value
                     ? 'bg-sky-700 text-white'
@@ -544,42 +550,84 @@ onBeforeUnmount(() => {
 
             <div
               v-if="viewMode === '3d' && !loading && !error"
-              class="absolute bottom-3 left-3 z-[500] flex overflow-hidden rounded-md border border-slate-300 bg-white text-xs font-medium text-slate-700 shadow-md"
+              class="absolute bottom-3 left-3 z-[500] overflow-hidden rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 shadow-md"
             >
-              <button type="button" class="px-3 py-2 hover:bg-slate-50" @click="map3d?.fitTrack()">
-                Fit track
-              </button>
               <button
                 type="button"
-                class="border-l border-slate-200 px-3 py-2 hover:bg-slate-50"
-                @click="map3d?.toggleTilt()"
+                class="flex items-center gap-1.5 px-3 py-2 hover:bg-slate-50"
+                @click="map3d?.fitTrack()"
               >
-                Tilt
+                <span class="text-sm">⌗</span> Fit track
               </button>
             </div>
 
             <div
               v-if="!loading && !error"
-              class="absolute right-3 top-3 z-[500] flex rounded-md border border-slate-300 bg-white p-0.5 text-xs font-medium shadow-md"
+              class="absolute right-3 top-16 z-[500] flex flex-col gap-1.5 text-slate-700"
             >
               <button
-                v-for="option in [
-                  { value: 'street', label: 'Map' },
-                  { value: 'satellite', label: 'Satellite' },
-                ] as const"
-                :key="option.value"
                 type="button"
-                class="rounded px-2.5 py-1.5 transition-colors disabled:opacity-50"
-                :class="
-                  mapLayer === option.value
-                    ? 'bg-sky-700 text-white'
-                    : 'text-slate-700 hover:bg-slate-100'
-                "
-                :disabled="mapLayerSaving"
-                @click="selectMapLayer(option.value)"
+                class="flex size-8 items-center justify-center rounded-full bg-white text-sm shadow-md"
+                :class="viewMode === '2d' ? 'invisible' : ''"
+                aria-label="Change camera angle"
+                @click="map3d?.toggleTilt()"
               >
-                {{ option.label }}
+                ◈
               </button>
+              <div class="overflow-hidden rounded-lg bg-white shadow-md">
+                <button
+                  type="button"
+                  class="block size-8 text-lg hover:bg-slate-50"
+                  aria-label="Zoom in"
+                  @click="zoomIn"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  class="block size-8 border-t border-slate-200 text-lg hover:bg-slate-50"
+                  aria-label="Zoom out"
+                  @click="zoomOut"
+                >
+                  −
+                </button>
+              </div>
+            </div>
+
+            <div
+              v-if="!loading && !error"
+              class="absolute right-3 top-3 z-[500] text-xs font-medium"
+            >
+              <button
+                type="button"
+                class="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-700 shadow-md"
+                @click="layersOpen = !layersOpen"
+              >
+                <span class="text-sm">▱</span> Layers <span class="text-slate-400">⌄</span>
+              </button>
+              <div
+                v-if="layersOpen"
+                class="mt-1 overflow-hidden rounded-lg border border-slate-200 bg-white p-0.5 shadow-lg"
+              >
+                <button
+                  v-for="option in [
+                    { value: 'street', label: 'Map' },
+                    { value: 'satellite', label: 'Satellite' },
+                  ] as const"
+                  :key="option.value"
+                  type="button"
+                  class="block w-full rounded-md px-3 py-1.5 text-left disabled:opacity-50"
+                  :class="
+                    mapLayer === option.value
+                      ? 'bg-sky-700 text-white'
+                      : 'text-slate-700 hover:bg-slate-50'
+                  "
+                  :disabled="mapLayerSaving"
+                  @click="chooseMapLayer(option.value)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
             </div>
 
             <div
@@ -593,14 +641,14 @@ onBeforeUnmount(() => {
             <div
               v-show="!error"
               ref="mapContainer"
-              class="h-full w-full bg-slate-100 sm:rounded-md sm:border sm:border-slate-200"
-              :class="viewMode === '2d' ? '' : 'invisible absolute inset-0'"
+              class="absolute inset-0 h-full w-full bg-slate-100"
+              :class="viewMode === '2d' ? 'visible' : 'invisible'"
             />
 
             <Igc3DMap
               v-if="viewMode === '3d' && track && !loading && !error"
               ref="map3d"
-              class="absolute inset-0 size-full overflow-hidden sm:rounded-md sm:border sm:border-slate-200"
+              class="absolute inset-0 size-full overflow-hidden"
               :points="track.points"
               :selected-index="selectedIndex"
               :map-layer="mapLayer"
@@ -613,17 +661,9 @@ onBeforeUnmount(() => {
             :points="track.points"
             :selected-index="selectedIndex"
             :units="units"
-            class="shrink-0 px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-0 sm:pb-0"
+            class="relative z-[600] h-[clamp(200px,30dvh,320px)] shrink-0"
             @update:selected-index="selectedIndex = $event"
           />
-
-          <p
-            v-if="pointCount > 0 && !loading"
-            class="hidden shrink-0 text-xs text-slate-500 sm:block"
-          >
-            {{ pointCount }} GPS points · track colour = altitude · point at or drag along the track
-            to inspect
-          </p>
         </div>
       </div>
     </div>
