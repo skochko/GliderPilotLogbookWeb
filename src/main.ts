@@ -12,7 +12,20 @@ import router from './router'
 
 if (import.meta.env.PROD) {
   deferAfterLoad(() => {
-    registerSW({ immediate: true })
+    if (!('serviceWorker' in navigator)) return
+    const hadServiceWorkerController = Boolean(navigator.serviceWorker.controller)
+    let reloadingForUpdate = false
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadServiceWorkerController || reloadingForUpdate) return
+      reloadingForUpdate = true
+      window.location.reload()
+    })
+    registerSW({
+      immediate: true,
+      onRegisteredSW: (_scriptUrl, registration) => {
+        void registration?.update()
+      },
+    })
   })
 }
 

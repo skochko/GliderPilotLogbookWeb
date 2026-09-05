@@ -55,8 +55,29 @@ let loadingFallbackTimer: ReturnType<typeof setTimeout> | null = null
 let tilted = true
 
 const altitude = (point: IgcPoint) => pointAltitude(point) ?? 0
-const airbornePositions = () =>
-  props.points.map((point) => Cartesian3.fromDegrees(point.lng, point.lat, altitude(point)))
+function airbornePositions(
+  groundHeights: readonly number[],
+  normalizeToTerrain: boolean,
+): Cartesian3[] {
+  const lastIndex = props.points.length - 1
+  const startCorrection = normalizeToTerrain
+    ? (groundHeights[0] ?? 0) - altitude(props.points[0]!)
+    : 0
+  const endCorrection = normalizeToTerrain
+    ? (groundHeights[lastIndex] ?? 0) - altitude(props.points[lastIndex]!)
+    : 0
+
+  return props.points.map((point, index) => {
+    const ratio = index / Math.max(lastIndex, 1)
+    const correction = startCorrection + (endCorrection - startCorrection) * ratio
+    const groundHeight = groundHeights[index] ?? 0
+    const correctedHeight = altitude(point) + correction
+    const visualHeight = normalizeToTerrain
+      ? Math.max(correctedHeight, groundHeight + 1)
+      : correctedHeight
+    return Cartesian3.fromDegrees(point.lng, point.lat, visualHeight)
+  })
+}
 
 function smoothedVario(index: number): number {
   const from = Math.max(0, index - 2)
@@ -149,7 +170,7 @@ function updateSelectedPoint(): void {
       : units.value === 'imperial'
         ? `${Math.round(speedKmh * 0.539956803)} kt`
         : `${Math.round(speedKmh)} km/h`
-  selectedEntity.position = Cartesian3.fromDegrees(point.lng, point.lat, altitude(point)) as never
+  selectedEntity.position = trackPositions[props.selectedIndex!] as never
   if (selectedEntity.label) {
     selectedEntity.label.text = [
       formatIgcTime(point.time),
@@ -171,7 +192,7 @@ function closestPointIndex(position: Cartesian2, maxDistance = 28): number | nul
     if (!point) return
     const screen = SceneTransforms.worldToWindowCoordinates(
       viewer!.scene,
-      Cartesian3.fromDegrees(point.lng, point.lat, altitude(point)),
+      trackPositions[index] ?? Cartesian3.fromDegrees(point.lng, point.lat, altitude(point)),
     )
     if (!screen) return
     const distance = Cartesian2.distance(position, screen)
@@ -264,21 +285,26 @@ onMounted(async () => {
   viewer.scene.globe.depthTestAgainstTerrain = false
   setImagery()
 
-  const positions = airbornePositions()
-  trackPositions = positions
   let groundHeights = props.points.map(() => 0)
+  let terrainHeightsLoaded = false
   if (terrainProvider) {
     try {
       const terrainPoints = props.points.map((point) =>
         Cartographic.fromDegrees(point.lng, point.lat),
       )
       await sampleTerrainMostDetailed(terrainProvider, terrainPoints)
-      groundHeights = terrainPoints.map((point) => point.height ?? 0)
+      const sampledHeights = terrainPoints.map((point) => point.height)
+      if (sampledHeights.every((height): height is number => Number.isFinite(height))) {
+        groundHeights = sampledHeights
+        terrainHeightsLoaded = true
+      }
     } catch {
       groundHeights = props.points.map(() => 0)
     }
   }
   if (!viewer || viewer.isDestroyed()) return
+  const positions = airbornePositions(groundHeights, terrainHeightsLoaded)
+  trackPositions = positions
   trackGroundHeights = groundHeights
   viewer.camera.viewBoundingSphere(BoundingSphere.fromPoints(positions), cameraOffset(true))
   viewer.camera.lookAtTransform(Matrix4.IDENTITY)
