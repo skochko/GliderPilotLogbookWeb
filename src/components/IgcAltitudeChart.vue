@@ -4,7 +4,6 @@ import { formatIgcTime, pointAltitude, type IgcPoint } from '@/lib/igc'
 import {
   altitudeScaleValue,
   formatAltitudeValue,
-  formatDistanceValue,
   formatVarioValue,
   type MeasurementUnits,
 } from '@/lib/measurementUnits'
@@ -14,6 +13,7 @@ const props = defineProps<{
   selectedIndex: number | null
   startIndex: number
   endIndex: number
+  altitudeOffsetM: number
   units: MeasurementUnits
 }>()
 const emit = defineEmits<{
@@ -25,7 +25,11 @@ type Mode = 'altitude' | 'vario' | 'speed'
 const mode = ref<Mode>('altitude')
 const svgRef = ref<SVGSVGElement | null>(null)
 const playing = ref(false)
+const playbackSpeed = ref<1 | 5 | 10>(1)
 let timer: ReturnType<typeof setInterval> | null = null
+let playbackPositionSeconds = 0
+let lastPlaybackTick = 0
+let playbackIndex = 0
 const width = ref(600)
 const height = 118
 const pad = { left: 42, right: 8, top: 12, bottom: 20 }
@@ -59,7 +63,7 @@ const values = computed(() =>
     if (mode.value === 'vario') return point.varioMs ?? 0
     if (mode.value === 'speed')
       return (speedKmh.value[index] ?? 0) * (props.units === 'imperial' ? 0.539956803 : 1)
-    return altitudeScaleValue(pointAltitude(point) ?? 0, props.units)
+    return altitudeScaleValue((pointAltitude(point) ?? 0) - props.altitudeOffsetM, props.units)
   }),
 )
 const bounds = computed(() => {
@@ -103,39 +107,22 @@ const activePoint = computed(() => props.points[active.value])
 const marker = computed(() => xy(active.value, values.value[active.value] ?? 0))
 const startMarker = computed(() => xy(props.startIndex, values.value[props.startIndex] ?? 0))
 const endMarker = computed(() => xy(props.endIndex, values.value[props.endIndex] ?? 0))
-const totalDistance = computed(() =>
-  props.points.slice(1).reduce((sum, point, i) => sum + distanceKm(props.points[i]!, point), 0),
-)
-const totalClimb = computed(() =>
-  props.points
-    .slice(1)
-    .reduce(
-      (sum, point, i) =>
-        sum + Math.max(0, (pointAltitude(point) ?? 0) - (pointAltitude(props.points[i]!) ?? 0)),
-      0,
-    ),
-)
-const maximum = computed(() => Math.max(...props.points.map((point) => pointAltitude(point) ?? 0)))
-const duration = computed(() =>
-  props.points.length > 1 ? elapsed(props.points[0]!.time, props.points.at(-1)!.time) : 0,
-)
 const ticks = computed(() =>
   [0, 0.25, 0.5, 0.75, 1].map((ratio) => ({
     ratio,
     point: props.points[Math.round(ratio * (props.points.length - 1))],
   })),
 )
-function durationText(value: number): string {
-  return [Math.floor(value / 3600), Math.floor((value % 3600) / 60), value % 60]
-    .map((part) => String(part).padStart(2, '0'))
-    .join(':')
-}
 function activeValue(): string {
   if (!activePoint.value) return '—'
   if (mode.value === 'vario') return formatVarioValue(activePoint.value.varioMs, props.units)
   if (mode.value === 'speed')
     return `${Math.round(values.value[active.value] ?? 0)} ${props.units === 'imperial' ? 'kt' : 'km/h'}`
-  return formatAltitudeValue(pointAltitude(activePoint.value), props.units)
+  const altitude = pointAltitude(activePoint.value)
+  return formatAltitudeValue(
+    altitude === null ? null : altitude - props.altitudeOffsetM,
+    props.units,
+  )
 }
 function selectAt(clientX: number): void {
   if (!svgRef.value) return
@@ -152,14 +139,47 @@ function togglePlay(): void {
     playing.value = false
     return
   }
+  const startPoint = props.points[props.startIndex]
+  const currentPoint = props.points[active.value]
+  if (!startPoint || !currentPoint) return
+  if (active.value >= props.endIndex) emit('update:selectedIndex', props.startIndex)
+  playbackIndex = active.value >= props.endIndex ? props.startIndex : active.value
+  playbackPositionSeconds =
+    active.value >= props.endIndex ? 0 : elapsed(startPoint.time, currentPoint.time)
+  lastPlaybackTick = performance.now()
   playing.value = true
   timer = setInterval(() => {
-    const next = active.value + Math.max(1, Math.ceil(props.points.length / 400))
-    if (next > props.endIndex) {
-      emit('update:selectedIndex', props.startIndex)
-      togglePlay()
-    } else emit('update:selectedIndex', next)
-  }, 120)
+    const now = performance.now()
+    playbackPositionSeconds += ((now - lastPlaybackTick) / 1000) * playbackSpeed.value
+    lastPlaybackTick = now
+
+    const rangeStart = props.points[props.startIndex]
+    const rangeEnd = props.points[props.endIndex]
+    if (!rangeStart || !rangeEnd) return
+    const rangeDuration = elapsed(rangeStart.time, rangeEnd.time)
+    if (playbackPositionSeconds >= rangeDuration) {
+      emit('update:selectedIndex', props.endIndex)
+      clearInterval(timer!)
+      timer = null
+      playing.value = false
+      return
+    }
+
+    let next = playbackIndex
+    while (
+      next < props.endIndex &&
+      elapsed(rangeStart.time, props.points[next + 1]!.time) <= playbackPositionSeconds
+    ) {
+      next += 1
+    }
+    if (next !== playbackIndex) {
+      playbackIndex = next
+      emit('update:selectedIndex', next)
+    }
+  }, 50)
+}
+function setPlaybackSpeed(speed: 1 | 5 | 10): void {
+  playbackSpeed.value = speed
 }
 function updateStart(value: number): void {
   const start = Math.max(0, Math.min(value, props.endIndex))
@@ -191,10 +211,10 @@ onBeforeUnmount(() => {
 
 <template>
   <section
-    class="rounded-t-2xl bg-white px-4 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-4px_18px_rgba(15,23,42,.12)] sm:px-6"
+    class="rounded-t-2xl bg-white pb-[max(.75rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-4px_18px_rgba(15,23,42,.12)]"
   >
     <div class="mx-auto mb-1.5 h-1 w-16 rounded-full bg-slate-300" />
-    <div class="flex items-center justify-between gap-2">
+    <div class="flex items-center justify-between gap-2 px-4 sm:px-6">
       <h3 class="text-base font-semibold text-slate-900 sm:text-lg">Altitude profile</h3>
       <div
         class="flex rounded-lg bg-slate-100 p-0.5 text-[11px] font-medium text-slate-600 sm:text-xs"
@@ -308,16 +328,9 @@ onBeforeUnmount(() => {
         </text>
       </g>
     </svg>
-    <div class="relative h-10">
-      <button
-        type="button"
-        class="absolute left-0 top-0 flex size-9 items-center justify-center rounded-full bg-sky-700 text-xs text-white"
-        @click="togglePlay"
-      >
-        {{ playing ? 'Ⅱ' : '▶' }}
-      </button>
+    <div class="relative h-20">
       <div
-        class="range-slider absolute top-1.5 h-6"
+        class="range-slider absolute top-0 h-6"
         :style="[
           {
             left: `${(pad.left * 105) / height}px`,
@@ -352,23 +365,35 @@ onBeforeUnmount(() => {
           @input="updateCurrent(Number(($event.target as HTMLInputElement).value))"
         />
       </div>
-      <span class="absolute right-0 top-7 text-[10px] text-slate-500">
+      <span class="absolute right-0 top-8 text-[10px] text-slate-500">
         {{ formatIgcTime(activePoint?.time ?? '') }}
       </span>
-    </div>
-    <div class="mt-2 grid grid-cols-4 gap-2">
-      <div
-        v-for="item in [
-          { label: 'Max alt.', value: formatAltitudeValue(maximum, units) },
-          { label: 'Total climb', value: formatAltitudeValue(totalClimb, units) },
-          { label: 'Duration', value: durationText(duration) },
-          { label: 'Distance', value: formatDistanceValue(totalDistance, units) },
-        ]"
-        :key="item.label"
-        class="rounded-xl bg-slate-50 px-2 py-1.5"
-      >
-        <span class="block truncate text-[9px] text-slate-500">{{ item.label }}</span
-        ><strong class="block truncate text-[11px] text-slate-900">{{ item.value }}</strong>
+      <div class="absolute left-1/2 top-8 flex -translate-x-1/2 items-center gap-2">
+        <button
+          type="button"
+          class="flex size-11 items-center justify-center rounded-full bg-sky-700 text-sm text-white shadow-md"
+          :aria-label="playing ? 'Pause track playback' : 'Play track'"
+          @click="togglePlay"
+        >
+          {{ playing ? 'Ⅱ' : '▶' }}
+        </button>
+        <div
+          class="flex rounded-lg bg-slate-100 p-0.5 text-[10px] font-medium text-slate-600 shadow-sm"
+        >
+          <button
+            v-for="speed in [1, 5, 10] as const"
+            :key="speed"
+            type="button"
+            class="rounded-md px-2 py-1.5 transition-colors"
+            :class="
+              playbackSpeed === speed ? 'bg-white text-sky-800 shadow-sm' : 'hover:bg-slate-200'
+            "
+            :aria-pressed="playbackSpeed === speed"
+            @click="setPlaybackSpeed(speed)"
+          >
+            {{ speed }}×
+          </button>
+        </div>
       </div>
     </div>
   </section>

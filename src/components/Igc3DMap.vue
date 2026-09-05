@@ -29,6 +29,8 @@ import type { TerrainProvider } from 'cesium'
 import type { MapLayerPreference } from '@/composables/useMapLayerPreference'
 import { useMeasurementUnits } from '@/composables/useMeasurementUnits'
 import { formatAltitude, formatIgcTime, formatVario, pointAltitude, type IgcPoint } from '@/lib/igc'
+import { calculateTerrainAltitudeCorrection } from '@/lib/trackAltitude'
+import { trailStartIndex } from '@/lib/trackPlayback'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
 
 const props = defineProps<{
@@ -36,6 +38,7 @@ const props = defineProps<{
   selectedIndex: number | null
   startIndex: number
   endIndex: number
+  altitudeOffsetM: number
   mapLayer: MapLayerPreference
 }>()
 const emit = defineEmits<{ 'update:selectedIndex': [number] }>()
@@ -67,20 +70,10 @@ function airbornePositions(
 ): Cartesian3[] {
   let altitudeCorrection = 0
   if (normalizeToTerrain) {
-    const sampleSize = Math.min(30, Math.max(1, Math.floor(props.points.length / 2)))
-    const indexes = new Set<number>()
-    for (let index = 0; index < sampleSize; index += 1) {
-      indexes.add(index)
-      indexes.add(props.points.length - 1 - index)
-    }
-    const corrections = [...indexes]
-      .map((index) => (groundHeights[index] ?? 0) - altitude(props.points[index]!))
-      .sort((a, b) => a - b)
-    const middle = Math.floor(corrections.length / 2)
-    altitudeCorrection =
-      corrections.length % 2
-        ? corrections[middle]!
-        : (corrections[middle - 1]! + corrections[middle]!) / 2
+    altitudeCorrection = calculateTerrainAltitudeCorrection(
+      props.points.map(altitude),
+      groundHeights,
+    )
   }
 
   return props.points.map((point) =>
@@ -203,7 +196,7 @@ function updateSelectedPoint(): void {
   if (selectedEntity.label) {
     selectedEntity.label.text = [
       formatIgcTime(point.time),
-      formatAltitude(altitude(point), units.value),
+      formatAltitude(altitude(point) - props.altitudeOffsetM, units.value),
       formatVario(point.varioMs, units.value),
       speed,
     ].join('\n') as never
@@ -264,6 +257,7 @@ function updateTrackProgress(): void {
     const endIndex = Math.max(props.startIndex, props.endIndex)
     const startIndex = Math.max(0, Math.min(props.startIndex, endIndex))
     const currentIndex = Math.max(startIndex, Math.min(props.selectedIndex ?? startIndex, endIndex))
+    const trailStart = trailStartIndex(props.points, startIndex, currentIndex)
     if (selectedRangePrimitive) {
       viewer.scene.primitives.remove(selectedRangePrimitive)
       selectedRangePrimitive = null
@@ -290,21 +284,25 @@ function updateTrackProgress(): void {
         asynchronous: false,
       }),
     )
-    if (currentIndex === startIndex) return
+    if (currentIndex === trailStart) return
     playedTrackPrimitive = viewer.scene.primitives.add(
       new Primitive({
         geometryInstances: new GeometryInstance({
           geometry: new PolylineGeometry({
-            positions: trackPositions.slice(startIndex, currentIndex + 1),
+            positions: trackPositions.slice(trailStart, currentIndex + 1),
             width: 2,
             colors: props.points
-              .slice(startIndex, currentIndex + 1)
-              .map((_, index) => colorForVario(startIndex + index)),
+              .slice(trailStart, currentIndex + 1)
+              .map((_, index, points) =>
+                colorForVario(trailStart + index).withAlpha(
+                  0.12 + (index / Math.max(points.length - 1, 1)) * 0.83,
+                ),
+              ),
             colorsPerVertex: true,
             arcType: ArcType.NONE,
           }),
         }),
-        appearance: new PolylineColorAppearance({ translucent: false }),
+        appearance: new PolylineColorAppearance({ translucent: true }),
         asynchronous: false,
       }),
     )
@@ -486,6 +484,7 @@ watch(
   },
 )
 watch(units, updateSelectedPoint)
+watch(() => props.altitudeOffsetM, updateSelectedPoint)
 
 onBeforeUnmount(() => {
   if (progressFrame !== null) cancelAnimationFrame(progressFrame)

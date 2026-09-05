@@ -3,10 +3,12 @@ import L from 'leaflet'
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import IgcAltitudeChart from '@/components/IgcAltitudeChart.vue'
+import IgcTrackStats from '@/components/IgcTrackStats.vue'
 import SpinnerIcon from '@/components/SpinnerIcon.vue'
 import { fetchFlightIgcContent } from '@/api/flightMedia'
 import { isApiError } from '@/api/errors'
 import { useAuth } from '@/composables/useAuth'
+import { useAltitudeReference, type AltitudeReference } from '@/composables/useAltitudeReference'
 import { useMapLayerPreference, type MapLayerPreference } from '@/composables/useMapLayerPreference'
 import { useMeasurementUnits } from '@/composables/useMeasurementUnits'
 import {
@@ -20,6 +22,7 @@ import {
   pointAltitude,
   type IgcTrack,
 } from '@/lib/igc'
+import { trailStartIndex } from '@/lib/trackPlayback'
 import 'leaflet/dist/leaflet.css'
 
 const Igc3DMap = defineAsyncComponent(() => import('@/components/Igc3DMap.vue'))
@@ -63,6 +66,12 @@ const {
 const { user } = useAuth()
 const isDemo = computed(() => user.value?.is_demo ?? false)
 const {
+  altitudeReference,
+  saving: altitudeReferenceSaving,
+  ensureLoaded: ensureAltitudeReferenceLoaded,
+  setAltitudeReference,
+} = useAltitudeReference()
+const {
   mapLayer,
   saving: mapLayerSaving,
   ensureLoaded: ensureMapLayerLoaded,
@@ -86,6 +95,10 @@ const selectedPoint = computed(() => {
     return null
   }
   return track.value.points[selectedIndex.value] ?? null
+})
+const altitudeOffsetM = computed(() => {
+  if (altitudeReference.value !== 'qfe' || !track.value?.points.length) return 0
+  return pointAltitude(track.value.points[rangeStartIndex.value]!) ?? 0
 })
 
 function selectTrackPoint(index: number | null): void {
@@ -314,7 +327,8 @@ function update2dTrackProgress(): void {
   const startIndex = Math.min(rangeStartIndex.value, endIndex)
   const currentIndex = Math.max(startIndex, Math.min(selectedIndex.value ?? startIndex, endIndex))
   const rangePoints = track.value.points.slice(startIndex, endIndex + 1)
-  const playedPoints = track.value.points.slice(startIndex, currentIndex + 1)
+  const trailStart = trailStartIndex(track.value.points, startIndex, currentIndex)
+  const trailPoints = track.value.points.slice(trailStart, currentIndex + 1)
   if (rangePoints.length < 2) return
   const stats = getAltitudeStats(track.value.points)
   const layers: L.Layer[] = []
@@ -329,12 +343,17 @@ function update2dTrackProgress(): void {
         }),
       )
     }
-    for (const segment of buildColoredTrackSegments(playedPoints, stats)) {
+    for (let index = 1; index < trailPoints.length; index += 1) {
+      const segment = buildColoredTrackSegments(
+        [trailPoints[index - 1]!, trailPoints[index]!],
+        stats,
+      )[0]
+      if (!segment) continue
       layers.push(
         L.polyline(segment.latlngs, {
           color: segment.color,
           weight: 3,
-          opacity: 0.95,
+          opacity: 0.12 + (index / (trailPoints.length - 1)) * 0.83,
           interactive: false,
         }),
       )
@@ -346,11 +365,18 @@ function update2dTrackProgress(): void {
         { color: '#0369a1', weight: 1, opacity: 0.45, interactive: false },
       ),
     )
-    if (playedPoints.length > 1)
+    for (let index = 1; index < trailPoints.length; index += 1)
       layers.push(
         L.polyline(
-          playedPoints.map((point) => [point.lat, point.lng] as [number, number]),
-          { color: '#0369a1', weight: 3, opacity: 0.95, interactive: false },
+          [trailPoints[index - 1]!, trailPoints[index]!].map(
+            (point) => [point.lat, point.lng] as [number, number],
+          ),
+          {
+            color: '#0369a1',
+            weight: 3,
+            opacity: 0.12 + (index / (trailPoints.length - 1)) * 0.83,
+            interactive: false,
+          },
         ),
       )
   }
@@ -361,7 +387,7 @@ function buildTooltip(point: IgcTrack['points'][number]): string {
   const altitude = pointAltitude(point)
   return [
     `<strong>${formatIgcTime(point.time)}</strong>`,
-    `Alt: ${formatAltitude(altitude, units.value)}`,
+    `Alt: ${formatAltitude(altitude === null ? null : altitude - altitudeOffsetM.value, units.value)} (${altitudeReference.value.toUpperCase()})`,
     `Vario: ${formatVario(point.varioMs, units.value)}`,
     `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`,
   ].join('<br/>')
@@ -490,6 +516,10 @@ watch(units, () => {
   updateSelectionMarker(selectedIndex.value)
 })
 
+watch(altitudeOffsetM, () => {
+  updateSelectionMarker(selectedIndex.value)
+})
+
 watch(mapLayer, applyMapLayer)
 
 watch(viewMode, async (mode) => {
@@ -509,6 +539,15 @@ async function selectUnits(next: 'metric' | 'imperial'): Promise<void> {
     await setUnits(next)
   } catch (err) {
     preferenceError.value = isApiError(err) ? err.message : 'Failed to save measurement units'
+  }
+}
+
+async function selectAltitudeReference(next: AltitudeReference): Promise<void> {
+  preferenceError.value = null
+  try {
+    await setAltitudeReference(next, !isDemo.value)
+  } catch (err) {
+    preferenceError.value = isApiError(err) ? err.message : 'Failed to save altitude reference'
   }
 }
 
@@ -533,6 +572,7 @@ watch(
       updateVisualViewport()
       if (!isDemo.value) {
         void ensureUnitsLoaded()
+        void ensureAltitudeReferenceLoaded()
         void ensureMapLayerLoaded()
       }
       document.body.style.overflow = 'hidden'
@@ -621,21 +661,45 @@ onBeforeUnmount(() => {
               {{ metadataLine }}
             </p>
           </div>
-          <div class="flex shrink-0 rounded-md bg-slate-100 p-0.5 text-xs font-medium">
-            <button
-              v-for="option in [
-                { value: 'metric', label: 'SI' },
-                { value: 'imperial', label: 'Imperial' },
-              ] as const"
-              :key="option.value"
-              type="button"
-              class="rounded px-2.5 py-1.5 transition-colors disabled:opacity-50"
-              :class="units === option.value ? 'bg-white text-sky-800 shadow-sm' : 'text-slate-600'"
-              :disabled="unitsSaving"
-              @click="selectUnits(option.value)"
-            >
-              {{ option.label }}
-            </button>
+          <div class="flex shrink-0 items-center gap-1.5 text-xs font-medium">
+            <label class="relative">
+              <span class="sr-only">Measurement units</span>
+              <select
+                :value="units"
+                class="appearance-none rounded-md border border-slate-200 bg-white py-1.5 pl-2.5 pr-7 text-slate-800 shadow-sm disabled:opacity-50"
+                :disabled="unitsSaving"
+                @change="
+                  selectUnits(($event.target as HTMLSelectElement).value as 'metric' | 'imperial')
+                "
+              >
+                <option value="metric">SI</option>
+                <option value="imperial">Imperial</option>
+              </select>
+              <span
+                class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400"
+                >⌄</span
+              >
+            </label>
+            <label class="relative">
+              <span class="sr-only">Altitude reference</span>
+              <select
+                :value="altitudeReference"
+                class="appearance-none rounded-md border border-slate-200 bg-white py-1.5 pl-2.5 pr-7 text-slate-800 shadow-sm disabled:opacity-50"
+                :disabled="altitudeReferenceSaving"
+                @change="
+                  selectAltitudeReference(
+                    ($event.target as HTMLSelectElement).value as AltitudeReference,
+                  )
+                "
+              >
+                <option value="qnh">QNH</option>
+                <option value="qfe">QFE</option>
+              </select>
+              <span
+                class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400"
+                >⌄</span
+              >
+            </label>
           </div>
           <button
             type="button"
@@ -649,6 +713,13 @@ onBeforeUnmount(() => {
         <div class="flex min-h-0 flex-1 flex-col">
           <ErrorBanner v-if="error" :message="error" :retry-busy="loading" @retry="loadTrack" />
           <ErrorBanner v-if="preferenceError" :message="preferenceError" />
+
+          <IgcTrackStats
+            v-if="track && track.points.length > 0 && !loading"
+            :points="track.points"
+            :units="units"
+            :altitude-offset-m="altitudeOffsetM"
+          />
 
           <div class="relative min-h-[180px] basis-0 flex-1">
             <div
@@ -779,6 +850,7 @@ onBeforeUnmount(() => {
               :selected-index="selectedIndex"
               :start-index="rangeStartIndex"
               :end-index="rangeEndIndex"
+              :altitude-offset-m="altitudeOffsetM"
               :map-layer="mapLayer"
               @update:selected-index="selectTrackPoint"
             />
@@ -790,8 +862,9 @@ onBeforeUnmount(() => {
             :selected-index="selectedIndex"
             :start-index="rangeStartIndex"
             :end-index="rangeEndIndex"
+            :altitude-offset-m="altitudeOffsetM"
             :units="units"
-            class="relative z-[600] h-[clamp(200px,30dvh,320px)] shrink-0"
+            class="relative z-[600] h-[clamp(230px,32dvh,340px)] shrink-0"
             @update:selected-index="selectTrackPoint"
             @update:start-index="updateRangeStart"
             @update:end-index="updateRangeEnd"
