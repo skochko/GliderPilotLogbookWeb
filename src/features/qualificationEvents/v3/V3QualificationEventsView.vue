@@ -9,13 +9,17 @@ import LoadingState from '@/components/LoadingState.vue'
 import { getQualificationEvents, updateQualificationEvents } from '@/api/qualificationEvents'
 import { useAuth } from '@/composables/useAuth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
-import { QUALIFICATION_EVENT_TYPES, type QualificationEvent } from '@/types/qualificationEvents'
+import {
+  DEFAULT_QUALIFICATION_EVENT_TYPES,
+  type QualificationEvent,
+} from '@/types/qualificationEvents'
 import { sortQualificationEventsNewestFirst } from '@/features/qualificationEvents/sort'
 
 const { show } = useFlashMessage()
 const { user } = useAuth()
 const isDemo = computed(() => user.value?.is_demo ?? false)
 const events = ref<QualificationEvent[]>([])
+const eventTypes = ref<string[]>([...DEFAULT_QUALIFICATION_EVENT_TYPES])
 const loading = ref(true)
 const saving = ref(false)
 const error = ref<string | null>(null)
@@ -57,7 +61,9 @@ async function loadEvents(): Promise<void> {
   loading.value = true
   error.value = null
   try {
-    events.value = sortQualificationEventsNewestFirst((await getQualificationEvents()).events)
+    const response = await getQualificationEvents()
+    events.value = sortQualificationEventsNewestFirst(response.events)
+    eventTypes.value = response.event_types
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Could not load qualification events.'
   } finally {
@@ -69,7 +75,7 @@ function newEvent(): QualificationEvent {
   return {
     date: '',
     place: '',
-    event_type: QUALIFICATION_EVENT_TYPES[0],
+    event_type: eventTypes.value[0] ?? '',
     date_completed: '',
     remarks: '',
   }
@@ -386,7 +392,7 @@ function formatEventDate(value: string): string {
                   v-model="editingEvent.event_type"
                   class="field-control mt-1 block !w-[calc(100dvw-2rem)] min-w-0 max-w-full sm:!w-full"
                 >
-                  <option v-for="type in QUALIFICATION_EVENT_TYPES" :key="type" :value="type">
+                  <option v-for="type in eventTypes" :key="type" :value="type">
                     {{ type }}
                   </option>
                 </select>

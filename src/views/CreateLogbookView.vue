@@ -33,7 +33,7 @@ import { useLicenseOptions, withLegacyLookupOption } from '@/composables/useLice
 import { defaultLogbookCreateForm } from '@/types/logbookCreate'
 import type { QualificationSummary } from '@/types/summary'
 import {
-  QUALIFICATION_EVENT_TYPES,
+  DEFAULT_QUALIFICATION_EVENT_TYPES,
   type QualificationEvent,
 } from '@/types/qualificationEvents'
 
@@ -86,6 +86,7 @@ const organizationsError = ref<string | null>(null)
 const form = reactive(defaultLogbookCreateForm())
 const templateVersion = ref('')
 const qualificationEvents = ref<QualificationEvent[]>([])
+const qualificationEventTypes = ref<string[]>([...DEFAULT_QUALIFICATION_EVENT_TYPES])
 const legacySummary = reactive<QualificationSummary>({
   by_date_start: '',
   by_date_end: '',
@@ -202,7 +203,9 @@ async function prefillFormFromConnectedLogbook(): Promise<void> {
 
 async function loadQualificationEvents(): Promise<void> {
   try {
-    qualificationEvents.value = (await getQualificationEvents()).events
+    const response = await getQualificationEvents()
+    qualificationEvents.value = response.events
+    qualificationEventTypes.value = response.event_types
   } catch {
     // The qualification step can still be opened and completed manually.
   }
@@ -245,7 +248,7 @@ function addQualificationEvent(): void {
   qualificationEvents.value.push({
     date: '',
     place: '',
-    event_type: QUALIFICATION_EVENT_TYPES[0],
+    event_type: qualificationEventTypes.value[0] ?? '',
     date_completed: '',
     remarks: '',
   })
@@ -688,7 +691,7 @@ async function retrySubmit(): Promise<void> {
                 <label class="block text-sm">
                   <span class="font-medium text-slate-700">Event type</span>
                   <select v-model="event.event_type" class="field-control">
-                    <option v-for="type in QUALIFICATION_EVENT_TYPES" :key="type" :value="type">
+                    <option v-for="type in qualificationEventTypes" :key="type" :value="type">
                       {{ type }}
                     </option>
                   </select>
