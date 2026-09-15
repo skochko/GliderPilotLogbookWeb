@@ -39,8 +39,11 @@ export function isDurationValue(value: string | null | undefined): boolean {
   return DURATION_PATTERN.test((value ?? '').trim())
 }
 
-/** Format logbook duration strings (H:MM or H:MM:SS) for display, e.g. 05:00 → 5h. */
-export function formatDurationDisplay(value: string | null | undefined): string {
+/** Format logbook duration strings (H:MM or H:MM:SS), e.g. 05:00 → 5h 0m. */
+export function formatDurationDisplay(
+  value: string | null | undefined,
+  includeZeroMinutes = true,
+): string {
   const trimmed = (value ?? '').trim()
   if (!trimmed) {
     return '—'
@@ -63,11 +66,10 @@ export function formatDurationDisplay(value: string | null | undefined): string 
   const totalHours = hours + Math.floor(roundedMinutes / 60)
   const remainingMinutes = roundedMinutes % 60
 
-  if (totalHours > 0 && remainingMinutes > 0) {
-    return `${totalHours}h ${remainingMinutes}m`
-  }
   if (totalHours > 0) {
-    return `${totalHours}h`
+    return includeZeroMinutes || remainingMinutes > 0
+      ? `${totalHours}h ${remainingMinutes}m`
+      : `${totalHours}h`
   }
   return `${remainingMinutes}m`
 }
@@ -96,11 +98,8 @@ export function formatDurationProse(value: string | null | undefined): string {
   const totalHours = hours + Math.floor(roundedMinutes / 60)
   const remainingMinutes = roundedMinutes % 60
 
-  if (totalHours > 0 && remainingMinutes > 0) {
-    return `${totalHours} h ${remainingMinutes} min`
-  }
   if (totalHours > 0) {
-    return `${totalHours} h`
+    return `${totalHours} h ${remainingMinutes} min`
   }
   if (remainingMinutes === 1) {
     return '1 min'
@@ -161,5 +160,5 @@ export function formatRequirementValue(value: string | null | undefined): string
   if (!trimmed) {
     return '—'
   }
-  return formatDurationDisplay(trimmed)
+  return formatDurationDisplay(trimmed, false)
 }

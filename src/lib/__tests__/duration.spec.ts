@@ -14,9 +14,9 @@ describe('isHoursMinutesDuration', () => {
 })
 
 describe('formatDurationDisplay', () => {
-  it('formats hour-only durations without leading zeros', () => {
-    expect(formatDurationDisplay('05:00')).toBe('5h')
-    expect(formatDurationDisplay('5:00')).toBe('5h')
+  it('always includes minutes for durations of at least one hour', () => {
+    expect(formatDurationDisplay('05:00')).toBe('5h 0m')
+    expect(formatDurationDisplay('5:00')).toBe('5h 0m')
   })
 
   it('formats hours and minutes', () => {
@@ -30,6 +30,7 @@ describe('formatDurationDisplay', () => {
 
   it('rounds seconds in H:MM:SS values', () => {
     expect(formatDurationDisplay('1:02:30')).toBe('1h 3m')
+    expect(formatDurationDisplay('0:59:30')).toBe('1h 0m')
   })
 
   it('passes through non-duration values', () => {
@@ -46,7 +47,7 @@ describe('formatDurationDisplay', () => {
 describe('splitDurationDisplay', () => {
   it('splits hours and minutes onto two lines', () => {
     expect(splitDurationDisplay('1:30')).toEqual({ primary: '1h', secondary: '30m' })
-    expect(splitDurationDisplay('5:00')).toEqual({ primary: '5h', secondary: null })
+    expect(splitDurationDisplay('5:00')).toEqual({ primary: '5h', secondary: '0m' })
     expect(splitDurationDisplay('0:30')).toEqual({ primary: '30m', secondary: null })
   })
 })
@@ -54,7 +55,7 @@ describe('splitDurationDisplay', () => {
 describe('formatDurationProse', () => {
   it('formats readable durations for detail views', () => {
     expect(formatDurationProse('0:01')).toBe('1 min')
-    expect(formatDurationProse('1:00')).toBe('1 h')
+    expect(formatDurationProse('1:00')).toBe('1 h 0 min')
     expect(formatDurationProse('1:30')).toBe('1 h 30 min')
     expect(formatDurationProse('0:30')).toBe('30 min')
   })

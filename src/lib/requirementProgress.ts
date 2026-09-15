@@ -75,8 +75,8 @@ function formatBooleanProgress(input: RequirementProgressInput): string {
 }
 
 function formatDurationProgress(obtained: string, required: string): string {
-  const obtainedLabel = formatDurationDisplay(obtained)
-  const requiredLabel = formatDurationDisplay(required)
+  const obtainedLabel = formatDurationDisplay(obtained, false)
+  const requiredLabel = formatDurationDisplay(required, false)
   if (obtainedLabel === '—' && requiredLabel === '—') {
     return ''
   }
