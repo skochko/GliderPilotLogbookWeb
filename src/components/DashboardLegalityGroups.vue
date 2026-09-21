@@ -111,7 +111,7 @@ function statusLabel(status: DashboardStatusEnum): string {
 
           <div
             v-if="isExpanded(group.id, row.id)"
-            class="ml-5 mt-2 space-y-2 border-l border-slate-200 pl-3"
+            class="ml-2 mt-2 space-y-2 border-l border-slate-200 pl-2"
           >
             <DashboardFormulaTree
               v-if="row.formula_tree"
