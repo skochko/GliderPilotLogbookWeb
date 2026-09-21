@@ -56,7 +56,12 @@ export interface DashboardLegalityRow {
   requirement_type?: string
   lookback_period?: string
   requirements: DashboardRequirement[]
+  formula_tree?: DashboardFormulaNode
 }
+
+export type DashboardFormulaNode =
+  | { requirement_id: string }
+  | { operator: 'AND' | 'OR'; children: DashboardFormulaNode[] }
 
 export interface DashboardLegalityChip {
   id: string

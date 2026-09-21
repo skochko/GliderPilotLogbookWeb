@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import type { DeepReadonly } from 'vue'
 import { formatRequirementProgress } from '@/lib/requirementProgress'
+import DashboardFormulaTree from '@/components/DashboardFormulaTree.vue'
 import {
   dashboardChipBaseClass,
   dashboardChipStatusDotStyles,
@@ -112,8 +113,13 @@ function statusLabel(status: DashboardStatusEnum): string {
             v-if="isExpanded(group.id, row.id)"
             class="ml-5 mt-2 space-y-2 border-l border-slate-200 pl-3"
           >
+            <DashboardFormulaTree
+              v-if="row.formula_tree"
+              :node="row.formula_tree"
+              :requirements="row.requirements"
+            />
             <div
-              v-for="requirement in row.requirements"
+              v-for="requirement in row.formula_tree ? [] : row.requirements"
               :key="requirement.id"
               class="flex items-start gap-3"
             >
