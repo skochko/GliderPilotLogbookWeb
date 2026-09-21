@@ -26,7 +26,7 @@ function statusLabel(status: DashboardStatusEnum): string {
 </script>
 
 <template>
-  <div v-if="'operator' in node" class="border-l border-slate-200 pl-3">
+  <div v-if="'operator' in node">
     <template v-for="(child, index) in node.children" :key="index">
       <div v-if="index > 0" class="my-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
         <span v-if="node.operator === 'AND'" class="h-px flex-1 bg-slate-200" />
