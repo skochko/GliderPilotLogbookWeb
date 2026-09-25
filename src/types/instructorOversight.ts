@@ -36,3 +36,37 @@ export interface ClubInstructorOverview {
 export interface ProfileCapabilities {
   can_view_club_instructor_reports: boolean
 }
+
+export interface InstructorActivityMetric {
+  count: number
+  minutes: number
+  launches: number
+  last_date: string | null
+}
+
+export interface InstructorActivityRow {
+  key: string
+  label: string
+  nested: boolean
+  periods: Record<'12' | '24' | '36', InstructorActivityMetric>
+  last_date: string | null
+}
+
+export interface InstructorActivityDetail {
+  pilot_name: string
+  privilege: string
+  reporting_date: string
+  generated_on: string
+  medical: {
+    type: string
+    expiry_date: string | null
+    status: string
+  }
+  activity: InstructorActivityRow[]
+  events: Array<{
+    date: string
+    event_type: string
+    place: string
+    remarks: string
+  }>
+}

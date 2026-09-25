@@ -5,12 +5,15 @@ import ClubInstructorsTable from '@/components/ClubInstructorsTable.vue'
 import ClubInstructorDetailDialog from '@/components/ClubInstructorDetailDialog.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
-import { downloadClubInstructorReport } from '@/api/instructorOversight'
+import {
+  downloadClubInstructorReport,
+  getClubInstructorActivityDetail,
+} from '@/api/instructorOversight'
 import { isApiError } from '@/api/errors'
 import { useInstructorOversight } from '@/composables/useInstructorOversight'
 import { useProfile } from '@/composables/useProfile'
 import { formatDisplayDate } from '@/lib/dates'
-import type { ClubInstructor } from '@/types/instructorOversight'
+import type { ClubInstructor, InstructorActivityDetail } from '@/types/instructorOversight'
 
 const router = useRouter()
 const { profile, initialized: profileInitialized, fetch: fetchProfile } = useProfile()
@@ -18,6 +21,9 @@ const { overview, loading, initialized, error, fetchOverview } = useInstructorOv
 const downloadingProfileId = ref<number | null>(null)
 const downloadError = ref<string | null>(null)
 const selectedInstructor = ref<ClubInstructor | null>(null)
+const activityDetail = ref<InstructorActivityDetail | null>(null)
+const detailLoading = ref(false)
+const detailError = ref<string | null>(null)
 
 const staleCount = computed(
   () => overview.value?.instructors.filter((item) => item.data_status === 'stale').length ?? 0,
@@ -55,6 +61,26 @@ async function downloadReport(instructor: ClubInstructor): Promise<void> {
   } finally {
     downloadingProfileId.value = null
   }
+}
+
+async function openInstructor(instructor: ClubInstructor): Promise<void> {
+  selectedInstructor.value = instructor
+  activityDetail.value = null
+  detailError.value = null
+  detailLoading.value = true
+  try {
+    activityDetail.value = await getClubInstructorActivityDetail(instructor.profile_id)
+  } catch (err) {
+    detailError.value = isApiError(err) ? err.message : 'Could not load instructor details.'
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+function closeInstructor(): void {
+  selectedInstructor.value = null
+  activityDetail.value = null
+  detailError.value = null
 }
 </script>
 
@@ -118,14 +144,17 @@ async function downloadReport(instructor: ClubInstructor): Promise<void> {
         :instructors="overview.instructors"
         :downloading-profile-id="downloadingProfileId"
         @download="downloadReport"
-        @select="selectedInstructor = $event"
+        @select="openInstructor"
       />
     </template>
 
     <ClubInstructorDetailDialog
       :open="selectedInstructor !== null"
       :instructor="selectedInstructor"
-      @close="selectedInstructor = null"
+      :activity-detail="activityDetail"
+      :loading="detailLoading"
+      :error="detailError"
+      @close="closeInstructor"
     />
   </div>
 </template>
