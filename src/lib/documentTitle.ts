@@ -27,8 +27,7 @@ export const PUBLIC_PAGE_TITLES: Record<string, string> = {
  * Also used for og:description on prerendered routes.
  */
 export const PUBLIC_PAGE_DESCRIPTIONS: Record<string, string> = {
-  '/':
-    'Manage your gliding logbook in Google Sheets. Log flights, track currency and medical dates, and view statistics — your spreadsheet stays the official record.',
+  '/': 'Manage your gliding logbook in Google Sheets. Log flights, track currency and medical dates, and view statistics — your spreadsheet stays the official record.',
   '/about':
     'Learn how Glider Pilot Logbook works with Google Sheets — flight logging, dashboards, and optional automatic club flight import for pilots and gliding clubs.',
   '/logbook-template':
@@ -85,6 +84,7 @@ export const APP_ROUTE_TITLES: Record<string, string> = {
   'flight-create': `Add Flight – ${SITE_NAME}`,
   'flight-edit': `Edit Flight – ${SITE_NAME}`,
   statistics: `Statistics – ${SITE_NAME}`,
+  'club-instructors': `Club Instructors – ${SITE_NAME}`,
   settings: `Settings – ${SITE_NAME}`,
   automation: `Club Automation Request – ${SITE_NAME}`,
   profile: `Profile – ${SITE_NAME}`,
@@ -94,10 +94,7 @@ export function getPublicPageTitle(path: string): string | undefined {
   return PUBLIC_PAGE_TITLES[path]
 }
 
-export function getDocumentTitle(route: {
-  path: string
-  name?: string | symbol | null
-}): string {
+export function getDocumentTitle(route: { path: string; name?: string | symbol | null }): string {
   const byPath = PUBLIC_PAGE_TITLES[route.path]
   if (byPath) {
     return byPath

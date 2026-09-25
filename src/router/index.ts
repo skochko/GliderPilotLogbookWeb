@@ -103,6 +103,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresLogbook: true },
     },
     {
+      path: '/club-instructors',
+      name: 'club-instructors',
+      component: () => import('@/views/ClubInstructorsView.vue'),
+      meta: { requiresAuth: true, requiresLogbook: true },
+    },
+    {
       path: '/flights/new',
       name: 'flight-create',
       component: () => import('@/views/FlightCreateView.vue'),

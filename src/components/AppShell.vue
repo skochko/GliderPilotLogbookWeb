@@ -10,6 +10,7 @@ import { resetLogbookState } from '@/composables/resetLogbookState'
 import { useLogbookSync } from '@/composables/useLogbookSync'
 import { useMeasurementUnits } from '@/composables/useMeasurementUnits'
 import { isApiError } from '@/api/errors'
+import { useProfile } from '@/composables/useProfile'
 
 const { user, mutating, logout } = useAuth()
 const { ensureLoaded: ensureDisplaySettingsLoaded } = useDisplaySettings()
@@ -17,6 +18,7 @@ const { ensureLoaded: ensureMeasurementUnitsLoaded } = useMeasurementUnits()
 const { message, kind, clear, show } = useFlashMessage()
 const route = useRoute()
 const router = useRouter()
+const { profile, initialized: profileInitialized, fetch: fetchProfile } = useProfile()
 const menuOpen = ref(false)
 const userMenuOpen = ref(false)
 const syncPanelOpen = ref(false)
@@ -72,7 +74,7 @@ onUnmounted(() => {
   if (clockTimer !== null) clearInterval(clockTimer)
 })
 
-const navItems = [
+const navItems = computed(() => [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/flights', label: 'Flights' },
   { to: '/statistics', label: 'Statistics' },
@@ -81,10 +83,13 @@ const navItems = [
     label: 'Training & Qualification Events',
     desktopLabel: 'Training',
   },
+  ...(profile.value?.capabilities?.can_view_club_instructor_reports
+    ? [{ to: '/club-instructors', label: 'Club Instructors', desktopLabel: 'Instructors' }]
+    : []),
   { to: '/settings', label: 'Settings', desktopAccountOnly: true },
   { to: '/automation', label: 'Automation' },
   { to: '/profile', label: 'Profile', desktopAccountOnly: true },
-]
+])
 
 function isActive(path: string): boolean {
   if (path === '/dashboard') return route.path === '/dashboard'
@@ -203,7 +208,10 @@ watch(
 watch(
   () => user.value?.email,
   (email) => {
-    if (email) void ensureMeasurementUnitsLoaded()
+    if (email) {
+      void ensureMeasurementUnitsLoaded()
+      if (!profileInitialized.value) void fetchProfile()
+    }
   },
   { immediate: true },
 )
