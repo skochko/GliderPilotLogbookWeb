@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ClubInstructorsTable from '@/components/ClubInstructorsTable.vue'
+import ClubInstructorDetailDialog from '@/components/ClubInstructorDetailDialog.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import { downloadClubInstructorReport } from '@/api/instructorOversight'
@@ -16,6 +17,7 @@ const { profile, initialized: profileInitialized, fetch: fetchProfile } = usePro
 const { overview, loading, initialized, error, fetchOverview } = useInstructorOversight()
 const downloadingProfileId = ref<number | null>(null)
 const downloadError = ref<string | null>(null)
+const selectedInstructor = ref<ClubInstructor | null>(null)
 
 const staleCount = computed(
   () => overview.value?.instructors.filter((item) => item.data_status === 'stale').length ?? 0,
@@ -116,7 +118,14 @@ async function downloadReport(instructor: ClubInstructor): Promise<void> {
         :instructors="overview.instructors"
         :downloading-profile-id="downloadingProfileId"
         @download="downloadReport"
+        @select="selectedInstructor = $event"
       />
     </template>
+
+    <ClubInstructorDetailDialog
+      :open="selectedInstructor !== null"
+      :instructor="selectedInstructor"
+      @close="selectedInstructor = null"
+    />
   </div>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatDisplayDate, formatDateTime } from '@/lib/dates'
+import { formatDisplayDate } from '@/lib/dates'
 import type { ClubInstructor } from '@/types/instructorOversight'
 
 defineProps<{
@@ -7,7 +7,10 @@ defineProps<{
   downloadingProfileId: number | null
 }>()
 
-defineEmits<{ download: [instructor: ClubInstructor] }>()
+defineEmits<{
+  download: [instructor: ClubInstructor]
+  select: [instructor: ClubInstructor]
+}>()
 
 function value(value: string | number | null): string | number {
   return value ?? '—'
@@ -27,6 +30,7 @@ function statusClasses(status: string): string {
         <tr>
           <th class="px-3 py-2 font-medium">Instructor</th>
           <th class="px-3 py-2 text-center font-medium">Rating</th>
+          <th class="px-3 py-2 text-center font-medium">Status</th>
           <th class="px-3 py-2 text-right font-medium">PIC time</th>
           <th class="px-3 py-2 text-right font-medium">PIC launches</th>
           <th class="px-3 py-2 text-right font-medium">FI time</th>
@@ -42,7 +46,7 @@ function statusClasses(status: string): string {
         <tr
           v-for="(instructor, index) in instructors"
           :key="instructor.profile_id"
-          class="border-t border-slate-100 transition hover:bg-slate-50/70"
+          class="cursor-pointer border-t border-slate-100 transition hover:bg-slate-50/70"
           :class="[
             index % 2 === 1 ? 'bg-[var(--sheet-zebra-color)]' : '',
             instructor.data_status === 'stale' ? 'border-l-2 border-l-amber-400' : '',
@@ -50,25 +54,28 @@ function statusClasses(status: string): string {
               ? 'border-l-2 border-l-red-400'
               : '',
           ]"
+          tabindex="0"
+          @click="$emit('select', instructor)"
+          @keydown.enter="$emit('select', instructor)"
+          @keydown.space.prevent="$emit('select', instructor)"
         >
           <td class="px-3 py-2 align-top">
             <p class="font-medium text-slate-900">{{ instructor.instructor_name }}</p>
-            <span
-              class="mt-1 inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium capitalize ring-1 ring-inset"
-              :class="statusClasses(instructor.data_status)"
-              :title="instructor.data_status_message || undefined"
-            >
-              {{ instructor.data_status }}
-            </span>
-            <p v-if="instructor.cache_verified_at" class="mt-1 text-xs text-slate-500">
-              Checked {{ formatDateTime(instructor.cache_verified_at) }}
-            </p>
           </td>
           <td class="px-3 py-2 text-center align-top">
             <span
               class="inline-flex rounded bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-800 ring-1 ring-inset ring-sky-600/20"
             >
               {{ instructor.rating }}
+            </span>
+          </td>
+          <td class="px-3 py-2 text-center align-top">
+            <span
+              class="inline-flex rounded px-2 py-0.5 text-xs font-medium capitalize ring-1 ring-inset"
+              :class="statusClasses(instructor.data_status)"
+              :title="instructor.data_status_message || undefined"
+            >
+              {{ instructor.data_status }}
             </span>
           </td>
           <td class="px-3 py-2 text-right align-top font-medium tabular-nums">
@@ -114,7 +121,7 @@ function statusClasses(status: string): string {
               type="button"
               class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium whitespace-nowrap text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="!instructor.activity_report_url || downloadingProfileId !== null"
-              @click="$emit('download', instructor)"
+              @click.stop="$emit('download', instructor)"
             >
               {{ downloadingProfileId === instructor.profile_id ? 'Downloading…' : 'Download PDF' }}
             </button>

@@ -35,6 +35,10 @@ describe('ClubInstructorsTable', () => {
     expect(wrapper.text()).toContain('154:31')
     expect(wrapper.text()).toContain('1 Feb 2028')
     expect(wrapper.text()).toContain('stale')
+    expect(wrapper.text()).not.toContain('Checked')
+
+    await wrapper.get('tbody tr').trigger('click')
+    expect(wrapper.emitted('select')).toEqual([[instructor]])
 
     await wrapper.get('button').trigger('click')
     expect(wrapper.emitted('download')).toEqual([[instructor]])
