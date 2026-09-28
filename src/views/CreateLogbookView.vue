@@ -4,12 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import ActionButton from '@/components/ActionButton.vue'
 import AirfieldAutocomplete from '@/components/AirfieldAutocomplete.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- referenced by the Vue template
 import LoadingState from '@/components/LoadingState.vue'
-import {
-  getQualificationEvents,
-  updateQualificationEvents,
-} from '@/api/qualificationEvents'
+import { getQualificationEvents, updateQualificationEvents } from '@/api/qualificationEvents'
 import { getSettings } from '@/api/settings'
 import { getSummary, updateSummary } from '@/api/summary'
 import { listOrganizations, type OrganizationListItem } from '@/api/organizations'
@@ -24,12 +20,13 @@ import {
 } from '@/lib/createLogbookWizardStorage'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- referenced by the Vue template
 import { ORGANIZATION_AUTOMATION_FORM_NOTICE } from '@/lib/organizations'
-import {
-  applySheetSettingsToCreateForm,
-  buildLogbookCreatePayload,
-} from '@/lib/logbookCreate'
+import { applySheetSettingsToCreateForm, buildLogbookCreatePayload } from '@/lib/logbookCreate'
 import { isBiPrivilege, isFiPrivilege, usePilotPrivileges } from '@/composables/usePilotPrivileges'
-import { useLicenseOptions, withLegacyLookupOption } from '@/composables/useLicenseOptions'
+import {
+  isLegacyLookupValue,
+  useLicenseOptions,
+  withLegacyLookupOption,
+} from '@/composables/useLicenseOptions'
 import { defaultLogbookCreateForm } from '@/types/logbookCreate'
 import type { QualificationSummary } from '@/types/summary'
 import {
@@ -109,14 +106,15 @@ const stepLabels = [
 const totalSteps = stepLabels.length
 
 const showInstructorFields = computed(() => isInstructorPrivilege(form.pilot_privilege))
-const showBiRefDate = computed(
-  () => !isV3Template.value && isBiPrivilege(form.pilot_privilege),
-)
-const showFiDates = computed(
-  () => !isV3Template.value && isFiPrivilege(form.pilot_privilege),
-)
+const showBiRefDate = computed(() => !isV3Template.value && isBiPrivilege(form.pilot_privilege))
+const showFiDates = computed(() => !isV3Template.value && isFiPrivilege(form.pilot_privilege))
 const showLegacyQualificationDates = computed(() => !isV3Template.value)
-const licenseTypeOptions = computed(() => withLegacyLookupOption(licenseTypes.value, form.license_type))
+const licenseTypeOptions = computed(() =>
+  withLegacyLookupOption(licenseTypes.value, form.license_type),
+)
+const unsupportedLicenseType = computed(() =>
+  isLegacyLookupValue(licenseTypes.value, form.license_type),
+)
 const licenseAuthorityOptions = computed(() =>
   withLegacyLookupOption(licenseAuthorities.value, form.license_authority),
 )
@@ -128,13 +126,12 @@ const nextDisabled = computed(
   () => setupDataLoading.value || mutating.value || savingQualificationEvents.value,
 )
 const nextBusy = computed(
-  () =>
-    mutating.value || savingQualificationEvents.value || prefillLoading.value,
+  () => mutating.value || savingQualificationEvents.value || prefillLoading.value,
 )
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- referenced by the Vue template
-const selectedOrganization = computed(() =>
-  organizations.value.find((org) => org.id === selectedOrganizationId.value) ?? null,
+const selectedOrganization = computed(
+  () => organizations.value.find((org) => org.id === selectedOrganizationId.value) ?? null,
 )
 
 function currentWizardState() {
@@ -233,11 +230,12 @@ async function saveQualificationEvents(): Promise<boolean> {
     qualificationEvents.value = (await updateQualificationEvents(compatibleEvents)).events
     return true
   } catch (err) {
-    validationError.value = err instanceof Error
-      ? err.message
-      : isV3Template.value
-        ? 'Could not save qualification events.'
-        : 'Could not save qualification dates.'
+    validationError.value =
+      err instanceof Error
+        ? err.message
+        : isV3Template.value
+          ? 'Could not save qualification events.'
+          : 'Could not save qualification dates.'
     return false
   } finally {
     savingQualificationEvents.value = false
@@ -258,9 +256,13 @@ function removeQualificationEvent(index: number): void {
   qualificationEvents.value.splice(index, 1)
 }
 
-watch(step, () => {
-  void nextTick(scrollActiveStepIntoView)
-}, { flush: 'post' })
+watch(
+  step,
+  () => {
+    void nextTick(scrollActiveStepIntoView)
+  },
+  { flush: 'post' },
+)
 
 function scrollActiveStepIntoView(): void {
   const nav = stepsNavRef.value
@@ -463,7 +465,11 @@ async function retrySubmit(): Promise<void> {
       :retry-busy="licenseOptionsLoading"
       @retry="loadLicenseOptions"
     />
-    <ErrorBanner v-if="prefillError" :message="prefillError" @retry="prefillFormFromConnectedLogbook()" />
+    <ErrorBanner
+      v-if="prefillError"
+      :message="prefillError"
+      @retry="prefillFormFromConnectedLogbook()"
+    />
     <section
       v-if="setupDataLoading"
       class="rounded-lg border border-sky-200 bg-white p-8 text-center shadow-sm"
@@ -480,251 +486,327 @@ async function retrySubmit(): Promise<void> {
     <section v-else class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <form class="space-y-4" @submit.prevent="goNext">
         <fieldset class="space-y-5">
-        <template v-if="step === STEP_PERSONAL">
-          <h2 class="text-lg font-semibold text-slate-900">Personal information</h2>
+          <template v-if="step === STEP_PERSONAL">
+            <h2 class="text-lg font-semibold text-slate-900">Personal information</h2>
 
-          <label class="block space-y-1 text-sm">
-            <span class="block font-medium text-slate-700">Pilot name <span class="text-red-600">*</span></span>
-            <input v-model="form.pilot_name" type="text" class="field-control" required />
-          </label>
-
-          <label class="block space-y-1 text-sm">
-            <span class="block font-medium text-slate-700">Pilot address</span>
-            <input v-model="form.pilot_address" type="text" class="field-control" />
-          </label>
-
-          <label class="block space-y-1 text-sm">
-            <span class="block font-medium text-slate-700">
-              Pilot privilege <span class="text-red-600">*</span>
-            </span>
-            <select
-              v-model="form.pilot_privilege"
-              class="field-control"
-              :disabled="pilotPrivilegesLoading"
-              required
-            >
-              <option v-for="option in pilotPrivilegeOptions" :key="option.code" :value="option.code">
-                {{ option.name }}
-              </option>
-            </select>
-          </label>
-
-          <label v-if="showInstructorFields" class="block text-sm">
-            <span class="font-medium text-slate-700">Instructor from date</span>
-            <input v-model="form.instructor_from_date" type="date" class="field-control" />
-          </label>
-
-          <label v-if="showBiRefDate" class="block text-sm">
-            <span class="font-medium text-slate-700">BI — refresh training date</span>
-            <input v-model="form.bi_ref_date" type="date" class="field-control" />
-          </label>
-
-          <template v-if="showFiDates">
-            <label class="block text-sm">
-              <span class="font-medium text-slate-700">FI — refresh training date</span>
-              <input v-model="form.fi_3year_date" type="date" class="field-control" />
+            <label class="block space-y-1 text-sm">
+              <span class="block font-medium text-slate-700"
+                >Pilot name <span class="text-red-600">*</span></span
+              >
+              <input v-model="form.pilot_name" type="text" class="field-control" required />
             </label>
+
+            <label class="block space-y-1 text-sm">
+              <span class="block font-medium text-slate-700">Pilot address</span>
+              <input v-model="form.pilot_address" type="text" class="field-control" />
+            </label>
+
+            <label class="block space-y-1 text-sm">
+              <span class="block font-medium text-slate-700">
+                Pilot privilege <span class="text-red-600">*</span>
+              </span>
+              <select
+                v-model="form.pilot_privilege"
+                class="field-control"
+                :disabled="pilotPrivilegesLoading"
+                required
+              >
+                <option
+                  v-for="option in pilotPrivilegeOptions"
+                  :key="option.code"
+                  :value="option.code"
+                >
+                  {{ option.name }}
+                </option>
+              </select>
+            </label>
+
+            <label v-if="showInstructorFields" class="block text-sm">
+              <span class="font-medium text-slate-700">Instructor from date</span>
+              <input v-model="form.instructor_from_date" type="date" class="field-control" />
+            </label>
+
+            <label v-if="showBiRefDate" class="block text-sm">
+              <span class="font-medium text-slate-700">BI — refresh training date</span>
+              <input v-model="form.bi_ref_date" type="date" class="field-control" />
+            </label>
+
+            <template v-if="showFiDates">
+              <label class="block text-sm">
+                <span class="font-medium text-slate-700">FI — refresh training date</span>
+                <input v-model="form.fi_3year_date" type="date" class="field-control" />
+              </label>
+              <label class="block text-sm">
+                <span class="font-medium text-slate-700">FI — demonstration flight date</span>
+                <input v-model="form.fi_ref_date" type="date" class="field-control" />
+              </label>
+            </template>
+          </template>
+
+          <template v-else-if="step === STEP_LICENSE">
+            <h2 class="text-lg font-semibold text-slate-900">License</h2>
+            <p class="text-sm text-slate-600">Optional — leave blank and press Next to continue.</p>
+
             <label class="block text-sm">
-              <span class="font-medium text-slate-700">FI — demonstration flight date</span>
-              <input v-model="form.fi_ref_date" type="date" class="field-control" />
+              <span class="font-medium text-slate-700">License type</span>
+              <select
+                v-model="form.license_type"
+                class="field-control"
+                :disabled="licenseOptionsLoading"
+              >
+                <option value="">—</option>
+                <option
+                  v-for="option in licenseTypeOptions"
+                  :key="option.code"
+                  :value="option.code"
+                >
+                  {{ option.name }}
+                </option>
+              </select>
+              <span
+                v-if="unsupportedLicenseType"
+                class="mt-2 block rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+              >
+                This value was read from your Google Sheet but is not one of the configured license
+                types. You can keep and save it, or select a supported value.
+              </span>
+            </label>
+
+            <label class="block text-sm">
+              <span class="font-medium text-slate-700">License date</span>
+              <input v-model="form.license_date" type="date" class="field-control" />
+            </label>
+
+            <label class="block text-sm">
+              <span class="font-medium text-slate-700">License number</span>
+              <input v-model="form.license_number" type="text" class="field-control" />
+            </label>
+
+            <label class="block text-sm">
+              <span class="font-medium text-slate-700">License authority</span>
+              <select
+                v-model="form.license_authority"
+                class="field-control"
+                :disabled="licenseOptionsLoading"
+              >
+                <option value="">—</option>
+                <option
+                  v-for="option in licenseAuthorityOptions"
+                  :key="option.code"
+                  :value="option.code"
+                >
+                  {{ option.name }}
+                </option>
+              </select>
             </label>
           </template>
-        </template>
 
-        <template v-else-if="step === STEP_LICENSE">
-          <h2 class="text-lg font-semibold text-slate-900">License</h2>
-          <p class="text-sm text-slate-600">Optional — leave blank and press Next to continue.</p>
-
-          <label class="block text-sm">
-            <span class="font-medium text-slate-700">License type</span>
-            <select v-model="form.license_type" class="field-control" :disabled="licenseOptionsLoading">
-              <option value="">—</option>
-              <option v-for="option in licenseTypeOptions" :key="option.code" :value="option.code">
-                {{ option.name }}
-              </option>
-            </select>
-          </label>
-
-          <label class="block text-sm">
-            <span class="font-medium text-slate-700">License date</span>
-            <input v-model="form.license_date" type="date" class="field-control" />
-          </label>
-
-          <label class="block text-sm">
-            <span class="font-medium text-slate-700">License number</span>
-            <input v-model="form.license_number" type="text" class="field-control" />
-          </label>
-
-          <label class="block text-sm">
-            <span class="font-medium text-slate-700">License authority</span>
-            <select v-model="form.license_authority" class="field-control" :disabled="licenseOptionsLoading">
-              <option value="">—</option>
-              <option v-for="option in licenseAuthorityOptions" :key="option.code" :value="option.code">
-                {{ option.name }}
-              </option>
-            </select>
-          </label>
-        </template>
-
-        <template v-else-if="step === STEP_TOTALS">
-          <h2 class="text-lg font-semibold text-slate-900">Totals from earlier logbooks</h2>
-          <p class="text-sm text-slate-600">Optional prior totals — leave blank and press Next to continue.</p>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <label class="block text-sm">
-              <span class="font-medium text-slate-700">Total time</span>
-              <input v-model="form.prior_total_time" type="text" placeholder="H:MM" class="field-control" />
-            </label>
-            <label class="block text-sm">
-              <span class="font-medium text-slate-700">PIC time</span>
-              <input v-model="form.prior_pic_time" type="text" placeholder="H:MM" class="field-control" />
-            </label>
-            <label class="block text-sm">
-              <span class="font-medium text-slate-700">PIC flights</span>
-              <input v-model="form.prior_pic_flight_count" type="number" min="0" class="field-control" />
-            </label>
-            <label class="block text-sm">
-              <span class="font-medium text-slate-700">P2 time</span>
-              <input v-model="form.prior_p2_time" type="text" placeholder="H:MM" class="field-control" />
-            </label>
-            <label class="block text-sm">
-              <span class="font-medium text-slate-700">P2 flights</span>
-              <input v-model="form.prior_p2_flight_count" type="number" min="0" class="field-control" />
-            </label>
-            <label v-if="showInstructorFields" class="block text-sm">
-              <span class="font-medium text-slate-700">Instructor time</span>
-              <input v-model="form.prior_instructor_time" type="text" placeholder="H:MM" class="field-control" />
-            </label>
-            <label v-if="showInstructorFields" class="block text-sm">
-              <span class="font-medium text-slate-700">Instructor flights</span>
-              <input v-model="form.prior_instructor_flight_count" type="number" min="0" class="field-control" />
-            </label>
-            <label class="block text-sm">
-              <span class="font-medium text-slate-700">Total flights</span>
-              <input v-model="form.prior_flight_count" type="number" min="0" class="field-control" />
-            </label>
-            <label class="block text-sm">
-              <span class="font-medium text-slate-700">Kms flown</span>
-              <input v-model="form.prior_kms_flown" type="text" class="field-control" />
-            </label>
-          </div>
-        </template>
-
-        <template v-else-if="step === STEP_MEDICAL">
-          <h2 class="text-lg font-semibold text-slate-900">Medical</h2>
-          <p class="text-sm text-slate-600">
-            Current medical certificate — optional. Leave blank and press Next to continue.
-          </p>
-
-          <label class="block text-sm">
-            <span class="font-medium text-slate-700">Medical type</span>
-            <input v-model="form.medical_type" type="text" class="field-control" />
-          </label>
-
-          <label v-if="!isV3Template" class="block text-sm">
-            <span class="font-medium text-slate-700">Issue date</span>
-            <input v-model="form.medical_issue_date" type="date" class="field-control" />
-          </label>
-
-          <label class="block text-sm">
-            <span class="font-medium text-slate-700">Expire date</span>
-            <input v-model="form.medical_expire_date" type="date" class="field-control" />
-          </label>
-        </template>
-
-        <template v-else-if="step === STEP_QUALIFICATIONS">
-          <h2 class="text-lg font-semibold text-slate-900">
-            {{ showLegacyQualificationDates ? 'Training & qualification dates' : 'Training & qualification events' }}
-          </h2>
-          <p v-if="showLegacyQualificationDates" class="text-sm text-slate-600">
-            Enter the qualification dates recorded in your legacy logbook.
-          </p>
-          <p v-else class="text-sm text-slate-600">
-            Add your previous training and qualification events. You can add or remove events at
-            any time.
-          </p>
-          <div v-if="showLegacyQualificationDates" class="space-y-5">
-            <label v-if="form.pilot_privilege === 'SPL Pilot'" class="block space-y-1 text-sm">
-              <span class="font-medium text-slate-700">Training flight FI(S) — date 1</span>
-              <input v-model="legacySummary.fi_train_date" type="date" class="field-control" />
-            </label>
-            <label v-if="form.pilot_privilege === 'SPL Pilot'" class="block space-y-1 text-sm">
-              <span class="font-medium text-slate-700">Training flight FI(S) — date 2</span>
-              <input v-model="legacySummary.fi_training_date_2" type="date" class="field-control" />
-            </label>
-            <label v-if="form.pilot_privilege === 'BI'" class="block space-y-1 text-sm">
-              <span class="font-medium text-slate-700">BI refresher / demonstration date</span>
-              <input v-model="legacySummary.bi_ref_date" type="date" class="field-control" />
-            </label>
-            <label v-if="form.pilot_privilege === 'FI'" class="block space-y-1 text-sm">
-              <span class="font-medium text-slate-700">FI refresher training date</span>
-              <input v-model="legacySummary.fi_3year_date" type="date" class="field-control" />
-            </label>
-            <label v-if="form.pilot_privilege === 'FI'" class="block space-y-1 text-sm">
-              <span class="font-medium text-slate-700">FI demonstration date</span>
-              <input v-model="legacySummary.fi_ref_date" type="date" class="field-control" />
-            </label>
-            <p
-              v-if="form.pilot_privilege === 'Student Pilot'"
-              class="text-sm text-slate-600"
-            >
-              No qualification dates are required for Student Pilot.
+          <template v-else-if="step === STEP_TOTALS">
+            <h2 class="text-lg font-semibold text-slate-900">Totals from earlier logbooks</h2>
+            <p class="text-sm text-slate-600">
+              Optional prior totals — leave blank and press Next to continue.
             </p>
-          </div>
-          <div v-else class="space-y-4">
-            <div
-              v-for="(event, index) in qualificationEvents"
-              :key="event.id ?? `new-${index}`"
-              class="space-y-3 rounded-lg border border-slate-200 p-4"
-            >
-              <div class="flex items-center justify-between gap-3">
-                <h3 class="font-medium text-slate-800">Event {{ index + 1 }}</h3>
-                <button
-                  type="button"
-                  class="text-sm font-medium text-red-700 hover:text-red-900"
-                  @click="removeQualificationEvent(index)"
-                >
-                  Delete
-                </button>
-              </div>
-              <div class="grid gap-3 sm:grid-cols-2">
-                <label class="block text-sm">
-                  <span class="font-medium text-slate-700">Event type</span>
-                  <select v-model="event.event_type" class="field-control">
-                    <option v-for="type in qualificationEventTypes" :key="type" :value="type">
-                      {{ type }}
-                    </option>
-                  </select>
-                </label>
-                <label class="block text-sm">
-                  <span class="font-medium text-slate-700">Date completed</span>
-                  <input v-model="event.date_completed" type="date" class="field-control" />
-                </label>
-                <label class="block text-sm">
-                  <span class="font-medium text-slate-700">Place</span>
-                  <AirfieldAutocomplete
-                    v-model="event.place"
-                    :list-id="`qualification-event-place-options-${index}`"
-                  />
-                </label>
-              </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
               <label class="block text-sm">
-                <span class="font-medium text-slate-700">Notes</span>
-                <textarea v-model="event.remarks" rows="2" class="field-control" />
+                <span class="font-medium text-slate-700">Total time</span>
+                <input
+                  v-model="form.prior_total_time"
+                  type="text"
+                  placeholder="H:MM"
+                  class="field-control"
+                />
+              </label>
+              <label class="block text-sm">
+                <span class="font-medium text-slate-700">PIC time</span>
+                <input
+                  v-model="form.prior_pic_time"
+                  type="text"
+                  placeholder="H:MM"
+                  class="field-control"
+                />
+              </label>
+              <label class="block text-sm">
+                <span class="font-medium text-slate-700">PIC flights</span>
+                <input
+                  v-model="form.prior_pic_flight_count"
+                  type="number"
+                  min="0"
+                  class="field-control"
+                />
+              </label>
+              <label class="block text-sm">
+                <span class="font-medium text-slate-700">P2 time</span>
+                <input
+                  v-model="form.prior_p2_time"
+                  type="text"
+                  placeholder="H:MM"
+                  class="field-control"
+                />
+              </label>
+              <label class="block text-sm">
+                <span class="font-medium text-slate-700">P2 flights</span>
+                <input
+                  v-model="form.prior_p2_flight_count"
+                  type="number"
+                  min="0"
+                  class="field-control"
+                />
+              </label>
+              <label v-if="showInstructorFields" class="block text-sm">
+                <span class="font-medium text-slate-700">Instructor time</span>
+                <input
+                  v-model="form.prior_instructor_time"
+                  type="text"
+                  placeholder="H:MM"
+                  class="field-control"
+                />
+              </label>
+              <label v-if="showInstructorFields" class="block text-sm">
+                <span class="font-medium text-slate-700">Instructor flights</span>
+                <input
+                  v-model="form.prior_instructor_flight_count"
+                  type="number"
+                  min="0"
+                  class="field-control"
+                />
+              </label>
+              <label class="block text-sm">
+                <span class="font-medium text-slate-700">Total flights</span>
+                <input
+                  v-model="form.prior_flight_count"
+                  type="number"
+                  min="0"
+                  class="field-control"
+                />
+              </label>
+              <label class="block text-sm">
+                <span class="font-medium text-slate-700">Kms flown</span>
+                <input v-model="form.prior_kms_flown" type="text" class="field-control" />
               </label>
             </div>
-            <button
-              type="button"
-              class="rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200"
-              @click="addQualificationEvent"
-            >
-              Add event
-            </button>
-          </div>
-        </template>
+          </template>
 
-        <!-- Club automation is configured during logbook creation, not in setup. -->
-        <!--
+          <template v-else-if="step === STEP_MEDICAL">
+            <h2 class="text-lg font-semibold text-slate-900">Medical</h2>
+            <p class="text-sm text-slate-600">
+              Current medical certificate — optional. Leave blank and press Next to continue.
+            </p>
+
+            <label class="block text-sm">
+              <span class="font-medium text-slate-700">Medical type</span>
+              <input v-model="form.medical_type" type="text" class="field-control" />
+            </label>
+
+            <label v-if="!isV3Template" class="block text-sm">
+              <span class="font-medium text-slate-700">Issue date</span>
+              <input v-model="form.medical_issue_date" type="date" class="field-control" />
+            </label>
+
+            <label class="block text-sm">
+              <span class="font-medium text-slate-700">Expire date</span>
+              <input v-model="form.medical_expire_date" type="date" class="field-control" />
+            </label>
+          </template>
+
+          <template v-else-if="step === STEP_QUALIFICATIONS">
+            <h2 class="text-lg font-semibold text-slate-900">
+              {{
+                showLegacyQualificationDates
+                  ? 'Training & qualification dates'
+                  : 'Training & qualification events'
+              }}
+            </h2>
+            <p v-if="showLegacyQualificationDates" class="text-sm text-slate-600">
+              Enter the qualification dates recorded in your legacy logbook.
+            </p>
+            <p v-else class="text-sm text-slate-600">
+              Add your previous training and qualification events. You can add or remove events at
+              any time.
+            </p>
+            <div v-if="showLegacyQualificationDates" class="space-y-5">
+              <label v-if="form.pilot_privilege === 'SPL Pilot'" class="block space-y-1 text-sm">
+                <span class="font-medium text-slate-700">Training flight FI(S) — date 1</span>
+                <input v-model="legacySummary.fi_train_date" type="date" class="field-control" />
+              </label>
+              <label v-if="form.pilot_privilege === 'SPL Pilot'" class="block space-y-1 text-sm">
+                <span class="font-medium text-slate-700">Training flight FI(S) — date 2</span>
+                <input
+                  v-model="legacySummary.fi_training_date_2"
+                  type="date"
+                  class="field-control"
+                />
+              </label>
+              <label v-if="form.pilot_privilege === 'BI'" class="block space-y-1 text-sm">
+                <span class="font-medium text-slate-700">BI refresher / demonstration date</span>
+                <input v-model="legacySummary.bi_ref_date" type="date" class="field-control" />
+              </label>
+              <label v-if="form.pilot_privilege === 'FI'" class="block space-y-1 text-sm">
+                <span class="font-medium text-slate-700">FI refresher training date</span>
+                <input v-model="legacySummary.fi_3year_date" type="date" class="field-control" />
+              </label>
+              <label v-if="form.pilot_privilege === 'FI'" class="block space-y-1 text-sm">
+                <span class="font-medium text-slate-700">FI demonstration date</span>
+                <input v-model="legacySummary.fi_ref_date" type="date" class="field-control" />
+              </label>
+              <p v-if="form.pilot_privilege === 'Student Pilot'" class="text-sm text-slate-600">
+                No qualification dates are required for Student Pilot.
+              </p>
+            </div>
+            <div v-else class="space-y-4">
+              <div
+                v-for="(event, index) in qualificationEvents"
+                :key="event.id ?? `new-${index}`"
+                class="space-y-3 rounded-lg border border-slate-200 p-4"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <h3 class="font-medium text-slate-800">Event {{ index + 1 }}</h3>
+                  <button
+                    type="button"
+                    class="text-sm font-medium text-red-700 hover:text-red-900"
+                    @click="removeQualificationEvent(index)"
+                  >
+                    Delete
+                  </button>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <label class="block text-sm">
+                    <span class="font-medium text-slate-700">Event type</span>
+                    <select v-model="event.event_type" class="field-control">
+                      <option v-for="type in qualificationEventTypes" :key="type" :value="type">
+                        {{ type }}
+                      </option>
+                    </select>
+                  </label>
+                  <label class="block text-sm">
+                    <span class="font-medium text-slate-700">Date completed</span>
+                    <input v-model="event.date_completed" type="date" class="field-control" />
+                  </label>
+                  <label class="block text-sm">
+                    <span class="font-medium text-slate-700">Place</span>
+                    <AirfieldAutocomplete
+                      v-model="event.place"
+                      :list-id="`qualification-event-place-options-${index}`"
+                    />
+                  </label>
+                </div>
+                <label class="block text-sm">
+                  <span class="font-medium text-slate-700">Notes</span>
+                  <textarea v-model="event.remarks" rows="2" class="field-control" />
+                </label>
+              </div>
+              <button
+                type="button"
+                class="rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200"
+                @click="addQualificationEvent"
+              >
+                Add event
+              </button>
+            </div>
+          </template>
+
+          <!-- Club automation is configured during logbook creation, not in setup. -->
+          <!--
         <template v-else-if="false">
           <h2 class="text-lg font-semibold text-slate-900">Club automatic flight import</h2>
           <p class="text-sm text-slate-600">
@@ -805,26 +887,21 @@ async function retrySubmit(): Promise<void> {
         </template>
         -->
 
-        <div class="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
-          <ActionButton
-            v-if="step > STEP_PERSONAL"
-            type="button"
-            variant="secondary"
-            :disabled="mutating"
-            @click="goBack"
-          >
-            Back
-          </ActionButton>
+          <div class="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
+            <ActionButton
+              v-if="step > STEP_PERSONAL"
+              type="button"
+              variant="secondary"
+              :disabled="mutating"
+              @click="goBack"
+            >
+              Back
+            </ActionButton>
 
-          <ActionButton
-            type="submit"
-            class="ml-auto"
-            :busy="nextBusy"
-            :disabled="nextDisabled"
-          >
-            {{ step === STEP_QUALIFICATIONS ? 'Save logbook details' : 'Next' }}
-          </ActionButton>
-        </div>
+            <ActionButton type="submit" class="ml-auto" :busy="nextBusy" :disabled="nextDisabled">
+              {{ step === STEP_QUALIFICATIONS ? 'Save logbook details' : 'Next' }}
+            </ActionButton>
+          </div>
         </fieldset>
       </form>
     </section>
@@ -836,5 +913,4 @@ async function retrySubmit(): Promise<void> {
   padding-bottom: 0.75rem;
   scrollbar-width: thin;
 }
-
 </style>

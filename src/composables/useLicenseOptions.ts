@@ -1,9 +1,5 @@
 import { ref } from 'vue'
-import {
-  fetchLicenseAuthorities,
-  fetchLicenseTypes,
-  type LookupOption,
-} from '@/api/licenseOptions'
+import { fetchLicenseAuthorities, fetchLicenseTypes, type LookupOption } from '@/api/licenseOptions'
 
 const licenseTypes = ref<LookupOption[]>([])
 const licenseAuthorities = ref<LookupOption[]>([])
@@ -13,13 +9,21 @@ const error = ref<string | null>(null)
 
 let loadPromise: Promise<void> | null = null
 
-export function withLegacyLookupOption(options: LookupOption[], currentValue: string): LookupOption[] {
+export function withLegacyLookupOption(
+  options: LookupOption[],
+  currentValue: string,
+): LookupOption[] {
   const value = currentValue.trim()
   const normalizedValue = value.toLowerCase()
   if (!value || options.some((option) => option.code.toLowerCase() === normalizedValue)) {
     return options
   }
   return [...options, { code: value, name: `${value} (from logbook)` }]
+}
+
+export function isLegacyLookupValue(options: LookupOption[], currentValue: string): boolean {
+  const value = currentValue.trim().toLowerCase()
+  return Boolean(value) && !options.some((option) => option.code.toLowerCase() === value)
 }
 
 export function useLicenseOptions() {
@@ -34,7 +38,10 @@ export function useLicenseOptions() {
     error.value = null
     loadPromise = (async () => {
       try {
-        const [types, authorities] = await Promise.all([fetchLicenseTypes(), fetchLicenseAuthorities()])
+        const [types, authorities] = await Promise.all([
+          fetchLicenseTypes(),
+          fetchLicenseAuthorities(),
+        ])
         licenseTypes.value = types
         licenseAuthorities.value = authorities
         loaded.value = true
