@@ -1,9 +1,10 @@
 import { apiJson } from './client'
-import type { QualificationEvent } from '@/types/qualificationEvents'
+import type { QualificationEvent, QualificationEventTypeOption } from '@/types/qualificationEvents'
 
 export interface QualificationEventsResponse {
   events: QualificationEvent[]
   event_types: string[]
+  event_type_options?: QualificationEventTypeOption[]
 }
 
 export function getQualificationEvents(): Promise<QualificationEventsResponse> {

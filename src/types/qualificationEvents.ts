@@ -17,3 +17,8 @@ export interface QualificationEvent {
   date_completed: string
   remarks: string
 }
+
+export interface QualificationEventTypeOption {
+  event_type: string
+  explanation: string
+}

@@ -20,6 +20,7 @@ const { user } = useAuth()
 const isDemo = computed(() => user.value?.is_demo ?? false)
 const events = ref<QualificationEvent[]>([])
 const eventTypes = ref<string[]>([...DEFAULT_QUALIFICATION_EVENT_TYPES])
+const eventTypeExplanations = ref<Record<string, string>>({})
 const loading = ref(true)
 const saving = ref(false)
 const error = ref<string | null>(null)
@@ -34,6 +35,9 @@ const editorSubtitle = computed(() =>
   editingIndex.value === null
     ? 'Record a new training or qualification event'
     : 'Update the event details',
+)
+const selectedEventTypeExplanation = computed(() =>
+  editingEvent.value ? (eventTypeExplanations.value[editingEvent.value.event_type] ?? '') : '',
 )
 let previousBodyOverflow = ''
 let bodyScrollLocked = false
@@ -64,6 +68,9 @@ async function loadEvents(): Promise<void> {
     const response = await getQualificationEvents()
     events.value = sortQualificationEventsNewestFirst(response.events)
     eventTypes.value = response.event_types
+    eventTypeExplanations.value = Object.fromEntries(
+      (response.event_type_options ?? []).map((option) => [option.event_type, option.explanation]),
+    )
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Could not load qualification events.'
   } finally {
@@ -396,6 +403,12 @@ function formatEventDate(value: string): string {
                     {{ type }}
                   </option>
                 </select>
+                <span
+                  v-if="selectedEventTypeExplanation"
+                  class="mt-2 block text-sm leading-5 text-slate-600"
+                >
+                  {{ selectedEventTypeExplanation }}
+                </span>
               </label>
               <label class="block text-sm">
                 <span class="font-medium text-slate-700">Date completed</span>

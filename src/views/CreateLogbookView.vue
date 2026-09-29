@@ -84,6 +84,7 @@ const form = reactive(defaultLogbookCreateForm())
 const templateVersion = ref('')
 const qualificationEvents = ref<QualificationEvent[]>([])
 const qualificationEventTypes = ref<string[]>([...DEFAULT_QUALIFICATION_EVENT_TYPES])
+const qualificationEventTypeExplanations = ref<Record<string, string>>({})
 const legacySummary = reactive<QualificationSummary>({
   by_date_start: '',
   by_date_end: '',
@@ -203,6 +204,9 @@ async function loadQualificationEvents(): Promise<void> {
     const response = await getQualificationEvents()
     qualificationEvents.value = response.events
     qualificationEventTypes.value = response.event_types
+    qualificationEventTypeExplanations.value = Object.fromEntries(
+      (response.event_type_options ?? []).map((option) => [option.event_type, option.explanation]),
+    )
   } catch {
     // The qualification step can still be opened and completed manually.
   }
@@ -777,6 +781,12 @@ async function retrySubmit(): Promise<void> {
                         {{ type }}
                       </option>
                     </select>
+                    <span
+                      v-if="qualificationEventTypeExplanations[event.event_type]"
+                      class="mt-2 block text-sm leading-5 text-slate-600"
+                    >
+                      {{ qualificationEventTypeExplanations[event.event_type] }}
+                    </span>
                   </label>
                   <label class="block text-sm">
                     <span class="font-medium text-slate-700">Date completed</span>
