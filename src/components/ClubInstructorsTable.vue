@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { formatDisplayDate } from '@/lib/dates'
+import { formatDurationDisplay } from '@/lib/duration'
 import type { ClubInstructor } from '@/types/instructorOversight'
 
 defineProps<{
@@ -25,19 +26,20 @@ function statusClasses(status: string): string {
 
 <template>
   <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-    <table class="min-w-[1160px] text-sm">
+    <table class="min-w-[820px] text-sm sm:min-w-[980px]">
       <thead class="bg-[var(--sheet-header-color)] text-left text-slate-700">
         <tr>
           <th class="px-3 py-2 font-medium">Instructor</th>
           <th class="px-3 py-2 text-center font-medium">Rating</th>
           <th class="px-3 py-2 text-center font-medium">Status</th>
-          <th class="px-3 py-2 text-right font-medium">PIC time</th>
-          <th class="px-3 py-2 text-right font-medium">PIC launches</th>
-          <th class="px-3 py-2 text-right font-medium">FI time</th>
-          <th class="px-3 py-2 text-right font-medium">FI launches</th>
+          <th class="px-3 py-2 text-right font-medium sm:hidden">PIC</th>
+          <th class="hidden px-3 py-2 text-right font-medium sm:table-cell">PIC time</th>
+          <th class="hidden px-3 py-2 text-right font-medium sm:table-cell">PIC launches</th>
+          <th class="px-3 py-2 text-right font-medium sm:hidden">FI</th>
+          <th class="hidden px-3 py-2 text-right font-medium sm:table-cell">FI time</th>
+          <th class="hidden px-3 py-2 text-right font-medium sm:table-cell">FI launches</th>
           <th class="px-3 py-2 font-medium">Refresher renewal</th>
           <th class="px-3 py-2 font-medium">Demonstration of ability</th>
-          <th class="min-w-56 px-3 py-2 font-medium">Time and launch formula</th>
           <th class="min-w-56 px-3 py-2 font-medium">Refresher</th>
           <th class="px-3 py-2 text-right font-medium">Report</th>
         </tr>
@@ -78,16 +80,28 @@ function statusClasses(status: string): string {
               {{ instructor.data_status }}
             </span>
           </td>
-          <td class="px-3 py-2 text-right align-top font-medium tabular-nums">
-            {{ value(instructor.pic_time) }}
+          <td class="px-3 py-2 text-right align-top tabular-nums sm:hidden">
+            <p class="font-medium">{{ formatDurationDisplay(instructor.pic_time) }}</p>
+            <p class="mt-0.5 text-xs text-slate-500">{{ value(instructor.pic_launches) }}</p>
           </td>
-          <td class="px-3 py-2 text-right align-top tabular-nums">
+          <td
+            class="hidden px-3 py-2 text-right align-top font-medium tabular-nums sm:table-cell"
+          >
+            {{ formatDurationDisplay(instructor.pic_time) }}
+          </td>
+          <td class="hidden px-3 py-2 text-right align-top tabular-nums sm:table-cell">
             {{ value(instructor.pic_launches) }}
           </td>
-          <td class="px-3 py-2 text-right align-top font-medium tabular-nums">
-            {{ value(instructor.fi_time) }}
+          <td class="px-3 py-2 text-right align-top tabular-nums sm:hidden">
+            <p class="font-medium">{{ formatDurationDisplay(instructor.fi_time) }}</p>
+            <p class="mt-0.5 text-xs text-slate-500">{{ value(instructor.fi_launches) }}</p>
           </td>
-          <td class="px-3 py-2 text-right align-top tabular-nums">
+          <td
+            class="hidden px-3 py-2 text-right align-top font-medium tabular-nums sm:table-cell"
+          >
+            {{ formatDurationDisplay(instructor.fi_time) }}
+          </td>
+          <td class="hidden px-3 py-2 text-right align-top tabular-nums sm:table-cell">
             {{ value(instructor.fi_launches) }}
           </td>
           <td class="px-3 py-2 align-top whitespace-nowrap">
@@ -106,9 +120,6 @@ function statusClasses(status: string): string {
                 ? formatDisplayDate(instructor.demonstration_of_ability_date)
                 : '—'
             }}
-          </td>
-          <td class="px-3 py-2 align-top text-xs leading-5 text-slate-600">
-            {{ instructor.time_launch_note }}
           </td>
           <td class="px-3 py-2 align-top text-xs leading-5 text-slate-600">
             {{ instructor.refresher_note }}

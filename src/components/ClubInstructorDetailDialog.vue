@@ -32,11 +32,14 @@ function dateTimeValue(value: string | null): string {
   return value ? formatDateTime(value) : '—'
 }
 
-function metricValue(metric: InstructorActivityMetric | undefined): string {
-  if (!metric) return '—'
+function metricDuration(metric: InstructorActivityMetric): string {
   const hours = Math.floor(metric.minutes / 60)
   const minutes = String(metric.minutes % 60).padStart(2, '0')
-  return `${hours} h ${minutes} min · ${metric.count} ${metric.count === 1 ? 'flight' : 'flights'}`
+  return `${hours} h ${minutes} min`
+}
+
+function metricFlights(metric: InstructorActivityMetric): string {
+  return `${metric.count} ${metric.count === 1 ? 'flight' : 'flights'}`
 }
 </script>
 
@@ -170,13 +173,31 @@ function metricValue(metric: InstructorActivityMetric | undefined): string {
                         {{ row.label }}
                       </td>
                       <td class="px-3 py-2 text-center tabular-nums">
-                        {{ metricValue(row.periods['36']) }}
+                        <template v-if="row.periods['36']">
+                          <p class="font-medium">{{ metricDuration(row.periods['36']) }}</p>
+                          <p class="mt-0.5 text-xs text-slate-500">
+                            {{ metricFlights(row.periods['36']) }}
+                          </p>
+                        </template>
+                        <template v-else>—</template>
                       </td>
                       <td class="px-3 py-2 text-center tabular-nums">
-                        {{ metricValue(row.periods['24']) }}
+                        <template v-if="row.periods['24']">
+                          <p class="font-medium">{{ metricDuration(row.periods['24']) }}</p>
+                          <p class="mt-0.5 text-xs text-slate-500">
+                            {{ metricFlights(row.periods['24']) }}
+                          </p>
+                        </template>
+                        <template v-else>—</template>
                       </td>
                       <td class="px-3 py-2 text-center tabular-nums">
-                        {{ metricValue(row.periods['12']) }}
+                        <template v-if="row.periods['12']">
+                          <p class="font-medium">{{ metricDuration(row.periods['12']) }}</p>
+                          <p class="mt-0.5 text-xs text-slate-500">
+                            {{ metricFlights(row.periods['12']) }}
+                          </p>
+                        </template>
+                        <template v-else>—</template>
                       </td>
                       <td class="px-3 py-2 text-center whitespace-nowrap">
                         {{ dateValue(row.last_date) }}

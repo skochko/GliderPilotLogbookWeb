@@ -11,7 +11,6 @@ export interface ClubInstructor {
   refresher_renewal_date: string | null
   refresher_source: string | null
   demonstration_of_ability_date: string | null
-  time_launch_note: string
   refresher_note: string
   activity_report_url: string | null
   data_status: string

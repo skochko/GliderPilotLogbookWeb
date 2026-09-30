@@ -16,7 +16,6 @@ const instructor: ClubInstructor = {
   refresher_renewal_date: '2028-02-01',
   refresher_source: 'refresher',
   demonstration_of_ability_date: '2029-10-01',
-  time_launch_note: 'FI activity over the last 3 years.',
   refresher_note: 'No note.',
   activity_report_url: '/api/instructor/club-instructors/42/flight-activity.pdf',
   data_status: 'stale',
@@ -32,10 +31,16 @@ describe('ClubInstructorsTable', () => {
     })
 
     expect(wrapper.text()).toContain('Rick Wiles')
-    expect(wrapper.text()).toContain('154:31')
+    expect(wrapper.text()).toContain('154h 31m')
+    expect(wrapper.text()).toContain('117h 22m')
+    expect(wrapper.text()).not.toContain('154:31')
     expect(wrapper.text()).toContain('1 Feb 2028')
     expect(wrapper.text()).toContain('stale')
     expect(wrapper.text()).not.toContain('Checked')
+    expect(wrapper.text()).not.toContain('Time and launch formula')
+    expect(wrapper.find('th.sm\\:hidden').text()).toBe('PIC')
+    expect(wrapper.findAll('td.sm\\:hidden')[0]?.text()).toContain('154h 31m')
+    expect(wrapper.findAll('td.sm\\:hidden')[0]?.text()).toContain('1200')
 
     await wrapper.get('tbody tr').trigger('click')
     expect(wrapper.emitted('select')).toEqual([[instructor]])
