@@ -1,12 +1,22 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { formatDisplayDate } from '@/lib/dates'
 import { formatDurationDisplay } from '@/lib/duration'
 import type { ClubInstructor } from '@/types/instructorOversight'
 
-defineProps<{
+const props = defineProps<{
   instructors: readonly ClubInstructor[]
   downloadingProfileId: number | null
 }>()
+
+const sortedInstructors = computed(() =>
+  [...props.instructors].sort((left, right) => {
+    const leftRank = left.data_status === 'incomplete' ? 0 : 1
+    const rightRank = right.data_status === 'incomplete' ? 0 : 1
+    if (leftRank !== rightRank) return leftRank - rightRank
+    return left.instructor_name.localeCompare(right.instructor_name)
+  }),
+)
 
 defineEmits<{
   download: [instructor: ClubInstructor]
@@ -46,7 +56,7 @@ function statusClasses(status: string): string {
       </thead>
       <tbody>
         <tr
-          v-for="(instructor, index) in instructors"
+          v-for="(instructor, index) in sortedInstructors"
           :key="instructor.profile_id"
           class="cursor-pointer border-t border-slate-100 transition hover:bg-slate-50/70"
           :class="[

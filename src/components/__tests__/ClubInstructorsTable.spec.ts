@@ -62,4 +62,20 @@ describe('ClubInstructorsTable', () => {
 
     expect(wrapper.get('button').attributes('disabled')).toBeDefined()
   })
+
+  it('sorts incomplete instructors before other statuses', () => {
+    const wrapper = mount(ClubInstructorsTable, {
+      props: {
+        instructors: [
+          { ...instructor, profile_id: 1, instructor_name: 'Alice', data_status: 'current' },
+          { ...instructor, profile_id: 2, instructor_name: 'Steve', data_status: 'incomplete' },
+          { ...instructor, profile_id: 3, instructor_name: 'Bob', data_status: 'stale' },
+        ],
+        downloadingProfileId: null,
+      },
+    })
+
+    const names = wrapper.findAll('tbody tr td:first-child').map((cell) => cell.text())
+    expect(names).toEqual(['Steve', 'Alice', 'Bob'])
+  })
 })
