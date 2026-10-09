@@ -2,7 +2,7 @@ export const DEFAULT_QUALIFICATION_EVENT_TYPES = [
   'First Solo',
   'Other training endorsement',
   'Proficiency check',
-  'Training flight FI(s)',
+  'Training flight with an FI(s)',
   'BI demonstration',
   'BI Refresher',
   'FI Refresher',

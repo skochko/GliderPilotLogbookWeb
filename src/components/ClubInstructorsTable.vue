@@ -71,14 +71,20 @@ function statusClasses(status: string): string {
               {{ instructor.rating }}
             </span>
           </td>
-          <td class="px-3 py-2 text-center align-top">
+          <td class="max-w-64 px-3 py-2 text-center align-top">
             <span
               class="inline-flex rounded px-2 py-0.5 text-xs font-medium capitalize ring-1 ring-inset"
               :class="statusClasses(instructor.data_status)"
-              :title="instructor.data_status_message || undefined"
             >
               {{ instructor.data_status }}
             </span>
+            <p
+              v-if="instructor.data_status_message"
+              class="mt-1 text-left text-xs leading-4"
+              :class="instructor.data_status === 'stale' ? 'text-amber-800' : 'text-red-700'"
+            >
+              {{ instructor.data_status_message }}
+            </p>
           </td>
           <td class="px-3 py-2 text-right align-top tabular-nums sm:hidden">
             <p class="font-medium">{{ formatDurationDisplay(instructor.pic_time) }}</p>
@@ -123,9 +129,6 @@ function statusClasses(status: string): string {
           </td>
           <td class="px-3 py-2 align-top text-xs leading-5 text-slate-600">
             {{ instructor.refresher_note }}
-            <p v-if="instructor.data_status_message" class="mt-1 text-amber-800">
-              {{ instructor.data_status_message }}
-            </p>
           </td>
           <td class="px-3 py-2 text-right align-top">
             <button

@@ -36,6 +36,9 @@ describe('ClubInstructorsTable', () => {
     expect(wrapper.text()).not.toContain('154:31')
     expect(wrapper.text()).toContain('1 Feb 2028')
     expect(wrapper.text()).toContain('stale')
+    expect(wrapper.get('tbody tr td:nth-child(3)').text()).toContain(
+      'Logbook cache was last verified over 48 hours ago.',
+    )
     expect(wrapper.text()).not.toContain('Checked')
     expect(wrapper.text()).not.toContain('Time and launch formula')
     expect(wrapper.find('th.sm\\:hidden').text()).toBe('PIC')
