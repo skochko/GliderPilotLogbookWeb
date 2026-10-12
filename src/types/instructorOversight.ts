@@ -12,11 +12,30 @@ export interface ClubInstructor {
   refresher_source: string | null
   demonstration_of_ability_date: string | null
   refresher_note: string
+  training_flights: TrainingFlightSummary
   activity_report_url: string | null
   data_status: string
   data_status_message: string
   cache_verified_at: string | null
   cache_updated_at: string | null
+}
+
+export interface TrainingFlightEvent {
+  date: string
+  event_type: string
+  place: string
+  remarks: string
+  valid_until: string | null
+  remaining_days: number | null
+}
+
+export interface TrainingFlightSummary {
+  obtained: number
+  required: number
+  valid_until: string | null
+  remaining_days: number | null
+  is_current: boolean
+  events: readonly TrainingFlightEvent[]
 }
 
 export interface ClubInstructorWarning {
@@ -68,4 +87,5 @@ export interface InstructorActivityDetail {
     place: string
     remarks: string
   }>
+  training_flights: TrainingFlightSummary
 }

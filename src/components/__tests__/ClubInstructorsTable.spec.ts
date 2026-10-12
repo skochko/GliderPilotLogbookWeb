@@ -17,6 +17,31 @@ const instructor: ClubInstructor = {
   refresher_source: 'refresher',
   demonstration_of_ability_date: '2029-10-01',
   refresher_note: 'No note.',
+  training_flights: {
+    obtained: 2,
+    required: 2,
+    valid_until: '2027-09-24',
+    remaining_days: 347,
+    is_current: true,
+    events: [
+      {
+        date: '2026-09-24',
+        event_type: 'Training flight with an FI(s)',
+        place: 'Lasham',
+        remarks: '',
+        valid_until: '2028-09-24',
+        remaining_days: 712,
+      },
+      {
+        date: '2025-09-24',
+        event_type: 'Training flight with an FI(s)',
+        place: '',
+        remarks: '',
+        valid_until: '2027-09-24',
+        remaining_days: 347,
+      },
+    ],
+  },
   activity_report_url: '/api/instructor/club-instructors/42/flight-activity.pdf',
   data_status: 'stale',
   data_status_message: 'Logbook cache was last verified over 48 hours ago.',
@@ -36,6 +61,7 @@ describe('ClubInstructorsTable', () => {
     expect(wrapper.text()).not.toContain('154:31')
     expect(wrapper.text()).toContain('1 Feb 2028')
     expect(wrapper.text()).toContain('stale')
+    expect(wrapper.text()).toContain('347 days left')
     expect(wrapper.get('tbody tr td:nth-child(3)').text()).toContain(
       'Logbook cache was last verified over 48 hours ago.',
     )

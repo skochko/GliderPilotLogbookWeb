@@ -48,6 +48,7 @@ function statusClasses(status: string): string {
           <th class="px-3 py-2 text-right font-medium sm:hidden">FI</th>
           <th class="hidden px-3 py-2 text-right font-medium sm:table-cell">FI time</th>
           <th class="hidden px-3 py-2 text-right font-medium sm:table-cell">FI launches</th>
+          <th class="min-w-44 px-3 py-2 font-medium">Training flights with FI(S)</th>
           <th class="px-3 py-2 font-medium">Refresher renewal</th>
           <th class="px-3 py-2 font-medium">Demonstration of ability</th>
           <th class="min-w-56 px-3 py-2 font-medium">Refresher</th>
@@ -119,6 +120,27 @@ function statusClasses(status: string): string {
           </td>
           <td class="hidden px-3 py-2 text-right align-top tabular-nums sm:table-cell">
             {{ value(instructor.fi_launches) }}
+          </td>
+          <td class="px-3 py-2 align-top text-xs">
+            <template v-if="instructor.training_flights.events.length">
+              <p
+                v-for="event in instructor.training_flights.events"
+                :key="`${instructor.profile_id}-${event.date}-${event.event_type}`"
+                class="whitespace-nowrap text-slate-700"
+              >
+                {{ formatDisplayDate(event.date) }}
+              </p>
+              <p
+                class="mt-1 font-medium"
+                :class="instructor.training_flights.is_current ? 'text-emerald-700' : 'text-red-700'"
+              >
+                <template v-if="instructor.training_flights.remaining_days !== null">
+                  {{ instructor.training_flights.remaining_days }} days left
+                </template>
+                <template v-else>Not current</template>
+              </p>
+            </template>
+            <template v-else>—</template>
           </td>
           <td class="px-3 py-2 align-top whitespace-nowrap">
             {{

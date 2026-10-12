@@ -147,6 +147,55 @@ function metricFlights(metric: InstructorActivityMetric): string {
             </dl>
 
             <section>
+              <div class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                <h3 class="text-base font-semibold text-slate-900">Training flights with FI(S)</h3>
+                <p class="text-sm text-slate-600">
+                  {{ activityDetail.training_flights.obtained }} of
+                  {{ activityDetail.training_flights.required }} required
+                  <template v-if="activityDetail.training_flights.remaining_days !== null">
+                    · {{ activityDetail.training_flights.remaining_days }} days left
+                  </template>
+                </p>
+              </div>
+              <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                <table class="min-w-[680px] text-sm">
+                  <thead class="bg-[var(--sheet-header-color)] text-slate-700">
+                    <tr>
+                      <th class="px-3 py-2 text-left font-medium">Date</th>
+                      <th class="px-3 py-2 text-left font-medium">Event type</th>
+                      <th class="px-3 py-2 text-left font-medium">Valid until</th>
+                      <th class="px-3 py-2 text-left font-medium">Place</th>
+                      <th class="px-3 py-2 text-left font-medium">Remarks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-if="!activityDetail.training_flights.events.length">
+                      <td colspan="5" class="px-3 py-6 text-center text-slate-500">
+                        No matching training flights recorded.
+                      </td>
+                    </tr>
+                    <tr
+                      v-for="event in activityDetail.training_flights.events"
+                      :key="`${event.date}-${event.event_type}`"
+                      class="border-t border-slate-100"
+                    >
+                      <td class="px-3 py-2 whitespace-nowrap">{{ dateValue(event.date) }}</td>
+                      <td class="px-3 py-2">{{ event.event_type }}</td>
+                      <td class="px-3 py-2 whitespace-nowrap">
+                        {{ dateValue(event.valid_until) }}
+                        <span v-if="event.remaining_days !== null" class="block text-xs text-slate-500">
+                          {{ event.remaining_days }} days left
+                        </span>
+                      </td>
+                      <td class="px-3 py-2">{{ event.place || '—' }}</td>
+                      <td class="px-3 py-2">{{ event.remarks || '—' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section>
               <h3 class="mb-2 text-base font-semibold text-slate-900">Flight activity</h3>
               <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
                 <table class="min-w-[760px] text-sm">
