@@ -85,20 +85,19 @@ function closeInstructor(): void {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-4 md:space-y-6">
     <div>
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 class="text-2xl font-bold text-slate-900">Club Instructors</h1>
-          <p class="mt-1 text-slate-600">
-            Instructor activity and renewal information for
-            {{ overview?.organization.name ?? 'your club' }}.
+          <h1 class="text-xl font-semibold text-slate-900">Instructors</h1>
+          <p class="mt-0.5 text-sm text-slate-500">
+            {{ overview?.organization.name ?? 'Your club' }}
+            <template v-if="overview"> · {{ overview.viewer_role.toUpperCase() }}</template>
           </p>
         </div>
-        <div v-if="overview" class="text-right text-sm text-slate-500">
-          <p class="font-medium uppercase text-slate-700">{{ overview.viewer_role }}</p>
-          <p>As of {{ formatDisplayDate(overview.as_of) }}</p>
-        </div>
+        <p v-if="overview" class="text-xs text-slate-500">
+          Updated {{ formatDisplayDate(overview.as_of) }}
+        </p>
       </div>
     </div>
 

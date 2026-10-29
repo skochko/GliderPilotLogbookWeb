@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import ClubInstructorsTable from '@/components/ClubInstructorsTable.vue'
 import type { ClubInstructor } from '@/types/instructorOversight'
 
@@ -50,31 +50,33 @@ const instructor: ClubInstructor = {
 }
 
 describe('ClubInstructorsTable', () => {
-  it('renders report values and emits the selected instructor', async () => {
+  beforeEach(() => window.localStorage.clear())
+
+  it('renders the compact list and retains detail and report actions', async () => {
     const wrapper = mount(ClubInstructorsTable, {
       props: { instructors: [instructor], downloadingProfileId: null },
     })
 
     expect(wrapper.text()).toContain('Rick Wiles')
-    expect(wrapper.text()).toContain('154h 31m')
     expect(wrapper.text()).toContain('117h 22m')
-    expect(wrapper.text()).not.toContain('154:31')
     expect(wrapper.text()).toContain('1 Feb 2028')
-    expect(wrapper.text()).toContain('stale')
+    expect(wrapper.text()).toContain('Stale data')
     expect(wrapper.text()).toContain('347 days left')
-    expect(wrapper.get('tbody tr td:nth-child(3)').text()).toContain(
-      'Logbook cache was last verified over 48 hours ago.',
-    )
-    expect(wrapper.text()).not.toContain('Checked')
-    expect(wrapper.text()).not.toContain('Time and launch formula')
-    expect(wrapper.find('th.sm\\:hidden').text()).toBe('PIC')
-    expect(wrapper.findAll('td.sm\\:hidden')[0]?.text()).toContain('154h 31m')
-    expect(wrapper.findAll('td.sm\\:hidden')[0]?.text()).toContain('1200')
+    expect(wrapper.get('[data-view="list"]').attributes('aria-pressed')).toBe('true')
 
-    await wrapper.get('tbody tr').trigger('click')
+    const summary = wrapper.get('#instructor-list article > button')
+    expect(summary.attributes('aria-expanded')).toBe('false')
+    await summary.trigger('click')
+    expect(summary.attributes('aria-expanded')).toBe('true')
+
+    const detailsButton = wrapper
+      .findAll('#instructor-list button')
+      .find((button) => button.text().includes('View full details'))
+    expect(detailsButton).toBeDefined()
+    await detailsButton!.trigger('click')
     expect(wrapper.emitted('select')).toEqual([[instructor]])
 
-    await wrapper.get('button').trigger('click')
+    await wrapper.get('#instructor-list [data-action="download"]').trigger('click')
     expect(wrapper.emitted('download')).toEqual([[instructor]])
   })
 
@@ -86,10 +88,12 @@ describe('ClubInstructorsTable', () => {
       },
     })
 
-    expect(wrapper.get('button').attributes('disabled')).toBeDefined()
+    expect(
+      wrapper.get('#instructor-list [data-action="download"]').attributes('disabled'),
+    ).toBeDefined()
   })
 
-  it('sorts incomplete instructors before other statuses', () => {
+  it('sorts attention states first and filters by search and status', async () => {
     const wrapper = mount(ClubInstructorsTable, {
       props: {
         instructors: [
@@ -101,7 +105,33 @@ describe('ClubInstructorsTable', () => {
       },
     })
 
-    const names = wrapper.findAll('tbody tr td:first-child').map((cell) => cell.text())
-    expect(names).toEqual(['Steve', 'Alice', 'Bob'])
+    const names = wrapper
+      .findAll('#instructor-list article > button > span:first-child > span:first-child')
+      .map((cell) => cell.text())
+    expect(names).toEqual(['Steve', 'Bob', 'Alice'])
+
+    await wrapper.get('[data-filter="current"]').trigger('click')
+    expect(wrapper.findAll('#instructor-list article')).toHaveLength(1)
+    expect(wrapper.get('#instructor-list article').text()).toContain('Alice')
+
+    await wrapper.get('[data-filter="all"]').trigger('click')
+    await wrapper.get('#instructor-search').setValue('steve')
+    expect(wrapper.findAll('#instructor-list article')).toHaveLength(1)
+    expect(wrapper.get('#instructor-list article').text()).toContain('Steve')
+  })
+
+  it('persists the selected list or table view', async () => {
+    const wrapper = mount(ClubInstructorsTable, {
+      props: { instructors: [instructor], downloadingProfileId: null },
+    })
+
+    await wrapper.get('[data-view="table"]').trigger('click')
+    expect(window.localStorage.getItem('club-instructors-view')).toBe('table')
+    wrapper.unmount()
+
+    const restored = mount(ClubInstructorsTable, {
+      props: { instructors: [instructor], downloadingProfileId: null },
+    })
+    expect(restored.get('[data-view="table"]').attributes('aria-pressed')).toBe('true')
   })
 })
