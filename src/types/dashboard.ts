@@ -9,6 +9,7 @@ export interface DashboardRequirement {
   required: string
   requirement_type?: string
   lookback_period?: string
+  regulation_url?: string
   message?: string | null
   valid_until?: string
   remaining_days?: number | null

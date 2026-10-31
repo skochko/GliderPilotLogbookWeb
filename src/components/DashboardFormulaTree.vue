@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { DeepReadonly } from 'vue'
 import { formatRequirementProgress } from '@/lib/requirementProgress'
 import { dashboardChipStatusDotStyles } from '@/lib/dashboardChips'
+import RequirementRegulationLink from '@/components/RequirementRegulationLink.vue'
 import type { DashboardFormulaNode, DashboardRequirement, DashboardStatusEnum } from '@/types'
 
 const props = defineProps<{
@@ -28,7 +29,10 @@ function statusLabel(status: DashboardStatusEnum): string {
 <template>
   <div v-if="'operator' in node">
     <template v-for="(child, index) in node.children" :key="index">
-      <div v-if="index > 0" class="my-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+      <div
+        v-if="index > 0"
+        class="my-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500"
+      >
         <span v-if="node.operator === 'AND'" class="h-px flex-1 bg-slate-200" />
         <span>{{ node.operator }}</span>
         <span v-if="node.operator === 'AND'" class="h-px flex-1 bg-slate-200" />
@@ -45,7 +49,13 @@ function statusLabel(status: DashboardStatusEnum): string {
       :aria-label="statusLabel(requirement.status)"
     />
     <div class="min-w-0 flex-1 text-xs text-slate-600">
-      <p class="font-medium text-slate-800">{{ requirement.label || requirement.title }}</p>
+      <div class="flex items-center gap-1">
+        <p class="font-medium text-slate-800">{{ requirement.label || requirement.title }}</p>
+        <RequirementRegulationLink
+          :url="requirement.regulation_url"
+          :requirement-label="requirement.label || requirement.title"
+        />
+      </div>
       <p v-if="formatRequirementProgress(requirement)" class="mt-0.5 tabular-nums text-slate-500">
         {{ formatRequirementProgress(requirement) }}
       </p>

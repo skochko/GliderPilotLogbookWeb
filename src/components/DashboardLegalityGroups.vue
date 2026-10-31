@@ -3,12 +3,19 @@ import { ref } from 'vue'
 import type { DeepReadonly } from 'vue'
 import { formatRequirementProgress } from '@/lib/requirementProgress'
 import DashboardFormulaTree from '@/components/DashboardFormulaTree.vue'
+import RequirementRegulationLink from '@/components/RequirementRegulationLink.vue'
 import {
   dashboardChipBaseClass,
   dashboardChipStatusDotStyles,
   dashboardChipStatusStyles,
 } from '@/lib/dashboardChips'
-import type { DashboardLegalityChip, DashboardLegalityGroup, DashboardLegalityRow, DashboardRequirement, DashboardStatusEnum } from '@/types'
+import type {
+  DashboardLegalityChip,
+  DashboardLegalityGroup,
+  DashboardLegalityRow,
+  DashboardRequirement,
+  DashboardStatusEnum,
+} from '@/types'
 
 defineProps<{
   groups: DeepReadonly<DashboardLegalityGroup[]>
@@ -98,7 +105,10 @@ function statusLabel(status: DashboardStatusEnum): string {
             />
             <span class="min-w-0 flex-1">
               <span class="block text-sm text-slate-900">{{ row.label }}</span>
-              <span v-if="rowProgress(row)" class="mt-0.5 block text-xs tabular-nums text-slate-500">
+              <span
+                v-if="rowProgress(row)"
+                class="mt-0.5 block text-xs tabular-nums text-slate-500"
+              >
                 {{ rowProgress(row) }}
               </span>
             </span>
@@ -106,7 +116,8 @@ function statusLabel(status: DashboardStatusEnum): string {
               class="shrink-0 text-lg leading-none text-slate-400 transition-transform"
               :class="{ 'rotate-90': isExpanded(group.id, row.id) }"
               aria-hidden="true"
-            >›</span>
+              >›</span
+            >
           </button>
 
           <div
@@ -131,8 +142,19 @@ function statusLabel(status: DashboardStatusEnum): string {
                 :aria-label="statusLabel(requirement.status)"
               />
               <div class="min-w-0 flex-1 text-xs text-slate-600">
-                <p class="font-medium text-slate-800">{{ requirement.label || requirement.title }}</p>
-                <p v-if="requirementProgress(requirement)" class="mt-0.5 tabular-nums text-slate-500">
+                <div class="flex items-center gap-1">
+                  <p class="font-medium text-slate-800">
+                    {{ requirement.label || requirement.title }}
+                  </p>
+                  <RequirementRegulationLink
+                    :url="requirement.regulation_url"
+                    :requirement-label="requirement.label || requirement.title"
+                  />
+                </div>
+                <p
+                  v-if="requirementProgress(requirement)"
+                  class="mt-0.5 tabular-nums text-slate-500"
+                >
                   {{ requirementProgress(requirement) }}
                 </p>
               </div>
@@ -159,21 +181,25 @@ function statusLabel(status: DashboardStatusEnum): string {
               class="text-sm leading-none opacity-60 transition-transform"
               :class="{ 'rotate-90': isExpanded(group.id, chip.id) }"
               aria-hidden="true"
-            >›</span>
+              >›</span
+            >
           </button>
         </div>
 
-        <div
-          v-for="chip in group.chips"
-          :key="`${chip.id}-details`"
-        >
+        <div v-for="chip in group.chips" :key="`${chip.id}-details`">
           <div
             v-if="isExpanded(group.id, chip.id)"
             class="mt-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
           >
             <div class="flex items-start gap-3">
               <div class="min-w-0 flex-1 text-xs text-slate-600">
-                <p class="font-medium text-slate-800">{{ chip.label }}</p>
+                <div class="flex items-center gap-1">
+                  <p class="font-medium text-slate-800">{{ chip.label }}</p>
+                  <RequirementRegulationLink
+                    :url="chip.requirements[0]?.regulation_url"
+                    :requirement-label="chip.label"
+                  />
+                </div>
                 <p v-if="requirementProgress(chip)" class="mt-0.5 tabular-nums text-slate-500">
                   {{ requirementProgress(chip) }}
                 </p>
