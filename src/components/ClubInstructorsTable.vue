@@ -57,12 +57,7 @@ watch(activeView, (view) => {
 })
 
 function needsAttention(instructor: ClubInstructor): boolean {
-  return (
-    instructor.data_status !== 'current' ||
-    !instructor.training_flights.is_current ||
-    !instructor.refresher_renewal_date ||
-    !instructor.demonstration_of_ability_date
-  )
+  return instructor.data_status !== 'current'
 }
 
 const sortedInstructors = computed(() =>

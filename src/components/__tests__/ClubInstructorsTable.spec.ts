@@ -120,6 +120,31 @@ describe('ClubInstructorsTable', () => {
     expect(wrapper.get('#instructor-list article').text()).toContain('Steve')
   })
 
+  it('uses the backend data status without re-evaluating qualification fields', () => {
+    const bi = {
+      ...instructor,
+      instructor_name: 'Gave',
+      data_status: 'current',
+      data_status_message: '',
+      refresher_renewal_date: null,
+      refresher_source: null,
+      demonstration_of_ability_date: null,
+      training_flights: {
+        ...instructor.training_flights,
+        remaining_days: 589,
+        is_current: false,
+      },
+    }
+    const wrapper = mount(ClubInstructorsTable, {
+      props: { instructors: [bi], downloadingProfileId: null },
+    })
+
+    expect(wrapper.get('#instructor-list article > button').text()).toContain('Current')
+    expect(wrapper.get('#instructor-list article > button').text()).toContain('589 days left')
+    expect(wrapper.get('[data-filter="current"]').text()).toContain('Current 1')
+    expect(wrapper.get('[data-filter="attention"]').text()).toContain('Needs attention 0')
+  })
+
   it('persists the selected list or table view', async () => {
     const wrapper = mount(ClubInstructorsTable, {
       props: { instructors: [instructor], downloadingProfileId: null },
