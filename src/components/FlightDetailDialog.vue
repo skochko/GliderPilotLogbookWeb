@@ -10,7 +10,13 @@ import { encodeFlightId } from '@/lib/flightId'
 import { dashboardChipBaseClass } from '@/lib/dashboardChips'
 import { dashboardFieldLabelClass, dashboardPanelClass } from '@/lib/dashboardPanels'
 import { launchTypeBadgeClass, launchTypeChipLabel } from '@/lib/launchTypes'
-import { hasUserRemarks, userRemarksText } from '@/lib/mediaTags'
+import {
+  fileAttachments,
+  hasUserRemarks,
+  userRemarksText,
+  youtubeAttachment,
+} from '@/lib/mediaTags'
+import YouTubePlayer from '@/components/YouTubePlayer.vue'
 import {
   pilotRoleLabel,
   pilotRoleStyles,
@@ -225,7 +231,8 @@ const showRoute = computed(() => {
 })
 
 const remarks = computed(() => (flight.value ? userRemarksText(flight.value.remarks) : ''))
-const mediaItems = computed(() => flight.value?.media ?? [])
+const mediaItems = computed(() => fileAttachments(flight.value?.media))
+const youtubeVideo = computed(() => (flight.value ? youtubeAttachment(flight.value) : null))
 </script>
 
 <template>
@@ -337,6 +344,15 @@ const mediaItems = computed(() => flight.value?.media ?? [])
                 <p class="whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
                   {{ remarks }}
                 </p>
+              </article>
+
+              <article
+                v-if="youtubeVideo"
+                :class="[dashboardPanelClass, 'p-3']"
+                data-testid="flight-youtube"
+              >
+                <p :class="[dashboardFieldLabelClass, 'mb-2']">Video</p>
+                <YouTubePlayer :video="youtubeVideo" />
               </article>
 
               <article :class="[dashboardPanelClass, 'p-3']">

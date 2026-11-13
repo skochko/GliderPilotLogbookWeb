@@ -1,7 +1,8 @@
 import type { FlightMediaItem } from '@/types'
 
 const MEDIA_TAG_PATTERN = /\[(video|image|audio|file|igc):([^\]]+)\]/g
-const MEDIA_ATTACHMENTS_BLOCK_PATTERN = /(?:^|\n)\[(?:Tracks|Images|Videos|Files|Attachments):[^\n]*\]/g
+const MEDIA_ATTACHMENTS_BLOCK_PATTERN =
+  /(?:^|\n)\[(?:Tracks|Images|Videos|YouTube|Files|Attachments):[^\n]*\]/g
 const UNDER_INSTRUCTION_PATTERN =
   /(?:\[\s*(?:under\s+instruction|PUI)\s*\]|(?<!\w)under\s+instruction(?!\w)|(?<!\w)PUI(?!\w))/gi
 
@@ -37,7 +38,7 @@ export function hasIgcAttachment(flight: FlightWithMedia): boolean {
 }
 
 export function hasOtherMediaAttachments(flight: FlightWithMedia): boolean {
-  return flight.media?.some((item) => item.type !== 'igc') ?? false
+  return flight.media?.some((item) => item.type !== 'igc' && item.type !== 'youtube') ?? false
 }
 
 export function firstIgcAttachment(flight: FlightWithMedia): FlightMediaItem | null {
@@ -49,7 +50,17 @@ export function igcAttachments(flight: FlightWithMedia): FlightMediaItem[] {
 }
 
 export function nonIgcMediaAttachments(flight: FlightWithMedia): FlightMediaItem[] {
-  return flight.media?.filter((item) => item.type !== 'igc') ?? []
+  return flight.media?.filter((item) => item.type !== 'igc' && item.type !== 'youtube') ?? []
+}
+
+export function youtubeAttachment(flight: FlightWithMedia): FlightMediaItem | null {
+  return flight.media?.find((item) => item.type === 'youtube' && item.embed_url) ?? null
+}
+
+export function fileAttachments(
+  media: readonly FlightMediaItem[] | null | undefined,
+): FlightMediaItem[] {
+  return media?.filter((item) => item.type !== 'youtube') ?? []
 }
 
 export function mediaListIcon(flight: FlightWithMedia): MediaListIcon | null {
@@ -78,6 +89,8 @@ export function mediaTypeLabel(type: FlightMediaItem['type']): string {
       return 'Audio'
     case 'igc':
       return 'IGC'
+    case 'youtube':
+      return 'YouTube'
     default:
       return 'File'
   }

@@ -164,3 +164,13 @@ export async function fetchFlightMediaBlob(flightId: string, filename: string): 
   }
   return res.blob()
 }
+
+export function addFlightYouTubeLink(
+  flightId: string,
+  url: string,
+): Promise<FlightMediaUploadResponse> {
+  return apiJson<FlightMediaUploadResponse>(`/flights/${encodeFlightId(flightId)}/media/youtube`, {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  })
+}

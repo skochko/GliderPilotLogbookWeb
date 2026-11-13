@@ -7,13 +7,16 @@ import FlightRowActions from '@/components/FlightRowActions.vue'
 import IgcMapDialog from '@/components/IgcMapDialog.vue'
 import IgcPickDialog from '@/components/IgcPickDialog.vue'
 import RemarksDialog from '@/components/RemarksDialog.vue'
+import YouTubePlayerDialog from '@/components/YouTubePlayerDialog.vue'
 import { formatDayNumber, groupByMonth } from '@/lib/dates'
 import {
+  fileAttachments,
   hasIgcAttachment,
   hasUserRemarks,
   igcAttachments,
   mediaListIcon,
   userRemarksText,
+  youtubeAttachment,
 } from '@/lib/mediaTags'
 import {
   formatRoleCompanionDisplay,
@@ -44,6 +47,7 @@ const detailFlight = ref<Flight | null>(null)
 const mediaOpen = ref(false)
 const mediaFlightId = ref<string | null>(null)
 const mediaItems = ref<FlightMediaItem[]>([])
+const youtubeVideo = ref<FlightMediaItem | null>(null)
 const igcMapOpen = ref(false)
 const igcFlightId = ref<string | null>(null)
 const igcFilename = ref<string | null>(null)
@@ -67,7 +71,7 @@ function rowClass(flight: Flight, index: number): string {
   }
   if (hasIgcAttachment(flight)) {
     classes.push('border-l-2 border-l-emerald-400')
-  } else if (mediaListIcon(flight)) {
+  } else if (mediaListIcon(flight) || youtubeAttachment(flight)) {
     classes.push('border-l-2 border-l-sky-400')
   } else if (hasUserRemarks(flight.remarks)) {
     classes.push('border-l-2 border-l-amber-400')
@@ -77,8 +81,12 @@ function rowClass(flight: Flight, index: number): string {
 
 function openMedia(flight: Flight): void {
   mediaFlightId.value = flight.id
-  mediaItems.value = [...(flight.media ?? [])]
+  mediaItems.value = fileAttachments(flight.media)
   mediaOpen.value = true
+}
+
+function openYoutube(flight: Flight): void {
+  youtubeVideo.value = youtubeAttachment(flight)
 }
 
 function openIgcMapForItem(flightId: string, item: FlightMediaItem): void {
@@ -257,6 +265,7 @@ function openRemarks(flight: Flight): void {
                   @open-igc="openIgcMap(flight)"
                   @open-remarks="openRemarks(flight)"
                   @open-media="openMedia(flight)"
+                  @open-youtube="openYoutube(flight)"
                 />
               </td>
             </tr>
@@ -279,6 +288,12 @@ function openRemarks(flight: Flight): void {
       :flight-id="mediaFlightId"
       :media="mediaItems"
       @close="mediaOpen = false"
+    />
+
+    <YouTubePlayerDialog
+      :open="youtubeVideo !== null"
+      :video="youtubeVideo"
+      @close="youtubeVideo = null"
     />
 
     <IgcPickDialog

@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import {
-  hasIgcAttachment,
-  hasUserRemarks,
-  mediaListIcon,
-} from '@/lib/mediaTags'
+import { hasIgcAttachment, hasUserRemarks, mediaListIcon, youtubeAttachment } from '@/lib/mediaTags'
 import type { Flight } from '@/types'
 
 defineProps<{
@@ -14,6 +10,7 @@ const emit = defineEmits<{
   openIgc: []
   openRemarks: []
   openMedia: []
+  openYoutube: []
 }>()
 
 const iconClass = 'h-6 w-6'
@@ -30,7 +27,14 @@ const buttonClass = 'inline-flex items-center justify-center rounded-md p-1.5 tr
       aria-label="View IGC track"
       @click.stop="emit('openIgc')"
     >
-      <svg :class="iconClass" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <svg
+        :class="iconClass"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
         <path
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -104,6 +108,28 @@ const buttonClass = 'inline-flex items-center justify-center rounded-md p-1.5 tr
           stroke-linejoin="round"
           d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l7.693 7.694a4.5 4.5 0 01-6.364 6.364L4.5 9.75m7.875-3.75v11.25"
         />
+      </svg>
+    </button>
+
+    <button
+      v-if="youtubeAttachment(flight)"
+      type="button"
+      :class="buttonClass + ' text-sky-600 hover:bg-sky-50 hover:text-sky-800'"
+      title="Watch flight video"
+      aria-label="Watch flight video"
+      data-action="open-youtube"
+      @click.stop="emit('openYoutube')"
+    >
+      <svg
+        :class="iconClass"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <rect x="2.5" y="5" width="19" height="14" rx="3.5" />
+        <path stroke-linejoin="round" d="M10 9.25v5.5L14.75 12 10 9.25z" fill="currentColor" />
       </svg>
     </button>
   </div>

@@ -57,7 +57,9 @@ const maximum = computed(
   () => Math.max(...props.points.map((point) => pointAltitude(point) ?? 0)) - props.altitudeOffsetM,
 )
 const duration = computed(() =>
-  props.points.length > 1 ? elapsed(props.points[0]!.time, props.points.at(-1)!.time) : 0,
+  props.points.length > 1
+    ? elapsed(props.points[0]!.time, props.points[props.points.length - 1]!.time)
+    : 0,
 )
 </script>
 
