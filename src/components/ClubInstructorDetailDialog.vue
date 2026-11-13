@@ -324,7 +324,7 @@ function metricFlights(metric: InstructorActivityMetric): string {
                 </table>
               </div>
               <p class="mt-2 text-xs text-slate-500">
-                Only events from the four years up to the reporting date are shown.
+                Only events from the last four years are shown.
               </p>
             </section>
           </div>
