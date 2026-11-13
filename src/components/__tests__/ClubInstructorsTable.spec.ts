@@ -62,6 +62,7 @@ describe('ClubInstructorsTable', () => {
 
     expect(wrapper.text()).toContain('Rick Wiles')
     expect(wrapper.text()).toContain('117h 22m')
+    expect(wrapper.text()).toContain('Activity to 1 Sept 2026')
     expect(wrapper.text()).toContain('1 Feb 2028')
     expect(wrapper.text()).toContain('Stale data')
     expect(wrapper.text()).toContain('347 days left')
