@@ -30,6 +30,7 @@ const { isInstructorPrivilege, load: loadPilotPrivileges } = usePilotPrivileges(
 const flight = ref<Flight | null>(null)
 const fieldErrors = ref<Record<string, string[]>>({})
 const submitError = ref<string | null>(null)
+const mediaSection = ref<InstanceType<typeof FlightMediaSection> | null>(null)
 const pageReady = ref(false)
 const deleteOpen = ref(false)
 const mediaBusy = ref(false)
@@ -109,6 +110,11 @@ async function onSubmit(payload: Record<string, unknown>): Promise<void> {
     submitError.value = 'Demo mode: changes are not saved.'
     return
   }
+  if (!(await (mediaSection.value?.submitPendingYoutube() ?? true))) {
+    submitError.value =
+      'The YouTube link could not be added. Check the link under Media attachments.'
+    return
+  }
   try {
     const updated = await update(flightId, payload as FlightPatchRequest)
     if (updated) {
@@ -180,6 +186,7 @@ async function confirmDelete(): Promise<void> {
               @cancel="onCancel"
             />
             <FlightMediaSection
+              ref="mediaSection"
               :flight-id="flightId"
               :media="flight.media"
               @busy-change="mediaBusy = $event"
