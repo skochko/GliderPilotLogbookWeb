@@ -153,10 +153,10 @@ function remainingDaysLabel(days: number | null): string {
   if (days <= 0) return 'Expired'
   return `${days} day${days === 1 ? '' : 's'} left`
 }
-/** Activity columns end on the reporting date; the status is judged on today. */
+/** Activity is rolling recency over the policy period ending today. */
 function activityLabel(instructor: ClubInstructor): string {
-  return instructor.reporting_date
-    ? `Activity to ${formatDisplayDate(instructor.reporting_date)}`
+  return instructor.activity_period_months
+    ? `Activity, last ${instructor.activity_period_months} months`
     : 'Activity'
 }
 function dateValue(date: string | null): string {
@@ -382,7 +382,7 @@ function instructorCountLabel(count: number): string {
               scope="col"
               class="whitespace-nowrap bg-[var(--sheet-header-color)] px-3 py-2 font-medium"
             >
-              Activity to reporting date · either target
+              Activity · last 36 months · either target
             </th>
             <th
               scope="col"
@@ -446,9 +446,6 @@ function instructorCountLabel(count: number): string {
               {{ formatDurationDisplay(instructor.fi_time) }} / 30h
               <small class="block text-[11px] text-slate-500"
                 >OR {{ value(instructor.fi_launches) }} / 60 launches</small
-              >
-              <small v-if="instructor.reporting_date" class="block text-[11px] text-slate-500"
-                >to {{ formatDisplayDate(instructor.reporting_date) }}</small
               >
             </td>
             <td
