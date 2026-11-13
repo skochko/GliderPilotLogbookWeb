@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import ActionButton from '@/components/ActionButton.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
@@ -7,6 +7,7 @@ import IgcMapDialog from '@/components/IgcMapDialog.vue'
 import FlightImageViewerDialog from '@/components/FlightImageViewerDialog.vue'
 import UploadProgressBar from '@/components/UploadProgressBar.vue'
 import {
+  addFlightYouTubeLink,
   attachFlightMediaFromDrive,
   deleteFlightMedia,
   getFlightMediaFolder,
@@ -15,7 +16,7 @@ import {
 } from '@/api/flightMedia'
 import { isApiError } from '@/api/errors'
 import { useGooglePicker } from '@/composables/useGooglePicker'
-import { mediaTypeLabel } from '@/lib/mediaTags'
+import { fileAttachments, mediaTypeLabel } from '@/lib/mediaTags'
 import { FLIGHT_MEDIA_MAX_FILES, FLIGHT_MEDIA_MAX_UPLOAD_BYTES } from '@/types/flightMedia'
 import type { Flight, FlightMediaItem } from '@/types'
 
@@ -47,8 +48,18 @@ const imageViewerOpen = ref(false)
 const imageFilename = ref<string | null>(null)
 const imageLabel = ref<string | null>(null)
 
-const busy = computed(() => uploading.value || attaching.value || deletingFilename.value !== null)
-const mediaCount = computed(() => props.media?.length ?? 0)
+const youtubeFormOpen = ref(false)
+const youtubeUrl = ref('')
+const youtubeError = ref<string | null>(null)
+const addingYoutube = ref(false)
+const youtubeInput = ref<HTMLInputElement | null>(null)
+
+const busy = computed(
+  () =>
+    uploading.value || attaching.value || addingYoutube.value || deletingFilename.value !== null,
+)
+const mediaCount = computed(() => fileAttachments(props.media).length)
+const hasYoutube = computed(() => props.media?.some((item) => item.type === 'youtube') ?? false)
 const canAddMore = computed(() => mediaCount.value < FLIGHT_MEDIA_MAX_FILES)
 const maxUploadLabel = `${FLIGHT_MEDIA_MAX_UPLOAD_BYTES / (1024 * 1024)} MB`
 
@@ -125,6 +136,38 @@ async function attachFromDrive(): Promise<void> {
   }
 }
 
+async function openYoutubeForm(): Promise<void> {
+  youtubeFormOpen.value = true
+  youtubeUrl.value = ''
+  youtubeError.value = null
+  await nextTick()
+  youtubeInput.value?.focus()
+}
+
+function closeYoutubeForm(): void {
+  youtubeFormOpen.value = false
+  youtubeError.value = null
+}
+
+async function addYoutube(): Promise<void> {
+  const url = youtubeUrl.value.trim()
+  if (!url) {
+    youtubeError.value = 'Paste a YouTube link.'
+    return
+  }
+  addingYoutube.value = true
+  youtubeError.value = null
+  try {
+    const result = await addFlightYouTubeLink(props.flightId, url)
+    youtubeFormOpen.value = false
+    emit('updated', result.flight as Flight)
+  } catch (err) {
+    youtubeError.value = isApiError(err) ? err.message : 'Could not add the video.'
+  } finally {
+    addingYoutube.value = false
+  }
+}
+
 function openIgcMap(item: FlightMediaItem): void {
   igcFilename.value = item.filename
   igcLabel.value = item.label
@@ -193,8 +236,8 @@ async function confirmDelete(): Promise<void> {
       <div>
         <h3 class="text-sm font-medium text-slate-900">Media attachments</h3>
         <p class="mt-0.5 text-xs text-slate-500">
-          Up to {{ FLIGHT_MEDIA_MAX_FILES }} files per flight. In-app upload limit
-          {{ maxUploadLabel }}.
+          Up to {{ FLIGHT_MEDIA_MAX_FILES }} files per flight plus one YouTube video. In-app upload
+          limit {{ maxUploadLabel }}.
         </p>
       </div>
       <span class="text-xs tabular-nums text-slate-500"
@@ -238,6 +281,15 @@ async function confirmDelete(): Promise<void> {
             >
               View
             </button>
+            <a
+              v-if="item.type === 'youtube' && item.url"
+              :href="item.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-medium text-sky-700 hover:text-sky-900 hover:underline"
+            >
+              Watch <span aria-hidden="true">↗</span>
+            </a>
           </div>
         </div>
         <div class="relative shrink-0">
@@ -267,12 +319,52 @@ async function confirmDelete(): Promise<void> {
               role="menuitem"
               @click="requestDelete(item)"
             >
-              Delete attachment
+              {{ item.type === 'youtube' ? 'Remove video' : 'Delete attachment' }}
             </button>
           </div>
         </div>
       </li>
     </ul>
+
+    <form
+      v-if="youtubeFormOpen"
+      class="rounded-md border border-slate-200 p-3"
+      novalidate
+      data-testid="youtube-form"
+      @submit.prevent="addYoutube"
+      @keydown.esc.prevent="closeYoutubeForm"
+    >
+      <label for="youtube-url" class="block text-sm font-medium text-slate-700">YouTube link</label>
+      <input
+        id="youtube-url"
+        ref="youtubeInput"
+        v-model="youtubeUrl"
+        type="url"
+        inputmode="url"
+        autocomplete="off"
+        placeholder="https://youtu.be/…"
+        class="field-control mt-1"
+        :aria-invalid="youtubeError ? 'true' : 'false'"
+        aria-describedby="youtube-url-hint youtube-url-error"
+      />
+      <p id="youtube-url-hint" class="mt-1 text-xs text-slate-500">
+        Watch, youtu.be, Shorts and Live links work. A time stamp (t=) is kept.
+      </p>
+      <p
+        v-if="youtubeError"
+        id="youtube-url-error"
+        class="mt-1 text-xs font-medium text-red-700"
+        role="alert"
+      >
+        {{ youtubeError }}
+      </p>
+      <div class="mt-2 flex justify-end gap-2">
+        <ActionButton variant="secondary" :disabled="addingYoutube" @click="closeYoutubeForm">
+          Cancel
+        </ActionButton>
+        <ActionButton type="submit" :busy="addingYoutube">Add video</ActionButton>
+      </div>
+    </form>
 
     <div class="flex flex-wrap gap-2">
       <ActionButton :busy="uploading" :disabled="!canAddMore || attaching" @click="openFilePicker">
@@ -286,6 +378,15 @@ async function confirmDelete(): Promise<void> {
         @click="attachFromDrive"
       >
         Attach from Drive
+      </ActionButton>
+      <ActionButton
+        v-if="!hasYoutube && !youtubeFormOpen"
+        variant="secondary"
+        :disabled="busy"
+        data-action="add-youtube"
+        @click="openYoutubeForm"
+      >
+        Add YouTube link
       </ActionButton>
       <button
         type="button"
@@ -318,9 +419,13 @@ async function confirmDelete(): Promise<void> {
 
     <ConfirmDialog
       :open="deleteCandidate !== null"
-      title="Delete attachment"
-      :message="`This will permanently delete ${deleteCandidate?.label || 'this attachment'} from Google Drive.`"
-      confirm-label="Delete"
+      :title="deleteCandidate?.type === 'youtube' ? 'Remove video' : 'Delete attachment'"
+      :message="
+        deleteCandidate?.type === 'youtube'
+          ? `${deleteCandidate.label} will be removed from this flight. The video stays on YouTube.`
+          : `This will permanently delete ${deleteCandidate?.label || 'this attachment'} from Google Drive.`
+      "
+      :confirm-label="deleteCandidate?.type === 'youtube' ? 'Remove' : 'Delete'"
       :busy="deletingFilename !== null"
       @confirm="confirmDelete"
       @cancel="deleteCandidate = null"
