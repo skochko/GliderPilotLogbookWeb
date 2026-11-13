@@ -149,24 +149,39 @@ function closeYoutubeForm(): void {
   youtubeError.value = null
 }
 
-async function addYoutube(): Promise<void> {
+async function addYoutube(): Promise<boolean> {
   const url = youtubeUrl.value.trim()
   if (!url) {
     youtubeError.value = 'Paste a YouTube link.'
-    return
+    return false
   }
   addingYoutube.value = true
   youtubeError.value = null
   try {
     const result = await addFlightYouTubeLink(props.flightId, url)
     youtubeFormOpen.value = false
+    youtubeUrl.value = ''
     emit('updated', result.flight as Flight)
+    return true
   } catch (err) {
     youtubeError.value = isApiError(err) ? err.message : 'Could not add the video.'
+    return false
   } finally {
     addingYoutube.value = false
   }
 }
+
+/**
+ * Called by the flight form's Save: a link typed into the YouTube field but not yet added
+ * with "Add video" is attached first, so Save never silently drops it.
+ * Resolves to false when the link could not be added (the error is shown under the field).
+ */
+async function submitPendingYoutube(): Promise<boolean> {
+  if (!youtubeFormOpen.value || !youtubeUrl.value.trim()) return true
+  return addYoutube()
+}
+
+defineExpose({ submitPendingYoutube })
 
 function openIgcMap(item: FlightMediaItem): void {
   igcFilename.value = item.filename
