@@ -1,6 +1,10 @@
 import { apiFetch, apiJson } from './client'
 import { parseApiError } from './errors'
-import type { ClubInstructorOverview, InstructorActivityDetail } from '@/types/instructorOversight'
+import type {
+  ClubInstructorOverview,
+  ClubReportEmailResult,
+  InstructorActivityDetail,
+} from '@/types/instructorOversight'
 
 export function getClubInstructorOverview(): Promise<ClubInstructorOverview> {
   return apiJson<ClubInstructorOverview>('/instructor/club-instructors')
@@ -20,4 +24,16 @@ export async function downloadClubInstructorReport(profileId: number): Promise<B
   )
   if (!response.ok) throw await parseApiError(response)
   return response.blob()
+}
+
+export async function downloadClubReport(): Promise<Blob> {
+  const response = await apiFetch('/instructor/club-instructors/report.pdf')
+  if (!response.ok) throw await parseApiError(response)
+  return response.blob()
+}
+
+export function emailClubReport(): Promise<ClubReportEmailResult> {
+  return apiJson<ClubReportEmailResult>('/instructor/club-instructors/report/email', {
+    method: 'POST',
+  })
 }

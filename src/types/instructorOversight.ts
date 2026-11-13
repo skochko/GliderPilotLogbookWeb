@@ -1,3 +1,11 @@
+export type QualificationStatus = 'valid' | 'expiring' | 'lapsed' | 'unknown'
+
+export interface InstructorIssue {
+  code: string
+  severity: Exclude<QualificationStatus, 'valid'>
+  message: string
+}
+
 export interface ClubInstructor {
   profile_id: number
   instructor_name: string
@@ -11,10 +19,13 @@ export interface ClubInstructor {
   refresher_renewal_date: string | null
   refresher_source: string | null
   demonstration_of_ability_date: string | null
+  medical_expiry_date: string | null
   refresher_note: string
   training_flights: TrainingFlightSummary
+  qualification_status: QualificationStatus
+  issues: readonly InstructorIssue[]
   activity_report_url: string | null
-  data_status: string
+  data_status: 'current' | 'stale' | 'missing'
   data_status_message: string
   cache_verified_at: string | null
   cache_updated_at: string | null
@@ -88,4 +99,8 @@ export interface InstructorActivityDetail {
     remarks: string
   }>
   training_flights: TrainingFlightSummary
+}
+
+export interface ClubReportEmailResult {
+  recipient: string
 }

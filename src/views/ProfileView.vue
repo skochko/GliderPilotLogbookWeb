@@ -26,6 +26,7 @@ const disconnectOpen = ref(false)
 
 const preferences = ref<Record<string, unknown>>({})
 const emailNotificationsEnabled = ref(true)
+const reportEmail = ref('')
 const language = ref<'' | 'en' | 'ru'>('')
 const measurementUnits = ref<MeasurementUnits>('metric')
 const submitError = ref<string | null>(null)
@@ -34,6 +35,9 @@ const scopesLoading = ref(false)
 const scopesError = ref<string | null>(null)
 const googleAccessError = ref<string | null>(null)
 
+const canViewClubReports = computed(
+  () => profile.value?.capabilities.can_view_club_instructor_reports ?? false,
+)
 const hasLogbook = computed(() => profile.value?.has_logbook ?? false)
 const isDemo = computed(() => user.value?.is_demo ?? false)
 const needsGoogleReconnect = computed(
@@ -110,6 +114,7 @@ onMounted(async () => {
   if (profile.value) {
     preferences.value = profile.value.preferences ?? {}
     emailNotificationsEnabled.value = profile.value.email_notifications_enabled
+    reportEmail.value = profile.value.report_email ?? ''
     language.value = profile.value.language ?? ''
     measurementUnits.value = measurementUnitsFromPreferences(profile.value.preferences)
   }
@@ -133,6 +138,7 @@ async function onSubmit(): Promise<void> {
       preferences: { ...preferences.value, measurement_units: measurementUnits.value },
       email_notifications_enabled: emailNotificationsEnabled.value,
       language: language.value,
+      ...(canViewClubReports.value ? { report_email: reportEmail.value.trim() } : {}),
     })
     syncMeasurementUnits()
   } catch (err) {
@@ -317,6 +323,34 @@ async function confirmDisconnect(): Promise<void> {
             />
             <span>Send me email reminders</span>
           </label>
+        </section>
+
+        <section
+          v-if="canViewClubReports"
+          class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+          data-testid="instructor-reports-section"
+        >
+          <h2 class="font-semibold text-slate-900">Instructor reports</h2>
+          <p class="mt-1 text-sm text-slate-600">
+            Where the club instructor oversight report is emailed.
+          </p>
+          <label for="profile-report-email" class="mt-4 block text-sm font-medium text-slate-700">
+            Send reports to
+          </label>
+          <input
+            id="profile-report-email"
+            v-model="reportEmail"
+            type="email"
+            autocomplete="email"
+            inputmode="email"
+            :disabled="isDemo"
+            :placeholder="profile.email"
+            class="field-control mt-1 sm:max-w-md"
+            aria-describedby="profile-report-email-hint"
+          />
+          <p id="profile-report-email-hint" class="mt-1 text-xs text-slate-500">
+            Leave empty to use your account email ({{ profile.email }}).
+          </p>
         </section>
 
         <ActionButton type="submit" :busy="mutating" :disabled="isDemo || mutating">
