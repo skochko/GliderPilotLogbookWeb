@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ClubInstructorsTable from '@/components/ClubInstructorsTable.vue'
 import ClubInstructorDetailDialog from '@/components/ClubInstructorDetailDialog.vue'
+import ClubReportActions from '@/components/ClubReportActions.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import {
@@ -94,10 +95,15 @@ function closeInstructor(): void {
             {{ overview?.organization.name ?? 'Your club' }}
             <template v-if="overview"> · {{ overview.viewer_role.toUpperCase() }}</template>
           </p>
+          <p v-if="overview" class="mt-0.5 text-xs text-slate-500">
+            Updated {{ formatDisplayDate(overview.as_of) }}
+          </p>
         </div>
-        <p v-if="overview" class="text-xs text-slate-500">
-          Updated {{ formatDisplayDate(overview.as_of) }}
-        </p>
+        <ClubReportActions
+          v-if="overview"
+          :organization-name="overview.organization.name"
+          :as-of="overview.as_of"
+        />
       </div>
     </div>
 

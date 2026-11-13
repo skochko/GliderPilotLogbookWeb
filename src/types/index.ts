@@ -69,8 +69,13 @@ export type Statistics = import('./statistics').Statistics
 export type { StatisticsQuery } from './statistics'
 export type Profile = components['schemas']['Profile'] & {
   capabilities: import('./instructorOversight').ProfileCapabilities
+  /** Recipient for club instructor reports; empty means the account email. */
+  report_email: string
+  effective_report_email: string
 }
-export type ProfilePatch = components['schemas']['PatchedProfilePatchRequest']
+export type ProfilePatch = components['schemas']['PatchedProfilePatchRequest'] & {
+  report_email?: string
+}
 export type Page = components['schemas']['Page']
 export type SitePageType = components['schemas']['PageTypeEnum']
 export type { LogbookCreateRequest } from './logbookCreate'

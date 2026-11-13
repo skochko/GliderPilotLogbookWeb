@@ -16,6 +16,7 @@ const instructor: ClubInstructor = {
   refresher_renewal_date: '2028-02-01',
   refresher_source: 'refresher',
   demonstration_of_ability_date: '2029-10-01',
+  medical_expiry_date: '2027-05-01',
   refresher_note: 'No note.',
   training_flights: {
     obtained: 2,
@@ -42,6 +43,8 @@ const instructor: ClubInstructor = {
       },
     ],
   },
+  qualification_status: 'valid',
+  issues: [],
   activity_report_url: '/api/instructor/club-instructors/42/flight-activity.pdf',
   data_status: 'stale',
   data_status_message: 'Logbook cache was last verified over 48 hours ago.',
@@ -93,13 +96,26 @@ describe('ClubInstructorsTable', () => {
     ).toBeDefined()
   })
 
-  it('sorts attention states first and filters by search and status', async () => {
+  it('sorts by qualification status and filters by search and status', async () => {
     const wrapper = mount(ClubInstructorsTable, {
       props: {
         instructors: [
           { ...instructor, profile_id: 1, instructor_name: 'Alice', data_status: 'current' },
-          { ...instructor, profile_id: 2, instructor_name: 'Steve', data_status: 'incomplete' },
-          { ...instructor, profile_id: 3, instructor_name: 'Bob', data_status: 'stale' },
+          {
+            ...instructor,
+            profile_id: 2,
+            instructor_name: 'Steve',
+            data_status: 'current',
+            qualification_status: 'expiring',
+          },
+          {
+            ...instructor,
+            profile_id: 3,
+            instructor_name: 'Bob',
+            data_status: 'current',
+            qualification_status: 'lapsed',
+          },
+          { ...instructor, profile_id: 4, instructor_name: 'Dan', data_status: 'stale' },
         ],
         downloadingProfileId: null,
       },
@@ -108,7 +124,7 @@ describe('ClubInstructorsTable', () => {
     const names = wrapper
       .findAll('#instructor-list article > button > span:first-child > span:first-child')
       .map((cell) => cell.text())
-    expect(names).toEqual(['Steve', 'Bob', 'Alice'])
+    expect(names).toEqual(['Bob', 'Steve', 'Dan', 'Alice'])
 
     await wrapper.get('[data-filter="current"]').trigger('click')
     expect(wrapper.findAll('#instructor-list article')).toHaveLength(1)
@@ -120,27 +136,49 @@ describe('ClubInstructorsTable', () => {
     expect(wrapper.get('#instructor-list article').text()).toContain('Steve')
   })
 
-  it('uses the backend data status without re-evaluating qualification fields', () => {
-    const bi = {
+  it('shows the backend status and every reason without re-evaluating fields', () => {
+    const lapsed: ClubInstructor = {
       ...instructor,
       instructor_name: 'Gave',
       data_status: 'current',
       data_status_message: '',
-      refresher_renewal_date: null,
-      refresher_source: null,
-      demonstration_of_ability_date: null,
-      training_flights: {
-        ...instructor.training_flights,
-        remaining_days: 589,
-        is_current: false,
-      },
+      qualification_status: 'lapsed',
+      issues: [
+        {
+          code: 'refresher_expired',
+          severity: 'lapsed',
+          message: 'Refresher expired on 2026-10-01.',
+        },
+        { code: 'medical_expiring', severity: 'expiring', message: 'Medical expires soon.' },
+      ],
     }
     const wrapper = mount(ClubInstructorsTable, {
-      props: { instructors: [bi], downloadingProfileId: null },
+      props: { instructors: [lapsed], downloadingProfileId: null },
+    })
+
+    const summary = wrapper.get('#instructor-list article > button').text()
+    expect(summary).toContain('Lapsed')
+    expect(summary).toContain('2 reasons')
+    const reasons = wrapper.findAll('#instructor-list [aria-label="Status reasons"] li')
+    expect(reasons.map((item) => item.text())).toEqual([
+      '•Refresher expired on 2026-10-01.',
+      '•Medical expires soon.',
+    ])
+    expect(wrapper.get('#instructor-table').text()).toContain(
+      'Refresher expired on 2026-10-01. +1 more',
+    )
+    expect(wrapper.get('[data-filter="attention"]').text()).toContain('Needs attention 1')
+  })
+
+  it('treats a valid instructor with fresh data as current', () => {
+    const wrapper = mount(ClubInstructorsTable, {
+      props: {
+        instructors: [{ ...instructor, data_status: 'current', data_status_message: '' }],
+        downloadingProfileId: null,
+      },
     })
 
     expect(wrapper.get('#instructor-list article > button').text()).toContain('Current')
-    expect(wrapper.get('#instructor-list article > button').text()).toContain('589 days left')
     expect(wrapper.get('[data-filter="current"]').text()).toContain('Current 1')
     expect(wrapper.get('[data-filter="attention"]').text()).toContain('Needs attention 0')
   })

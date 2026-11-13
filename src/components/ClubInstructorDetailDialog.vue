@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
+import { QUALIFICATION_STATUS_LABELS } from '@/lib/qualificationStatus'
 import { formatDisplayDate, formatDateTime } from '@/lib/dates'
 import LoadingState from '@/components/LoadingState.vue'
 import type {
@@ -87,10 +88,38 @@ function metricFlights(metric: InstructorActivityMetric): string {
             {{ error }}
           </div>
           <div v-else-if="activityDetail" class="space-y-5">
+            <section
+              class="rounded-lg border bg-white p-3"
+              :class="
+                instructor.qualification_status === 'lapsed'
+                  ? 'border-red-200'
+                  : instructor.qualification_status === 'valid'
+                    ? 'border-slate-200'
+                    : 'border-amber-200'
+              "
+              aria-labelledby="instructor-status-title"
+            >
+              <h3 id="instructor-status-title" class="text-sm font-semibold text-slate-900">
+                Status: {{ QUALIFICATION_STATUS_LABELS[instructor.qualification_status] }}
+              </h3>
+              <ul v-if="instructor.issues.length" class="mt-1.5 space-y-1 text-sm">
+                <li
+                  v-for="issue in instructor.issues"
+                  :key="issue.code"
+                  class="flex gap-1.5"
+                  :class="issue.severity === 'lapsed' ? 'text-red-700' : 'text-amber-800'"
+                >
+                  <span aria-hidden="true">•</span>
+                  <span>{{ issue.message }}</span>
+                </li>
+              </ul>
+              <p v-else class="mt-1 text-sm text-slate-600">All tracked requirements are met.</p>
+            </section>
+
             <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div class="rounded-lg border border-slate-200 bg-white p-3">
                 <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Data status
+                  Logbook data
                 </dt>
                 <dd class="mt-1 font-semibold capitalize text-slate-900">
                   {{ instructor.data_status }}
@@ -183,7 +212,10 @@ function metricFlights(metric: InstructorActivityMetric): string {
                       <td class="px-3 py-2">{{ event.event_type }}</td>
                       <td class="px-3 py-2 whitespace-nowrap">
                         {{ dateValue(event.valid_until) }}
-                        <span v-if="event.remaining_days !== null" class="block text-xs text-slate-500">
+                        <span
+                          v-if="event.remaining_days !== null"
+                          class="block text-xs text-slate-500"
+                        >
                           {{ event.remaining_days }} days left
                         </span>
                       </td>

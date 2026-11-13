@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { QUALIFICATION_STATUS_LABELS } from '@/lib/qualificationStatus'
 import { formatDisplayDate } from '@/lib/dates'
 import { formatDurationDisplay } from '@/lib/duration'
-import type { ClubInstructor } from '@/types/instructorOversight'
+import type {
+  ClubInstructor,
+  InstructorIssue,
+  QualificationStatus,
+} from '@/types/instructorOversight'
 
 type InstructorFilter = 'all' | 'attention' | 'current'
 type InstructorView = 'list' | 'table'
@@ -57,19 +62,25 @@ watch(activeView, (view) => {
 })
 
 function needsAttention(instructor: ClubInstructor): boolean {
-  return instructor.data_status !== 'current'
+  return instructor.qualification_status !== 'valid' || instructor.data_status !== 'current'
+}
+
+const STATUS_RANK: Record<QualificationStatus, number> = {
+  lapsed: 0,
+  unknown: 1,
+  expiring: 2,
+  valid: 3,
 }
 
 const sortedInstructors = computed(() =>
   [...props.instructors].sort((left, right) => {
-    const rank = (instructor: ClubInstructor): number => {
-      if (instructor.data_status === 'incomplete') return 0
-      if (instructor.data_status === 'stale') return 1
-      if (needsAttention(instructor)) return 2
-      return 3
-    }
-    const rankDifference = rank(left) - rank(right)
-    return rankDifference || left.instructor_name.localeCompare(right.instructor_name)
+    const rankDifference =
+      STATUS_RANK[left.qualification_status] - STATUS_RANK[right.qualification_status]
+    const dataDifference =
+      Number(left.data_status === 'current') - Number(right.data_status === 'current')
+    return (
+      rankDifference || dataDifference || left.instructor_name.localeCompare(right.instructor_name)
+    )
   }),
 )
 const attentionCount = computed(() => props.instructors.filter(needsAttention).length)
@@ -101,19 +112,35 @@ function toggleExpanded(profileId: number): void {
   else ids.add(profileId)
   expandedInstructorIds.value = ids
 }
+const STATUS_MARKS: Record<QualificationStatus, string> = {
+  lapsed: '!',
+  unknown: '?',
+  expiring: '◷',
+  valid: '✓',
+}
 function statusLabel(instructor: ClubInstructor): string {
-  if (instructor.data_status === 'stale') return 'Stale data'
-  if (instructor.data_status !== 'current') return 'Missing data'
-  if (needsAttention(instructor)) return 'Action required'
-  return 'Current'
+  return QUALIFICATION_STATUS_LABELS[instructor.qualification_status]
 }
 function statusTone(instructor: ClubInstructor): string {
-  if (instructor.data_status === 'stale') return 'text-amber-700'
-  return needsAttention(instructor) ? 'text-red-700' : 'text-emerald-700'
+  if (instructor.qualification_status === 'lapsed') return 'text-red-700'
+  if (instructor.qualification_status === 'valid') return 'text-emerald-700'
+  return 'text-amber-700'
 }
 function statusMark(instructor: ClubInstructor): string {
-  if (instructor.data_status === 'stale') return '◷'
-  return needsAttention(instructor) ? '!' : '✓'
+  return STATUS_MARKS[instructor.qualification_status]
+}
+function issueTone(issue: InstructorIssue): string {
+  return issue.severity === 'lapsed' ? 'text-red-700' : 'text-amber-800'
+}
+function dataStatusLabel(instructor: ClubInstructor): string {
+  if (instructor.data_status === 'stale') return 'Stale data'
+  if (instructor.data_status === 'missing') return 'Missing data'
+  return ''
+}
+function primaryIssue(instructor: ClubInstructor): string {
+  const [first, ...rest] = instructor.issues
+  if (!first) return dataStatusLabel(instructor) || 'All requirements met'
+  return rest.length ? `${first.message} +${rest.length} more` : first.message
 }
 function trainingStatus(instructor: ClubInstructor): string {
   const training = instructor.training_flights
@@ -223,8 +250,11 @@ function instructorCountLabel(count: number): string {
           <span class="mt-0.5 block text-xs" :class="statusTone(instructor)">
             <span class="font-bold" aria-hidden="true">{{ statusMark(instructor) }}</span>
             {{ statusLabel(instructor) }}
-            <span v-if="instructor.training_flights.remaining_days !== null" class="text-slate-600">
-              · {{ remainingDaysLabel(instructor.training_flights.remaining_days) }}
+            <span v-if="instructor.issues.length" class="text-slate-600">
+              · {{ instructor.issues.length }} reason{{ instructor.issues.length === 1 ? '' : 's' }}
+            </span>
+            <span v-if="dataStatusLabel(instructor)" class="text-amber-700">
+              · {{ dataStatusLabel(instructor) }}
             </span>
           </span>
           <svg
@@ -247,6 +277,17 @@ function instructorCountLabel(count: number): string {
           :id="`instructor-summary-${instructor.profile_id}`"
           class="px-3 pb-3 text-xs text-slate-600"
         >
+          <ul v-if="instructor.issues.length" class="mb-2 space-y-1" aria-label="Status reasons">
+            <li
+              v-for="issue in instructor.issues"
+              :key="issue.code"
+              class="flex gap-1.5"
+              :class="issueTone(issue)"
+            >
+              <span aria-hidden="true">•</span>
+              <span>{{ issue.message }}</span>
+            </li>
+          </ul>
           <p class="mb-1.5 tabular-nums">
             Activity:
             <strong class="font-medium text-slate-900">
@@ -271,13 +312,19 @@ function instructorCountLabel(count: number): string {
               </dd>
             </div>
             <div class="flex justify-between gap-3 border-t border-slate-200/70 py-1.5">
+              <dt>Medical expiry</dt>
+              <dd class="text-right font-medium text-slate-800">
+                {{ dateValue(instructor.medical_expiry_date) }}
+              </dd>
+            </div>
+            <div class="flex justify-between gap-3 border-t border-slate-200/70 py-1.5">
               <dt>Demonstration of ability</dt>
               <dd class="text-right font-medium text-slate-800">
                 {{ dateValue(instructor.demonstration_of_ability_date) }}
               </dd>
             </div>
           </dl>
-          <p v-if="instructor.data_status_message" class="mt-1.5" :class="statusTone(instructor)">
+          <p v-if="instructor.data_status_message" class="mt-1.5 text-amber-700">
             {{ instructor.data_status_message }}
           </p>
           <div class="mt-2 flex flex-wrap gap-2">
@@ -323,7 +370,7 @@ function instructorCountLabel(count: number): string {
               scope="col"
               class="whitespace-nowrap bg-[var(--sheet-header-color)] px-3 py-2 font-medium"
             >
-              Status / days left
+              Status · reason
             </th>
             <th
               scope="col"
@@ -377,16 +424,14 @@ function instructorCountLabel(count: number): string {
               <small class="block text-[11px] text-slate-500">{{ instructor.rating }}</small>
             </td>
             <td
-              class="whitespace-nowrap border-t border-slate-200 px-2.5 py-2 align-middle group-hover:bg-sky-50 group-focus:bg-sky-50"
-              :class="[
-                index % 2 === 1 ? 'bg-[var(--sheet-zebra-color)]' : 'bg-white',
-                statusTone(instructor),
-              ]"
+              class="w-[240px] min-w-[200px] border-t border-slate-200 px-2.5 py-2 align-middle group-hover:bg-sky-50 group-focus:bg-sky-50"
+              :class="index % 2 === 1 ? 'bg-[var(--sheet-zebra-color)]' : 'bg-white'"
             >
-              {{ statusLabel(instructor) }}
-              <small class="block text-[11px] text-slate-500">{{
-                remainingDaysLabel(instructor.training_flights.remaining_days)
-              }}</small>
+              <span class="font-medium" :class="statusTone(instructor)">
+                <span aria-hidden="true">{{ statusMark(instructor) }}</span>
+                {{ statusLabel(instructor) }}
+              </span>
+              <small class="block text-[11px] text-slate-500">{{ primaryIssue(instructor) }}</small>
             </td>
             <td
               class="whitespace-nowrap border-t border-slate-200 px-2.5 py-2 align-middle tabular-nums group-hover:bg-sky-50 group-focus:bg-sky-50"
