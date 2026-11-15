@@ -42,6 +42,14 @@ function metricDuration(metric: InstructorActivityMetric): string {
 function metricFlights(metric: InstructorActivityMetric): string {
   return `${metric.count} ${metric.count === 1 ? 'flight' : 'flights'}`
 }
+
+type ActivityPeriodKey = '12' | '24' | '36'
+
+/** On phones only the instructor's policy period is shown; 36 months if it has none. */
+function mobilePeriod(instructor: ClubInstructor): ActivityPeriodKey {
+  const months = String(instructor.activity_period_months)
+  return months === '12' || months === '24' || months === '36' ? months : '36'
+}
 </script>
 
 <template>
@@ -229,7 +237,52 @@ function metricFlights(metric: InstructorActivityMetric): string {
 
             <section>
               <h3 class="mb-2 text-base font-semibold text-slate-900">Flight activity</h3>
-              <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+              <div
+                class="overflow-hidden rounded-lg border border-slate-200 bg-white sm:hidden"
+                data-testid="activity-mobile"
+              >
+                <table class="w-full text-sm">
+                  <thead class="bg-[var(--sheet-header-color)] text-slate-700">
+                    <tr>
+                      <th class="px-3 py-2 text-left font-medium">Flight role / category</th>
+                      <th class="px-3 py-2 text-center font-medium">Activity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="(row, index) in activityDetail.activity"
+                      :key="row.key"
+                      class="border-t border-slate-100"
+                      :class="index % 2 === 1 ? 'bg-[var(--sheet-zebra-color)]' : ''"
+                    >
+                      <td
+                        class="px-3 py-2"
+                        :class="row.nested ? 'pl-7 text-slate-600' : 'font-semibold'"
+                      >
+                        {{ row.label }}
+                      </td>
+                      <td class="px-3 py-2 text-center tabular-nums">
+                        <template v-if="row.periods[mobilePeriod(instructor)]">
+                          <p class="font-medium">
+                            {{ metricDuration(row.periods[mobilePeriod(instructor)]) }}
+                          </p>
+                          <p class="mt-0.5 text-xs text-slate-500">
+                            {{ metricFlights(row.periods[mobilePeriod(instructor)]) }}
+                          </p>
+                        </template>
+                        <template v-else>—</template>
+                        <p class="mt-0.5 text-xs text-slate-500">
+                          last {{ mobilePeriod(instructor) }} months
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div
+                class="hidden overflow-x-auto rounded-lg border border-slate-200 bg-white sm:block"
+                data-testid="activity-desktop"
+              >
                 <table class="min-w-[760px] text-sm">
                   <thead class="bg-[var(--sheet-header-color)] text-slate-700">
                     <tr>

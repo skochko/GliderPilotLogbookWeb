@@ -9,6 +9,13 @@ const instructor: ClubInstructor = {
   rating: 'FI(S)',
   reporting_date: '2026-09-01',
   activity_period_months: 36,
+  activity: {
+    period_months: 36,
+    time: '117:22',
+    launches: 1022,
+    required_time: '30:00',
+    required_launches: 60,
+  },
   pic_time: '154:31',
   pic_launches: 1200,
   fi_time: '117:22',
@@ -182,6 +189,75 @@ describe('ClubInstructorsTable', () => {
     expect(wrapper.get('#instructor-list article > button').text()).toContain('Current')
     expect(wrapper.get('[data-filter="current"]').text()).toContain('Current 1')
     expect(wrapper.get('[data-filter="attention"]').text()).toContain('Needs attention 0')
+  })
+
+  it("shows each instructor's activity period in the table cell, not the header", () => {
+    const bi: ClubInstructor = {
+      ...instructor,
+      profile_id: 43,
+      instructor_name: 'Bob Basic',
+      rating: 'BI(S)',
+      activity_period_months: 24,
+      fi_time: null,
+      fi_launches: null,
+      activity: {
+        period_months: 24,
+        time: '12:05',
+        launches: 46,
+        required_time: '20:00',
+        required_launches: 40,
+      },
+    }
+    const wrapper = mount(ClubInstructorsTable, {
+      props: { instructors: [instructor, bi], downloadingProfileId: null },
+    })
+
+    const table = wrapper.get('#instructor-table')
+    expect(table.get('thead').text()).toContain('Activity · either target')
+    expect(table.get('thead').text()).not.toMatch(/\d+ months/)
+    expect(table.get('tbody').text()).toContain('Last 36 months')
+    expect(table.get('tbody').text()).toContain('Last 24 months')
+  })
+
+  it('shows the activity figures and targets the status is judged on', async () => {
+    const ifp: ClubInstructor = {
+      ...instructor,
+      profile_id: 44,
+      instructor_name: 'Steve Fletcher',
+      rating: 'IFP',
+      activity_period_months: 12,
+      fi_time: null,
+      fi_launches: null,
+      activity: {
+        period_months: 12,
+        time: '35:19',
+        launches: 93,
+        required_time: '5:00',
+        required_launches: 15,
+      },
+    }
+    const unconfigured: ClubInstructor = {
+      ...instructor,
+      profile_id: 45,
+      instructor_name: 'No Policy',
+      activity_period_months: null,
+      activity: null,
+    }
+    const wrapper = mount(ClubInstructorsTable, {
+      props: { instructors: [ifp, unconfigured], downloadingProfileId: null },
+    })
+
+    const list = wrapper.get('#instructor-list').text()
+    expect(list).toContain('Activity, last 12 months: 35h 19m / 5h or 93 / 15 launches')
+    expect(list).not.toContain('/ 30h')
+    expect(list).toMatch(/Activity:\s*—/)
+
+    await wrapper.get('[data-view="table"]').trigger('click')
+    const table = wrapper.get('#instructor-table tbody').text()
+    expect(table).toContain('35h 19m / 5h')
+    expect(table).toContain('OR 93 / 15 launches')
+    expect(table).toContain('Last 12 months')
+    expect(table).not.toContain('60 launches')
   })
 
   it('persists the selected list or table view', async () => {
