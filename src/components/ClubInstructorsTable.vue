@@ -5,6 +5,7 @@ import { formatDisplayDate } from '@/lib/dates'
 import { formatDurationDisplay } from '@/lib/duration'
 import type {
   ClubInstructor,
+  InstructorActivitySummary,
   InstructorIssue,
   QualificationStatus,
 } from '@/types/instructorOversight'
@@ -155,9 +156,16 @@ function remainingDaysLabel(days: number | null): string {
 }
 /** Activity is rolling recency over the policy period ending today. */
 function activityLabel(instructor: ClubInstructor): string {
-  return instructor.activity_period_months
-    ? `Activity, last ${instructor.activity_period_months} months`
+  return instructor.activity
+    ? `Activity, last ${instructor.activity.period_months} months`
     : 'Activity'
+}
+function activityTime(activity: InstructorActivitySummary): string {
+  const target = activity.required_time ? formatDurationDisplay(activity.required_time, false) : '—'
+  return `${formatDurationDisplay(activity.time)} / ${target}`
+}
+function activityLaunches(activity: InstructorActivitySummary): string {
+  return `${activity.launches} / ${value(activity.required_launches)} launches`
 }
 function dateValue(date: string | null): string {
   return date ? formatDisplayDate(date) : 'Not recorded'
@@ -296,13 +304,16 @@ function instructorCountLabel(count: number): string {
           </ul>
           <p class="mb-1.5 tabular-nums">
             {{ activityLabel(instructor) }}:
-            <strong class="font-medium text-slate-900">
-              {{ formatDurationDisplay(instructor.fi_time) }} / 30h
-            </strong>
-            or
-            <strong class="font-medium text-slate-900">
-              {{ value(instructor.fi_launches) }} / 60 launches
-            </strong>
+            <template v-if="instructor.activity">
+              <strong class="font-medium text-slate-900">
+                {{ activityTime(instructor.activity) }}
+              </strong>
+              or
+              <strong class="font-medium text-slate-900">
+                {{ activityLaunches(instructor.activity) }}
+              </strong>
+            </template>
+            <strong v-else class="font-medium text-slate-900">—</strong>
           </p>
           <dl>
             <div class="flex justify-between gap-3 border-t border-slate-200/70 py-1.5">
@@ -382,7 +393,7 @@ function instructorCountLabel(count: number): string {
               scope="col"
               class="whitespace-nowrap bg-[var(--sheet-header-color)] px-3 py-2 font-medium"
             >
-              Activity · last 36 months · either target
+              Activity · either target
             </th>
             <th
               scope="col"
@@ -443,10 +454,16 @@ function instructorCountLabel(count: number): string {
               class="whitespace-nowrap border-t border-slate-200 px-2.5 py-2 align-middle tabular-nums group-hover:bg-sky-50 group-focus:bg-sky-50"
               :class="index % 2 === 1 ? 'bg-[var(--sheet-zebra-color)]' : 'bg-white'"
             >
-              {{ formatDurationDisplay(instructor.fi_time) }} / 30h
-              <small class="block text-[11px] text-slate-500"
-                >OR {{ value(instructor.fi_launches) }} / 60 launches</small
-              >
+              <template v-if="instructor.activity">
+                {{ activityTime(instructor.activity) }}
+                <small class="block text-[11px] text-slate-500"
+                  >OR {{ activityLaunches(instructor.activity) }}</small
+                >
+                <small class="block text-[11px] text-slate-500"
+                  >Last {{ instructor.activity.period_months }} months</small
+                >
+              </template>
+              <template v-else>—</template>
             </td>
             <td
               class="whitespace-nowrap border-t border-slate-200 px-2.5 py-2 align-middle group-hover:bg-sky-50 group-focus:bg-sky-50"

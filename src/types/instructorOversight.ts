@@ -6,12 +6,22 @@ export interface InstructorIssue {
   message: string
 }
 
+/** Figures and targets the activity status is judged on (FI: instruction; BI/IFP: PIC). */
+export interface InstructorActivitySummary {
+  period_months: number
+  time: string
+  launches: number
+  required_time: string | null
+  required_launches: number | null
+}
+
 export interface ClubInstructor {
   profile_id: number
   instructor_name: string
   rating: string
   reporting_date: string | null
-  activity_period_months: number
+  activity_period_months: number | null
+  activity: InstructorActivitySummary | null
   pic_time: string | null
   pic_launches: number | null
   fi_time: string | null
