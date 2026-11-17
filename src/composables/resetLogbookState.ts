@@ -2,6 +2,7 @@ import { resetAutomationState } from '@/composables/useAutomation'
 import { resetDashboardStatusState } from '@/composables/useDashboardStatus'
 import { resetDisplaySettingsState } from '@/composables/useDisplaySettings'
 import { resetFlightsState } from '@/composables/useFlights'
+import { resetGoogleAccessState } from '@/composables/useGoogleAccess'
 import { resetLogbookSyncState } from '@/composables/useLogbookSync'
 import { resetInstructorOversightState } from '@/composables/useInstructorOversight'
 import { resetMapLayerPreferenceState } from '@/composables/useMapLayerPreference'
@@ -29,4 +30,5 @@ export function resetLogbookState(): void {
   resetProfileState()
   resetLogbookStatus()
   resetAutomationState()
+  resetGoogleAccessState()
 }

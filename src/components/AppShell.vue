@@ -11,6 +11,8 @@ import { useLogbookSync } from '@/composables/useLogbookSync'
 import { useMeasurementUnits } from '@/composables/useMeasurementUnits'
 import { isApiError } from '@/api/errors'
 import { useProfile } from '@/composables/useProfile'
+import { useGoogleAccess } from '@/composables/useGoogleAccess'
+import { googleReconnectRedirect } from '@/api/auth'
 
 const { user, mutating, logout } = useAuth()
 const { ensureLoaded: ensureDisplaySettingsLoaded } = useDisplaySettings()
@@ -19,6 +21,19 @@ const { message, kind, clear, show } = useFlashMessage()
 const route = useRoute()
 const router = useRouter()
 const { profile, initialized: profileInitialized, fetch: fetchProfile } = useProfile()
+const { needsReconnect: googleNeedsReconnect, check: checkGoogleAccess } = useGoogleAccess()
+const showGoogleReconnect = computed(
+  () =>
+    googleNeedsReconnect.value &&
+    Boolean(user.value?.has_logbook) &&
+    !user.value?.is_demo &&
+    route.name !== 'profile' &&
+    !hideMobileChrome.value,
+)
+
+function onGoogleReconnect(): void {
+  googleReconnectRedirect(route.fullPath.split('#')[0])
+}
 const menuOpen = ref(false)
 const userMenuOpen = ref(false)
 const syncPanelOpen = ref(false)
@@ -65,6 +80,7 @@ onMounted(() => {
   }, 1_000)
   if (user.value?.has_logbook && !user.value.is_demo) {
     void refreshSyncStatus().catch(() => undefined)
+    void checkGoogleAccess()
   }
 })
 
@@ -200,6 +216,7 @@ watch(
   (hasLogbook) => {
     if (hasLogbook) {
       void ensureDisplaySettingsLoaded()
+      if (!user.value?.is_demo) void checkGoogleAccess()
     }
   },
   { immediate: true },
@@ -231,6 +248,31 @@ watch(
     userMenuOpen.value = false
     syncPanelOpen.value = false
   },
+)
+
+watch(
+  () => route.query.google_reconnect,
+  (result) => {
+    if (typeof result !== 'string' || !user.value?.has_logbook || user.value.is_demo) return
+    void checkGoogleAccess(true)
+    // Profile page shows its own reconnect messages.
+    if (route.name === 'profile') return
+    const query = { ...route.query }
+    delete query.google_reconnect
+    void router.replace({ path: route.path, query, hash: route.hash })
+    if (result === 'success') {
+      show('Google access restored. Your logbook will update shortly.', 'success')
+      void requestSync().catch(() => undefined)
+    } else if (result === 'account_mismatch') {
+      show(
+        'You signed in with a different Google account. Use the same account as your logbook and try again.',
+        'error',
+      )
+    } else {
+      show('Could not restore Google access. Please try again.', 'error')
+    }
+  },
+  { immediate: true },
 )
 
 watch(syncCompleteCount, (count, previous) => {
@@ -550,6 +592,28 @@ watch(syncCompleteCount, (count, previous) => {
         >
           Open read-only Google Sheet ↗
         </a>
+      </div>
+    </div>
+
+    <div
+      v-if="showGoogleReconnect"
+      class="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+      role="alert"
+    >
+      <div
+        class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 lg:max-w-[1440px]"
+      >
+        <span>
+          <strong>Google access to your logbook has stopped.</strong>
+          Your logbook can't update until you reconnect.
+        </span>
+        <button
+          type="button"
+          class="shrink-0 rounded-md bg-amber-600 px-3 py-1.5 font-semibold text-white transition hover:bg-amber-700"
+          @click="onGoogleReconnect"
+        >
+          Reconnect Google
+        </button>
       </div>
     </div>
 
