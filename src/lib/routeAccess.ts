@@ -45,3 +45,34 @@ export function authGuardRedirect(
 
   return true
 }
+
+/**
+ * Where the /demo share link should take the visitor.
+ * Guests start the demo logbook. Signed-in pilots keep their own session, unless the link
+ * asks to switch (`signOut` given, e.g. /demo?logout=1 from an email): then they are signed
+ * out first and the demo opens.
+ */
+export async function demoLinkRedirect(
+  user: UserMe | null,
+  startDemo: () => Promise<UserMe | null>,
+  onUnavailable: () => void,
+  signOut?: () => Promise<boolean>,
+): Promise<RouteLocationRaw> {
+  if (user?.is_demo) {
+    return { name: 'dashboard' }
+  }
+  if (user) {
+    const ownLogbook: RouteLocationRaw = user.has_logbook
+      ? { name: 'dashboard' }
+      : { name: 'connect' }
+    if (!signOut || !(await signOut())) {
+      return ownLogbook
+    }
+  }
+  const demoUser = await startDemo()
+  if (!demoUser) {
+    onUnavailable()
+    return { name: 'landing' }
+  }
+  return { name: 'dashboard' }
+}

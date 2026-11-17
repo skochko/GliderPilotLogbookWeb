@@ -2,8 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useFlashMessage } from '@/composables/useFlashMessage'
 import { applyRouteSeo } from '@/lib/seoTags'
-import { authGuardRedirect, isPublicFastPath } from '@/lib/routeAccess'
+import { authGuardRedirect, demoLinkRedirect, isPublicFastPath } from '@/lib/routeAccess'
 import { SITE_PAGE_ROUTES } from '@/lib/sitePages'
+import { resetLogbookState } from '@/composables/resetLogbookState'
 
 const sitePageRoutes = SITE_PAGE_ROUTES.map((page) => ({
   path: page.path,
@@ -35,6 +36,32 @@ const router = createRouter({
     {
       path: '/club/automation',
       redirect: '/club/synchronisation',
+    },
+    {
+      // Share link: opens the demo logbook straight away. Signed-in pilots go to their own
+      // logbook, unless ?logout=1 (used in emails) asks to sign them out and open the demo.
+      path: '/demo',
+      name: 'demo',
+      component: () => import('@/views/LandingView.vue'),
+      beforeEnter: (to) => {
+        const { user, loginDemo, logout } = useAuth()
+        const { show } = useFlashMessage()
+        const signOut =
+          to.query.logout === '1'
+            ? async () => {
+                await logout()
+                if (user.value) return false
+                resetLogbookState()
+                return true
+              }
+            : undefined
+        return demoLinkRedirect(
+          user.value,
+          loginDemo,
+          () => show('The demo logbook is currently unavailable.', 'error'),
+          signOut,
+        )
+      },
     },
     {
       path: '/login',
