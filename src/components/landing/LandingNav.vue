@@ -16,6 +16,7 @@ const landingSectionLinks = [
   { id: 'features', label: 'Features' },
   { id: 'google-sheets', label: 'Your data' },
   { id: 'how-it-works', label: 'How it works' },
+  { id: 'for-clubs', label: 'For clubs' },
   { id: 'faq', label: 'FAQ' },
 ] as const
 

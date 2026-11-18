@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import ClubConnectDialog from '@/components/landing/ClubConnectDialog.vue'
 import LandingNav from '@/components/landing/LandingNav.vue'
 import LandingScreenshotFrame from '@/components/landing/LandingScreenshotFrame.vue'
 import SiteFooter from '@/components/SiteFooter.vue'
@@ -50,6 +51,25 @@ const features = [
     description: 'Your spreadsheet stays in Google Drive. We cache data only to keep the app fast.',
   },
 ]
+
+const clubBenefits = [
+  {
+    title: 'Flights arrive automatically',
+    description:
+      'Flights from your club flight accounting system are added to pilots’ logbooks — only for pilots who choose to connect.',
+  },
+  {
+    title: 'Instructor oversight',
+    description: 'CFI and DCFI see the currency and qualifications of the club’s instructors in one place.',
+  },
+  {
+    title: 'We help you set it up',
+    description:
+      'We register your club and guide your IT through installing the synchronisation package.',
+  },
+]
+
+const clubDialogOpen = ref(false)
 
 const steps = [
   {
@@ -384,6 +404,58 @@ async function openDemo(): Promise<void> {
         </div>
       </section>
 
+      <!-- For clubs -->
+      <section id="for-clubs" class="landing-section">
+        <div class="mx-auto max-w-landing px-4 sm:px-6">
+          <div
+            class="rounded-3xl border border-landing-border bg-landing-card px-6 py-10 shadow-sm sm:px-10 sm:py-12"
+          >
+            <div class="mx-auto max-w-2xl text-center">
+              <p class="text-sm font-semibold uppercase tracking-wide text-landing-primary">
+                For gliding clubs
+              </p>
+              <h2 class="mt-2 text-[1.75rem] font-semibold text-landing-text sm:text-[2rem]">
+                Connect your club to club automation
+              </h2>
+              <span
+                class="mt-4 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700"
+              >
+                Free for clubs
+              </span>
+              <p class="mt-4 text-base text-landing-secondary sm:text-lg">
+                Less paperwork for the club, complete logbooks for your pilots.
+              </p>
+            </div>
+
+            <ul class="mt-10 grid gap-5 sm:grid-cols-3">
+              <li v-for="benefit in clubBenefits" :key="benefit.title" class="text-center sm:text-left">
+                <h3 class="text-lg font-semibold text-landing-text">{{ benefit.title }}</h3>
+                <p class="mt-2 text-sm leading-relaxed text-landing-secondary sm:text-base">
+                  {{ benefit.description }}
+                </p>
+              </li>
+            </ul>
+
+            <div class="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <button
+                type="button"
+                class="inline-flex items-center justify-center rounded-lg bg-landing-primary px-5 py-3 text-sm font-medium text-white transition hover:opacity-90"
+                data-testid="club-connect-open"
+                @click="clubDialogOpen = true"
+              >
+                Connect your club
+              </button>
+              <RouterLink
+                to="/club/synchronisation"
+                class="text-sm font-medium text-landing-primary hover:underline"
+              >
+                How club automation works
+              </RouterLink>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- FAQ -->
       <section id="faq" class="landing-section">
         <div class="mx-auto max-w-landing px-4 sm:px-6">
@@ -442,6 +514,8 @@ async function openDemo(): Promise<void> {
         </div>
       </section>
     </main>
+
+    <ClubConnectDialog :open="clubDialogOpen" @close="clubDialogOpen = false" />
 
     <footer class="border-t border-landing-border bg-landing-card">
       <div class="mx-auto max-w-landing px-4 py-10 sm:px-6">
