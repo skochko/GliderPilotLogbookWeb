@@ -18,6 +18,7 @@ export const PUBLIC_PAGE_TITLES: Record<string, string> = {
     'Google Drive Access – Why Glider Pilot Logbook Requests These Permissions',
   '/club/synchronisation': 'For Clubs: Automated Synchronisation – Glider Pilot Logbook',
   '/club/downloads': 'Club Downloads – Windows Software for Gliding Clubs',
+  '/connect-club': `Connect Your Gliding Club – Free for Clubs – ${SITE_NAME}`,
   '/login': `Start – ${SITE_NAME}`,
   '/unsubscribe': `Email Unsubscribe – ${SITE_NAME}`,
 }
@@ -50,6 +51,8 @@ export const PUBLIC_PAGE_DESCRIPTIONS: Record<string, string> = {
     'How gliding clubs import flights into pilots’ Google Sheets logbooks with consent using Glider Pilot Logbook Automated Synchronisation.',
   '/club/downloads':
     'Download Glider Pilot Logbook Automation for Windows gliding clubs — publisher certificate, release package, and setup guidance for club IT teams.',
+  '/connect-club':
+    'Free for gliding clubs: flights from your club system go straight into pilots’ logbooks. Leave a request and we will help you connect your club.',
   '/login':
     'Start with Glider Pilot Logbook using your Google account. Create or connect your gliding flight logbook spreadsheet — no separate password.',
   '/unsubscribe':

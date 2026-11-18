@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { nextTick, onMounted, ref } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import ClubConnectDialog from '@/components/landing/ClubConnectDialog.vue'
 import LandingNav from '@/components/landing/LandingNav.vue'
 import LandingScreenshotFrame from '@/components/landing/LandingScreenshotFrame.vue'
@@ -13,6 +13,7 @@ const { fetchLanding, screenshotFor } = useLanding()
 const { loginDemo, mutating } = useAuth()
 const { show } = useFlashMessage()
 const router = useRouter()
+const route = useRoute()
 
 const badges = ['Google Sheets sync', 'Mobile friendly']
 
@@ -111,7 +112,17 @@ const faqItems = [
 
 onMounted(() => {
   void fetchLanding()
+  if (route.name === 'connect-club') {
+    void openClubDialogFromLink()
+  }
 })
+
+/** /connect-club share link: show the clubs section behind the open request form. */
+async function openClubDialogFromLink(): Promise<void> {
+  await nextTick()
+  document.getElementById('for-clubs')?.scrollIntoView({ block: 'start' })
+  clubDialogOpen.value = true
+}
 
 async function openDemo(): Promise<void> {
   const demoUser = await loginDemo()

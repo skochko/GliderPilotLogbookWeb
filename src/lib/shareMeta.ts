@@ -33,6 +33,11 @@ export function getSharePages(): SharePageMeta[] {
       description: PAGE_TYPE_DESCRIPTIONS[page.type],
     })),
     {
+      path: '/connect-club',
+      title: PUBLIC_PAGE_TITLES['/connect-club']!,
+      description: PUBLIC_PAGE_DESCRIPTIONS['/connect-club']!,
+    },
+    {
       path: '/login',
       title: PUBLIC_PAGE_TITLES['/login']!,
       description: PUBLIC_PAGE_DESCRIPTIONS['/login']!,
