@@ -38,6 +38,14 @@ const router = createRouter({
       redirect: '/club/synchronisation',
     },
     {
+      // Share link for clubs (ads, emails): the landing page with the request form open.
+      // Not guestLanding, so signed-in pilots can open it too.
+      path: '/connect-club',
+      name: 'connect-club',
+      component: () => import('@/views/LandingView.vue'),
+      meta: { publicPage: true },
+    },
+    {
       // Share link: opens the demo logbook straight away. Signed-in pilots go to their own
       // logbook, unless ?logout=1 (used in emails) asks to sign them out and open the demo.
       path: '/demo',
